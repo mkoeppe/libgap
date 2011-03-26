@@ -4,3 +4,8 @@
 src/.deps/\.*
 config\.log
 .*~
+Makefile
+config.h
+config.status
+libtool
+autom4te.cache/requests
