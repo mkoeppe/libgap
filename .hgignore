@@ -6,3 +6,5 @@ config\.log
 .*~
 .*\.rej
 stamp-h1
+src/\.libs/.*
+src/lib.*\.la
