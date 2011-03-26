@@ -11,3 +11,4 @@ libtool
 autom4te.cache/requests
 Makefile.in
 src/Makefile.in
+.*\.rej
