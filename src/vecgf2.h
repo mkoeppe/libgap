@@ -2,17 +2,14 @@
 **
 *W  vecgf2.h                    GAP source                       Frank Celler
 **
-*H  @(#)$Id: vecgf2.h,v 4.14 2003/04/30 11:27:14 sal Exp $
 **
-*Y  Copyright (C)  1997,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1997,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_vecgf2_h =
-   "@(#)$Id: vecgf2.h,v 4.14 2003/04/30 11:27:14 sal Exp $";
-#endif
 
+#ifndef GAP_VECGF2_H
+#define GAP_VECGF2_H
 
 /****************************************************************************
 **
@@ -245,6 +242,8 @@ extern Obj IsGF2VectorRep;
 */
 StructInitInfo * InitInfoGF2Vec ( void );
 
+
+#endif // GAP_VECGF2_H
 
 /****************************************************************************
 **

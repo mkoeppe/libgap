@@ -6,10 +6,9 @@
 **  This file declares the function collecting from the left with polycyclic
 **  presentations.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_objcftl_h =
-   "@(#)$Id: objcftl.h,v 4.7 1997/11/26 17:43:51 frank Exp $";
-#endif
+
+#ifndef GAP_OBJCFTL_H
+#define GAP_OBJCFTL_H
 
 
 #define PC_NUMBER_OF_GENERATORS      1
@@ -49,6 +48,8 @@ const char * Revision_objcftl_h =
 */
 StructInitInfo * InitInfoPcc ( void );
 
+
+#endif // GAP_OBJCFTL_H
 
 /****************************************************************************
 **

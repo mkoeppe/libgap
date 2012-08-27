@@ -1,12 +1,11 @@
 /****************************************************************************
 **
 *W  blister.c                   GAP source                       Frank Celler
-*W                                                         & Martin Schoenert
+*W                                                         & Martin Schönert
 **
-*H  @(#)$Id: blister.c,v 4.52.2.5 2008/08/15 22:39:07 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This  file contains the functions  that mainly operate  on boolean lists.
@@ -72,8 +71,6 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_blister_c =
-   "@(#)$Id: blister.c,v 4.52.2.5 2008/08/15 22:39:07 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -95,9 +92,7 @@ const char * Revision_blister_c =
 #include        "lists.h"               /* generic lists                   */
 #include        "plist.h"               /* plain lists                     */
 #include        "set.h"                 /* plain sets                      */
-#define INCLUDE_DECLARATION_PART
 #include        "blister.h"             /* boolean lists                   */
-#undef  INCLUDE_DECLARATION_PART
 #include        "range.h"               /* ranges                          */
 #include        "string.h"              /* strings                         */
 
@@ -738,23 +733,26 @@ void AssBlistImm (
 **  only positive integers, that <poss> and <vals>  have the same length, and
 **  that <vals> is dense.
 **
-**  'AsssBlist' is the function in 'AsssListFuncs' for boolean lists.
+**  'AsssBlist' is intended as function in 'AsssListFuncs' for boolean lists.
+**  Note that currently, we use AsssListDefault instead. This ensures 
+**  automatically that <list> remains a blist if possible.
 **
-**  'AsssBlist' simply converts  the boolean list   to a plain  list and then
-**  does the same stuff  as 'AsssPlist'.  This is   because a boolean is  not
-**  very likely to stay a boolean list after the assignment.
 */
-void AsssBlist (
+void AsssBlist (     /*  currently not used */
     Obj                 list,
     Obj                 poss,
     Obj                 vals )
 {
-    /* convert <list> to a plain list                                      */
-    PLAIN_LIST(list);
-    CLEAR_FILTS_LIST(list);
+   Int   i, len, pos;
+   Obj   val;
 
-    /* and delegate                                                        */
-    ASSS_LIST( list, poss, vals );
+   len = LEN_LIST(poss);
+   for (i=1; i <= len; i++) {
+      /* use generic macros because list might be unpacked */
+      pos = INT_INTOBJ(ELMW_LIST(poss, i));
+      val = ELMW_LIST(vals, i);
+      ASS_LIST( list, pos, val);
+    }
 }
 
 
@@ -822,30 +820,30 @@ Obj PosBlist (
 
        x = ptr[firstblock];
        if (firstblock == lastblock) 
-	 {
-	   if (x != 0)
-	     for (j = firstoffset; j <= lastoffset; j++)
-	       if ((x & (1UL << j)) != 0)
-		 return INTOBJ_INT(BIPEB*firstblock + j + 1);
-	   return Fail;
-	 }
+         {
+           if (x != 0)
+             for (j = firstoffset; j <= lastoffset; j++)
+               if ((x & (1UL << j)) != 0)
+                 return INTOBJ_INT(BIPEB*firstblock + j + 1);
+           return Fail;
+         }
        if (x != 0)
-	 for (j = firstoffset; j < BIPEB; j++)
-	   if ((x & (1UL << j)) != 0)
-	     return INTOBJ_INT(BIPEB*firstblock + j + 1);
+         for (j = firstoffset; j < BIPEB; j++)
+           if ((x & (1UL << j)) != 0)
+             return INTOBJ_INT(BIPEB*firstblock + j + 1);
        for (i  = firstblock + 1; i < lastblock; i++)
-	 {
-	   x = ptr[i];
-	   if (x != 0)
-	     for (j = 0; j < BIPEB; j++)
-	       if ((x & (1UL << j)) != 0)
-		 return INTOBJ_INT(BIPEB*i + j + 1);
-	 }
+         {
+           x = ptr[i];
+           if (x != 0)
+             for (j = 0; j < BIPEB; j++)
+               if ((x & (1UL << j)) != 0)
+                 return INTOBJ_INT(BIPEB*i + j + 1);
+         }
        x = ptr[lastblock];
        if (x != 0)
-	 for (j = 0; j <= lastoffset; j++)
-	   if ((x & (1UL << j)) != 0)
-	     return INTOBJ_INT(BIPEB*lastblock + j + 1);
+         for (j = 0; j <= lastoffset; j++)
+           if ((x & (1UL << j)) != 0)
+             return INTOBJ_INT(BIPEB*lastblock + j + 1);
        return Fail;
     }
 
@@ -853,30 +851,30 @@ Obj PosBlist (
     else if ( val == False ) {
       x = ptr[firstblock];
       if (firstblock == lastblock) 
-	{
-	  if (x != ~0UL)
-	    for (j = firstoffset; j <= lastoffset; j++)
-	      if ((x & (1UL << j)) == 0)
-		return INTOBJ_INT(BIPEB*firstblock + j + 1);
-	   return Fail;
-	 }
+        {
+          if (x != ~0UL)
+            for (j = firstoffset; j <= lastoffset; j++)
+              if ((x & (1UL << j)) == 0)
+                return INTOBJ_INT(BIPEB*firstblock + j + 1);
+           return Fail;
+         }
        if (x != ~0UL)
-	 for (j = firstoffset; j < BIPEB; j++)
-	   if ((x & (1UL << j)) == 0)
-	     return INTOBJ_INT(BIPEB*firstblock + j + 1);
+         for (j = firstoffset; j < BIPEB; j++)
+           if ((x & (1UL << j)) == 0)
+             return INTOBJ_INT(BIPEB*firstblock + j + 1);
        for (i  = firstblock + 1; i < lastblock; i++)
-	 {
-	   x = ptr[i];
-	   if (x != ~0UL)
-	     for (j = 0; j < BIPEB; j++)
-	       if ((x & (1UL << j)) == 0)
-		 return INTOBJ_INT(BIPEB*i + j + 1);
-	 }
+         {
+           x = ptr[i];
+           if (x != ~0UL)
+             for (j = 0; j < BIPEB; j++)
+               if ((x & (1UL << j)) == 0)
+                 return INTOBJ_INT(BIPEB*i + j + 1);
+         }
        x = ptr[lastblock];
        if (x != ~0UL)
-	 for (j = 0; j <= lastoffset; j++)
-	   if ((x & (1UL << j)) == 0)
-	     return INTOBJ_INT(BIPEB*lastblock + j + 1);
+         for (j = 0; j <= lastoffset; j++)
+           if ((x & (1UL << j)) == 0)
+             return INTOBJ_INT(BIPEB*lastblock + j + 1);
        return Fail;
     }
 
@@ -1396,8 +1394,7 @@ Obj FuncBLIST_LIST (
 
     /* for a list as subset of a range, we need basically no search        */
     else if ( IS_RANGE(list) && GET_INC_RANGE( list) == 1
-          && (T_PLIST <= TNUM_OBJ(sub)
-           && TNUM_OBJ(sub) <= T_PLIST_CYC_SSORT) ) {
+          && IS_PLIST(sub) ) {
 
         /* allocate the boolean list and get pointer                       */
         lenList  = GET_LEN_RANGE( list );
@@ -1426,10 +1423,10 @@ Obj FuncBLIST_LIST (
       * FL  */
                 /* otherwise it may be a record, let 'PosRange' handle it  */
               /*  else {
-		    Obj pos;
+                    Obj pos;
                     pos = PosRange( list, ptrSub[l], 0L );
-		    if (pos != Fail) {
-		      k = INT_INTOBJ(pos);
+                    if (pos != Fail) {
+                      k = INT_INTOBJ(pos);
                       ptrBlist[(k-1)/BIPEB] |= (1UL << (k-1)%BIPEB);
                     }  
                 } */
@@ -1896,7 +1893,7 @@ Obj FuncUNITE_BLIST (
 Obj FuncUNITE_BLIST_LIST (
     Obj                 self,
     Obj                 list,
-    Obj			blist,
+    Obj                 blist,
     Obj                 sub )
 {
     UInt  *             ptrBlist;       /* pointer to the boolean list     */
@@ -1935,13 +1932,13 @@ Obj FuncUNITE_BLIST_LIST (
         /* allocate the boolean list and get pointer                       */
         lenList  = GET_LEN_RANGE( list );
 
-	/* check length */
-	while ( LEN_BLIST(blist) != lenList ) {
-	    blist = ErrorReturnObj(
-	      "UniteBlistList: <blist> must have the same length as <list> (%d)",
-		lenList, 0L,
-		"you can replace <blist> via 'return <blist>;'" );
-	}
+        /* check length */
+        while ( LEN_BLIST(blist) != lenList ) {
+            blist = ErrorReturnObj(
+              "UniteBlistList: <blist> must have the same length as <list> (%d)",
+                lenList, 0L,
+                "you can replace <blist> via 'return <blist>;'" );
+        }
 
         lenSub   = GET_LEN_RANGE( sub );
         ptrBlist = BLOCKS_BLIST(blist);
@@ -1967,19 +1964,18 @@ Obj FuncUNITE_BLIST_LIST (
 
     /* for a list as subset of a range, we need basically no search        */
     else if ( IS_RANGE(list) && GET_INC_RANGE( list) == 1
-          && (T_PLIST <= TNUM_OBJ(sub)
-           && TNUM_OBJ(sub) <= T_PLIST_CYC_SSORT) ) {
+          && IS_PLIST(sub) ) {
 
         /* allocate the boolean list and get pointer                       */
         lenList  = GET_LEN_RANGE( list );
 
-	/* check length */
-	while ( LEN_BLIST(blist) != lenList ) {
-	    blist = ErrorReturnObj(
-	      "UniteBlistList: <blist> must have the same length as <list> (%d)",
-		lenList, 0L,
-		"you can replace <blist> via 'return <blist>;'" );
-	}
+        /* check length */
+        while ( LEN_BLIST(blist) != lenList ) {
+            blist = ErrorReturnObj(
+              "UniteBlistList: <blist> must have the same length as <list> (%d)",
+                lenList, 0L,
+                "you can replace <blist> via 'return <blist>;'" );
+        }
 
         lenSub   = LEN_LIST( sub );
         ptrBlist = BLOCKS_BLIST(blist);
@@ -2000,11 +1996,11 @@ Obj FuncUNITE_BLIST_LIST (
        /* see comment where PosRange was used above   FL */         
                 /* otherwise it may be a record, let 'PosRange' handle it  */
               /*  else {
-		  Obj pos;
+                  Obj pos;
                     pos = PosRange( list, ptrSub[l], 0L );
-		    if (pos != Fail)
-		      k = INT_INTOBJ(pos);
-		    ptrBlist[(k-1)/BIPEB] |= (1UL << (k-1)%BIPEB);
+                    if (pos != Fail)
+                      k = INT_INTOBJ(pos);
+                    ptrBlist[(k-1)/BIPEB] |= (1UL << (k-1)%BIPEB);
                 }    */
 
             }
@@ -2018,13 +2014,13 @@ Obj FuncUNITE_BLIST_LIST (
         /* get the length of <list> and its logarithm                      */
         lenList = LEN_PLIST( list );
 
-	/* check length */
-	while ( LEN_BLIST(blist) != lenList ) {
-	    blist = ErrorReturnObj(
-	      "UniteBlistList: <blist> must have the same length as <list> (%d)",
-		lenList, 0L,
-		"you can replace <blist> via 'return <blist>;'" );
-	}
+        /* check length */
+        while ( LEN_BLIST(blist) != lenList ) {
+            blist = ErrorReturnObj(
+              "UniteBlistList: <blist> must have the same length as <list> (%d)",
+                lenList, 0L,
+                "you can replace <blist> via 'return <blist>;'" );
+        }
 
         for ( i = lenList, l = 0; i != 0; i >>= 1, l++ ) ;
         PLAIN_LIST( sub );
@@ -2110,13 +2106,13 @@ Obj FuncUNITE_BLIST_LIST (
         /* allocate the boolean list and get pointer                       */
         lenList  = LEN_LIST( list );
 
-	/* check length */
-	while ( LEN_BLIST(blist) != lenList ) {
-	    blist = ErrorReturnObj(
-	      "UniteBlistList: <blist> must have the same length as <list> (%d)",
-		lenList, 0L,
-		"you can replace <blist> via 'return <blist>;'" );
-	}
+        /* check length */
+        while ( LEN_BLIST(blist) != lenList ) {
+            blist = ErrorReturnObj(
+              "UniteBlistList: <blist> must have the same length as <list> (%d)",
+                lenList, 0L,
+                "you can replace <blist> via 'return <blist>;'" );
+        }
 
         lenSub   = LEN_PLIST( sub );
 
@@ -2711,7 +2707,7 @@ static Int InitKernel (
         ElmsListFuncs   [ t1 +IMMUTABLE ] = ElmsBlist;
         AssListFuncs    [ t1            ] = AssBlist;
         AssListFuncs    [ t1 +IMMUTABLE ] = AssBlistImm;
-        AsssListFuncs   [ t1            ] = AsssBlist;
+        AsssListFuncs   [ t1            ] = AsssListDefault;
         AsssListFuncs   [ t1 +IMMUTABLE ] = AsssBlistImm;
         IsDenseListFuncs[ t1            ] = IsDenseBlist;
         IsDenseListFuncs[ t1 +IMMUTABLE ] = IsDenseBlist;
@@ -2725,7 +2721,7 @@ static Int InitKernel (
         PosListFuncs    [ t1 +IMMUTABLE ] = PosBlist;
         PlainListFuncs  [ t1            ] = PlainBlist;
         PlainListFuncs  [ t1 +IMMUTABLE ] = PlainBlist;
-	MakeImmutableObjFuncs [ t1      ] = MakeImmutableBlist;
+        MakeImmutableObjFuncs [ t1      ] = MakeImmutableBlist;
     }
     IsSSortListFuncs[ T_BLIST_NSORT            ] = IsSSortBlistNot;
     IsSSortListFuncs[ T_BLIST_NSORT +IMMUTABLE ] = IsSSortBlistNot;
@@ -2784,8 +2780,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoBlist ( void )
 {
-    module.revision_c = Revision_blister_c;
-    module.revision_h = Revision_blister_h;
     FillInVersion( &module );
     return &module;
 }

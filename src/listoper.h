@@ -1,20 +1,18 @@
 /****************************************************************************
 **
-*W  listoper.h                  GAP source                   Martin Schoenert
+*W  listoper.h                  GAP source                   Martin Schönert
 **
-*H  @(#)$Id: listoper.h,v 4.10 2002/04/15 10:03:51 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares  the functions of the  package with the operations for
 **  generic lists.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_listoper_h =
-   "@(#)$Id: listoper.h,v 4.10 2002/04/15 10:03:51 sal Exp $";
-#endif
+
+#ifndef GAP_LISTOPER_H
+#define GAP_LISTOPER_H
 
 /* These functions are exported because specialised methods may want to
    fall back on them from other files (eg vec8bit) */
@@ -171,6 +169,8 @@ Obj             ProdListList (
 */
 StructInitInfo * InitInfoListOper ( void );
 
+
+#endif // GAP_LISTOPER_H
 
 /****************************************************************************
 **

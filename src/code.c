@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  code.c                      GAP source                   Martin Schoenert
+*W  code.c                      GAP source                   Martin Schönert
 **
-*H  @(#)$Id: code.c,v 4.40 2002/09/25 12:15:28 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions of the coder package.
@@ -14,12 +13,10 @@
 **  expressions.  Its functions are called from the reader.
 */
 #include        <stdio.h>               /* on SunOS, assert.h uses stderr
-					   but does not include stdio.h    */
+                                           but does not include stdio.h    */
 #include        <assert.h>              /* assert                          */
 #include        "system.h"              /* Ints, UInts                     */
 
-const char * Revision_code_c =
-   "@(#)$Id: code.c,v 4.40 2002/09/25 12:15:28 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -43,15 +40,13 @@ const char * Revision_code_c =
 
 #include        "funcs.h"               /* functions                       */
 
-#define INCLUDE_DECLARATION_PART
 #include        "code.h"                /* coder                           */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "vars.h"                /* variables                       */
 
 #include        "saveload.h"            /* saving and loading              */
 #include        "read.h"                /* to access stack of for loop globals */
-
+#include        "gvars.h"
 
 /****************************************************************************
 **
@@ -72,6 +67,18 @@ Stat * PtrBody;
 */
 Stat OffsBody;
 
+Stat OffsBodyStack[1024];
+UInt OffsBodyCount = 0;
+
+static inline void PushOffsBody( void ) {
+  assert(OffsBodyCount <= 1023);
+  OffsBodyStack[OffsBodyCount++] = OffsBody;
+}
+
+static inline void PopOffsBody( void ) {
+  assert(OffsBodyCount);
+  OffsBody = OffsBodyStack[--OffsBodyCount];
+}
 
 /****************************************************************************
 **
@@ -94,10 +101,10 @@ Stat NewStat (
 
     /* make certain that the current body bag is large enough              */
     if ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) == 0 ) {
-        ResizeBag( BODY_FUNC(CURR_FUNC), OffsBody );
+      ResizeBag( BODY_FUNC(CURR_FUNC), OffsBody + NUMBER_HEADER_ITEMS_BODY*sizeof(Obj) );
         PtrBody = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
     }
-    while ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) < OffsBody ) {
+    while ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) < OffsBody + NUMBER_HEADER_ITEMS_BODY*sizeof(Obj)  ) {
         ResizeBag( BODY_FUNC(CURR_FUNC), 2*SIZE_BAG(BODY_FUNC(CURR_FUNC)) );
         PtrBody = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
     }
@@ -561,11 +568,11 @@ void CodeFuncCallEnd (
     /* wrap up the call with the options */
     if (options)
       {
-	wrapper = NewExpr( funccall ? T_FUNCCALL_OPTS : T_PROCCALL_OPTS, 
-			   2*sizeof(Expr));
-	ADDR_EXPR(wrapper)[0] = opts;
-	ADDR_EXPR(wrapper)[1] = call;
-	call = wrapper;
+        wrapper = NewExpr( funccall ? T_FUNCCALL_OPTS : T_PROCCALL_OPTS, 
+                           2*sizeof(Expr));
+        ADDR_EXPR(wrapper)[0] = opts;
+        ADDR_EXPR(wrapper)[1] = call;
+        call = wrapper;
       }
 
     /* push the function call                                              */
@@ -596,16 +603,19 @@ void CodeFuncCallEnd (
 void CodeFuncExprBegin (
     Int                 narg,
     Int                 nloc,
-    Obj                 nams )
+    Obj                 nams,
+    Int                 startLine)
 {
     Obj                 fexp;           /* function expression bag         */
     Obj                 fexs;           /* function expressions list       */
     Bag                 body;           /* function body                   */
     Bag                 old;            /* old frame                       */
     Stat                stat1;          /* first statement in body         */
+    UInt                len;
 
     /* remember the current offset                                         */
-    SET_BRK_CALL_TO( OffsBody );
+    PushOffsBody();
+
 
     /* create a function expression                                        */
     fexp = NewBag( T_FUNCTION, SIZE_FUNC );
@@ -624,6 +634,17 @@ void CodeFuncExprBegin (
     body = NewBag( T_BODY, 1024*sizeof(Stat) );
     BODY_FUNC( fexp ) = body;
     CHANGED_BAG( fexp );
+
+    /* record where we are reading from */
+    if (!Input->gapname) {
+      len = strlen(Input->name);
+      Input->gapname = NEW_STRING(len);
+      SyStrncat(CSTR_STRING(Input->gapname),Input->name, len);
+    }
+    FILENAME_BODY(body) = Input->gapname;
+    STARTLINE_BODY(body) = INTOBJ_INT(startLine);
+    /*    Pr("Coding begin at %s:%d ",(Int)(Input->name),Input->number);
+          Pr(" Body id %d\n",(Int)(body),0L); */
     OffsBody = 0;
 
     /* give it an environment                                              */
@@ -632,6 +653,7 @@ void CodeFuncExprBegin (
 
     /* switch to this function                                             */
     SWITCH_TO_NEW_LVARS( fexp, (narg != -1 ? narg : 1), nloc, old );
+    (void) old; /* please picky compilers. */
 
     /* allocate the top level statement sequence                           */
     stat1 = NewStat( T_SEQ_STAT, 8*sizeof(Stat) );
@@ -686,13 +708,15 @@ void CodeFuncExprEnd (
     }
 
     /* make the body smaller                                               */
-    ResizeBag( BODY_FUNC(fexp), OffsBody );
+    ResizeBag( BODY_FUNC(fexp), OffsBody+NUMBER_HEADER_ITEMS_BODY*sizeof(Obj) );
+    ENDLINE_BODY(BODY_FUNC(fexp)) = INTOBJ_INT(Input->number);
+    /*    Pr("  finished coding %d at line %d\n",(Int)(BODY_FUNC(fexp)), Input->number); */
 
     /* switch back to the previous function                                */
     SWITCH_TO_OLD_LVARS( ENVI_FUNC(fexp) );
 
     /* restore the remembered offset                                       */
-    OffsBody = BRK_CALL_TO();
+    PopOffsBody();
 
     /* if this was inside another function definition, make the expression */
     /* and store it in the function expression list of the outer function  */
@@ -711,27 +735,6 @@ void CodeFuncExprEnd (
     /* otherwise, make the function and store it in 'CodeResult'           */
     else {
         CodeResult = MakeFunction( fexp );
-        if ( CompNowFuncs != 0 ) {
-            CompNowCount++;
-            if ( CompNowCount <= LEN_PLIST( CompNowFuncs ) ) {
-                fexp = ELM_PLIST( CompNowFuncs, CompNowCount );
-                for ( i = 0;  i <= 7;  i++ ) {
-                    HDLR_FUNC( fexp, i ) = HDLR_FUNC( CodeResult, i );
-                }
-                NARG_FUNC( fexp ) = NARG_FUNC( CodeResult );
-                NAMS_FUNC( fexp ) = NAMS_FUNC( CodeResult );
-                NLOC_FUNC( fexp ) = NLOC_FUNC( CodeResult );
-                BODY_FUNC( fexp ) = BODY_FUNC( CodeResult );
-                FEXS_FUNC( fexp ) = FEXS_FUNC( CodeResult );
-                CHANGED_BAG( fexp );
-            }
-            else {
-                GROW_PLIST(    CompNowFuncs, CompNowCount );
-                SET_LEN_PLIST( CompNowFuncs, CompNowCount );
-                SET_ELM_PLIST( CompNowFuncs, CompNowCount, CodeResult );
-                CHANGED_BAG(   CompNowFuncs );
-            }
-        }
     }
 
 }
@@ -1276,7 +1279,7 @@ void CodeAInv ( void )
     Int                 i;
 
     expr = PopExpr();
-    if ( IS_INTEXPR(expr) && INT_INTEXPR(expr) != -(1L<<28) ) {
+    if ( IS_INTEXPR(expr) && INT_INTEXPR(expr) != -(1L<<NR_SMALL_INT_BITS) ) {
         i = INT_INTEXPR(expr);
         PushExpr( INTEXPR_INT( -i ) );
     }
@@ -1378,12 +1381,11 @@ void CodeIntExpr (
     }
 
     /* otherwise stuff the value into the values list                      */
+    /* Need to fix this up for GMP integers */
     else {
-        expr = NewExpr( T_INT_EXPR, sizeof(UInt2) + SIZE_OBJ(val) );
-        ((UInt2*)ADDR_EXPR(expr))[0] = (Expr)sign;
-        for ( i = 1; i < SIZE_EXPR(expr)/sizeof(UInt2); i++ ) {
-            ((UInt2*)ADDR_EXPR(expr))[i] = ((UInt2*)ADDR_OBJ(val))[i-1];
-        }
+        expr = NewExpr( T_INT_EXPR, sizeof(UInt) + SIZE_OBJ(val) );
+        ((UInt *)ADDR_EXPR(expr))[0] = (UInt)TNUM_OBJ(val);
+        memcpy((void *)((UInt *)ADDR_EXPR(expr)+1), (void *)ADDR_OBJ(val), (size_t)SIZE_OBJ(val));
     }
 
     /* push the expression                                                 */
@@ -1454,6 +1456,7 @@ void CodeLongIntExpr (
     }
 
     /* otherwise stuff the value into the values list                      */
+    /* Need to fix this up for GMP integers */
     else {
         expr = NewExpr( T_INT_EXPR, sizeof(UInt2) + SIZE_OBJ(val) );
         ((UInt2*)ADDR_EXPR(expr))[0] = (Expr)sign;
@@ -1654,6 +1657,171 @@ void CodeStringExpr (
 
     /* push the string                                                     */
     PushExpr( string );
+}
+
+/****************************************************************************
+**
+*F  CodeFloatExpr( <str> ) . . . . . . . .  code literal float expression
+*/
+#define FLOAT_0_INDEX 1
+#define FLOAT_1_INDEX 2
+#define MAX_FLOAT_INDEX ((1L<<NR_SMALL_INT_BITS)-2)
+
+static UInt GVAR_SAVED_FLOAT_INDEX;
+static UInt NextFloatExprNumber = 3;
+
+static UInt NextEagerFloatLiteralNumber = 1;
+
+static Obj EAGER_FLOAT_LITERAL_CACHE = 0;
+static Obj CONVERT_FLOAT_LITERAL_EAGER;
+
+
+static UInt getNextFloatExprNumber( void ) {
+  if (NextFloatExprNumber > MAX_FLOAT_INDEX)
+    return 0;
+  else
+    return NextFloatExprNumber++;
+}
+
+static UInt CheckForCommonFloat(Char *str) {
+  /* skip leading zeros */
+  while (*str == '0')
+    str++;
+  if (*str == '.')
+    /* might be zero literal */
+    {
+      /* skip point */
+      str++;
+      /* skip more zeroes */
+      while (*str == '0')
+        str++;
+      /* if we've got to end of string we've got zero. */
+      if (!IsDigit(*str))
+        return FLOAT_0_INDEX;
+    }
+  if (*str++ !='1')
+    return 0;
+  /* might be one literal */
+  if (*str++ != '.')
+    return 0;
+  /* skip zeros */
+  while (*str == '0')
+    str++;
+  if (*str == '\0')
+    return FLOAT_1_INDEX;
+  if (IsDigit(*str))
+    return 0;
+  /* must now be an exponent character */
+  assert(IsAlpha(*str));
+  /* skip it */
+  str++;
+  /*skip + and - in exponent */
+  if (*str == '+' || *str == '-')
+    str++;
+  /* skip leading zeros in the exponent */
+  while (*str == '0')
+    str++;
+  /* if there's anything but leading zeros this isn't 
+     a one literal */
+  if (*str == '\0')
+    return FLOAT_1_INDEX;
+  else
+    return 0;
+}
+
+static void CodeLazyFloatExpr( Char *str, UInt len) {
+    UInt ix;
+
+    /* Lazy case, store the string for conversion at run time */
+    Expr fl = NewExpr( T_FLOAT_EXPR_LAZY, 2*sizeof(UInt) +len+1  );
+    /* copy the string                                                     */
+    memcpy( (void *)((char *)ADDR_EXPR(fl)+2*sizeof(UInt)), (void *)str, 
+            len+1 );
+      
+    *(UInt *)ADDR_EXPR(fl) = len;
+    ix = CheckForCommonFloat(str);
+    if (!ix) 
+      ix = getNextFloatExprNumber();
+    ((UInt *)ADDR_EXPR(fl))[1] = ix;
+    
+    /* push the expression                                                     */
+    PushExpr( fl );
+}
+
+static void CodeEagerFloatExpr( Obj str, Char mark ) {
+  /* Eager case, do the conversion now */
+  UInt l = GET_LEN_STRING(str);
+  Expr fl = NewExpr( T_FLOAT_EXPR_EAGER, sizeof(UInt)* 3 + l + 1);
+  Obj v = CALL_2ARGS(CONVERT_FLOAT_LITERAL_EAGER, str, ObjsChar[(Int)mark]);
+  assert(EAGER_FLOAT_LITERAL_CACHE);
+  assert(IS_PLIST(EAGER_FLOAT_LITERAL_CACHE));
+  GROW_PLIST(EAGER_FLOAT_LITERAL_CACHE, NextEagerFloatLiteralNumber);
+  SET_ELM_PLIST(EAGER_FLOAT_LITERAL_CACHE, NextEagerFloatLiteralNumber, v);
+  CHANGED_BAG(EAGER_FLOAT_LITERAL_CACHE);
+  SET_LEN_PLIST(EAGER_FLOAT_LITERAL_CACHE, NextEagerFloatLiteralNumber);
+  ADDR_EXPR(fl)[0] = NextEagerFloatLiteralNumber;
+  ADDR_EXPR(fl)[1] = l;
+  ADDR_EXPR(fl)[2] = (UInt)mark;
+  memcpy((void*)(ADDR_EXPR(fl)+3), (void *)CHARS_STRING(str), l+1);
+  NextEagerFloatLiteralNumber++;
+  PushExpr(fl);
+}
+
+void CodeFloatExpr (
+    Char *              str )
+{
+  
+  UInt l = strlen(str);
+  UInt l1 = l;
+  Char mark = '\0'; /* initialize to please compilers */
+  if (str[l-1] == '_' )
+    {
+      l1 = l-1;
+      mark = '\0';
+    }
+  else if (str[l-2] == '_')
+    {
+      l1 = l-2;
+      mark = str[l-1];
+    }
+  if (l1 < l)
+    {
+      Obj s = NEW_STRING(l1);
+      memcpy((void *)CHARS_STRING(s), (void *)str, (size_t)l1 );
+      CodeEagerFloatExpr(s,mark);
+    } else {
+    CodeLazyFloatExpr(str, l);
+  }
+}
+
+/****************************************************************************
+**
+*F  CodeLongFloatExpr( <str> ) . . . . . . .code long literal float expression
+*/
+
+void CodeLongFloatExpr (
+    Obj              str )
+{
+  Char mark = '\0'; /* initialize to please compilers */
+
+    /* allocate the float expression                                      */
+    UInt l = GET_LEN_STRING(str);
+    UInt l1 = l;
+    if (CHARS_STRING(str)[l-1] == '_') {
+      l1 = l-1;
+      mark = '\0';
+    } else if (CHARS_STRING(str)[l-2] == '_') {
+      l1 = l-2;
+      mark = CHARS_STRING(str)[l-1];
+    }
+    if (l1 < l) {
+      CHARS_STRING(str)[l1] = '\0';
+      SET_LEN_STRING(str,l1);
+      CodeEagerFloatExpr(str, mark);
+    } else {
+      CodeLazyFloatExpr((Char *)CHARS_STRING(str), l);
+    }
+    
 }
 
 
@@ -2945,7 +3113,11 @@ void SaveBody ( Obj body )
   UInt i;
   UInt *ptr;
   ptr = (UInt *) ADDR_OBJ(body);
-  for (i = 0; i < (SIZE_OBJ(body)+sizeof(UInt)-1)/sizeof(UInt); i++)
+  /* Save the new inforation in the body */
+  for (i =0; i < NUMBER_HEADER_ITEMS_BODY; i++)
+    SaveSubObj((Obj)(*ptr++));
+  /* and the rest */
+  for (; i < (SIZE_OBJ(body)+sizeof(UInt)-1)/sizeof(UInt); i++)
     SaveUInt(*ptr++);
 }
 
@@ -2963,7 +3135,9 @@ void LoadBody ( Obj body )
   UInt i;
   UInt *ptr;
   ptr = (UInt *) ADDR_OBJ(body);
-  for (i = 0; i < (SIZE_OBJ(body)+sizeof(UInt)-1)/sizeof(UInt); i++)
+  for (i =0; i < NUMBER_HEADER_ITEMS_BODY; i++)
+    *(Obj *)(ptr++) = LoadSubObj();
+  for (; i < (SIZE_OBJ(body)+sizeof(UInt)-1)/sizeof(UInt); i++)
     *ptr++ = LoadUInt();
 }
 
@@ -2986,7 +3160,7 @@ static Int InitKernel (
 {
     /* install the marking functions for function body bags                */
     InfoBags[ T_BODY ].name = "function body bag";
-    InitMarkFuncBags( T_BODY, MarkNoSubBags );
+    InitMarkFuncBags( T_BODY, MarkThreeSubBags );
 
     SaveObjFuncs[ T_BODY ] = SaveBody;
     LoadObjFuncs[ T_BODY ] = LoadBody;
@@ -2997,6 +3171,10 @@ static Int InitKernel (
     /* allocate the statements and expressions stacks                      */
     InitGlobalBag( &StackStat, "StackStat" );
     InitGlobalBag( &StackExpr, "StackExpr" );
+
+    /* some functions and globals needed for float conversion */
+    InitCopyGVar( "EAGER_FLOAT_LITERAL_CACHE", &EAGER_FLOAT_LITERAL_CACHE);
+    InitFopyGVar( "CONVERT_FLOAT_LITERAL_EAGER", &CONVERT_FLOAT_LITERAL_EAGER);
 
     /* return success                                                      */
     return 0;
@@ -3010,13 +3188,61 @@ static Int InitKernel (
 static Int InitLibrary (
     StructInitInfo *    module )
 {
+  UInt gv;
+  Obj cache;
     /* allocate the statements and expressions stacks                      */
     StackStat = NewBag( T_BODY, 64*sizeof(Stat) );
     StackExpr = NewBag( T_BODY, 64*sizeof(Expr) );
 
+    GVAR_SAVED_FLOAT_INDEX = GVarName("SavedFloatIndex");
+    
+    gv = GVarName("EAGER_FLOAT_LITERAL_CACHE");
+    cache = NEW_PLIST(T_PLIST+IMMUTABLE, 1000L);
+    SET_LEN_PLIST(cache,0);
+    AssGVar(gv, cache);
+
     /* return success                                                      */
     return 0;
 }
+
+/****************************************************************************
+**
+*F  PostRestore( <module> ) . . . . . . .  recover
+*/
+static Int PostRestore (
+    StructInitInfo *    module )
+{
+  GVAR_SAVED_FLOAT_INDEX = GVarName("SavedFloatIndex");
+  NextFloatExprNumber = INT_INTOBJ(VAL_GVAR(GVAR_SAVED_FLOAT_INDEX));
+  return 0;
+}
+
+
+/****************************************************************************
+**
+*F  PreSave( <module> ) . . . . . . .  clean up before saving
+*/
+static Int PreSave (
+    StructInitInfo *    module )
+{
+  UInt i;
+
+  /* Can't save in mid-parsing */
+  if (CountExpr || CountStat)
+    return 1;
+
+  /* push the FP cache index out into a GAP Variable */
+  AssGVar(GVAR_SAVED_FLOAT_INDEX, INTOBJ_INT(NextFloatExprNumber));
+
+  /* clean any old data out of the statement and expression stacks */
+  for (i = 0; i < SIZE_BAG(StackStat)/sizeof(UInt); i++)
+    ADDR_OBJ(StackStat)[i] = (Obj)0;
+  for (i = 0; i < SIZE_BAG(StackExpr)/sizeof(UInt); i++)
+    ADDR_OBJ(StackExpr)[i] = (Obj)0;
+  /* return success                                                      */
+  return 0;
+}
+
 
 
 /****************************************************************************
@@ -3032,16 +3258,14 @@ static StructInitInfo module = {
     0,                                  /* crc                            */
     InitKernel,                         /* initKernel                     */
     InitLibrary,                        /* initLibrary                    */
-    0,                                  /* checkInit                      */
-    0,                                  /* preSave                        */
+    0,                        /* checkInit                      */
+    PreSave,                            /* preSave                        */
     0,                                  /* postSave                       */
-    0                                   /* postRestore                    */
+    PostRestore                        /* postRestore                    */
 };
 
 StructInitInfo * InitInfoCode ( void )
 {
-    module.revision_c = Revision_code_c;
-    module.revision_h = Revision_code_h;
     FillInVersion( &module );
     return &module;
 }

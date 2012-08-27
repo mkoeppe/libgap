@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  scanner.h                   GAP source                   Martin Schoenert
+*W  scanner.h                   GAP source                   Martin Schönert
 **
-*H  @(#)$Id: scanner.h,v 4.30 2002/09/24 16:35:43 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the scanner, which is responsible for
@@ -26,10 +25,9 @@
 **  The scanner relies on the functions  provided  by  the  operating  system
 **  dependent module 'system.c' for the low level input/output.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_scanner_h =
-   "@(#)$Id: scanner.h,v 4.30 2002/09/24 16:35:43 sal Exp $";
-#endif
+
+#ifndef GAP_SCANNER_H
+#define GAP_SCANNER_H
 
 
 /****************************************************************************
@@ -51,9 +49,6 @@ const char * Revision_scanner_h =
 #define S_TRYNEXT       ((1UL<< 3)+3)
 #define S_INFO          ((1UL<< 3)+4)
 #define S_ASSERT        ((1UL<< 3)+5)
-#define S_SAVEWS        ((1UL<< 3)+6)
-#define S_LOADWS        ((1UL<< 3)+7)
-
 #define S_LBRACK        ((1UL<< 4)+0)
 #define S_LBRACE        ((1UL<< 4)+1)
 #define S_BLBRACK       ((1UL<< 4)+2)
@@ -68,8 +63,17 @@ const char * Revision_scanner_h =
 #define S_DOTDOT        ((1UL<< 9)+1)
 #define S_COLON         ((1UL<< 9)+2)
 
-#define S_PARTIALINT    ((1UL<<10)+0)
+#define S_PARTIALINT    ((1UL<<10)+0) /* Some digits */
 #define S_INT           ((1UL<<10)+1)
+#define S_FLOAT         ((1UL<<10)+2)
+#define S_PARTIALFLOAT1  ((1UL<<10)+3) /* A decimal point only, but in a context where
+					we know it's the start of a number */
+#define S_PARTIALFLOAT2  ((1UL<<10)+4) /* Some digits and a decimal point */
+#define S_PARTIALFLOAT3  ((1UL<<10)+5) /* Some digits and a decimal point  and an 
+					  exponent indicator and maybe a sign, but no digits*/
+#define S_PARTIALFLOAT4  ((1UL<<10)+6) /* Some digits and a decimal point  and an 
+					  exponent indicator and maybe a sign, and at 
+					  least one digit*/
 
 #define S_TRUE          ((1UL<<11)+0)
 #define S_FALSE         ((1UL<<11)+1)
@@ -213,7 +217,7 @@ typedef UInt            TypSymbolSet;
 **  maximal length of a  string.   'GetIdent', 'GetInt' and 'GetStr' truncate
 **  identifier, integers or strings after that many characters.
 */
-extern  Char            Value [1025];
+extern  Char            Value [1030];
 extern  UInt            ValueLen;
 
 /****************************************************************************
@@ -252,7 +256,7 @@ extern  UInt            NrErrLine;
 **  It is set to 'gap> ' or 'brk> ' in the  read-eval-print loops and changed
 **  to the partial prompt '> ' in 'Read' after the first symbol is read.
 */
-extern  Char *          Prompt;
+extern  const Char *    Prompt;
 
 /***************************************************************************** 
 **
@@ -309,7 +313,7 @@ extern void GetSymbol ( void );
 **  yet.  'NrErrLine' is reset to 0 if a new line is read in 'GetLine'.
 */
 extern  void            SyntaxError (
-            Char *              msg );
+            const Char *        msg );
 
 
 /****************************************************************************
@@ -359,16 +363,31 @@ extern Int DualSemicolon;
 
 extern void Match (
             UInt                symbol,
-            Char *              msg,
+            const Char *        msg,
             TypSymbolSet        skipto );
 
 
 /****************************************************************************
 **
-
 *F  ClearError()  . . . . . . . . . . . . . .  reset execution and error flag
 */
 extern void ClearError ( void );
+
+/****************************************************************************
+**
+*F  BreakLoopPending()  . . . . . .report whether a break loop is pending due
+**                               to Ctrl-C, memory overflow, or similar cause
+**
+**  return  values 0 -- no break loop
+**                 BLP_CTRLC -- break loop due to ctrl-C
+**                 BLP_MEMORY -- due to -o 
+**
+*/
+
+
+extern Int BreakLoopPending( void );
+#define BLP_CTRLC 1
+#define BLP_MEMORY 2
 
 
 /****************************************************************************
@@ -413,7 +432,7 @@ extern void ClearError ( void );
 **  closed by 'CloseInput'.
 */
 extern UInt OpenInput (
-    Char *              filename );
+    const Char *        filename );
 
 
 /****************************************************************************
@@ -498,7 +517,7 @@ extern UInt CloseInput ( void );
 **  The first symbol is read by 'Read' in the first call to 'Match' call.
 */
 extern UInt OpenTest (
-    Char *              filename );
+    const Char *        filename );
 
 
 /****************************************************************************
@@ -543,7 +562,7 @@ extern UInt CloseTest ( void );
 **  'OpenLog' will fail if there is already a current logfile.
 */
 extern UInt OpenLog (
-    Char *              filename );
+    const Char *        filename );
 
 
 /****************************************************************************
@@ -586,7 +605,7 @@ extern UInt CloseLog ( void );
 **  Finally 'OpenInputLog' will fail if there is already a current logfile.
 */
 extern UInt OpenInputLog (
-    Char *              filename );
+    const Char *        filename );
 
 
 /****************************************************************************
@@ -629,7 +648,7 @@ extern UInt CloseInputLog ( void );
 **  Finally 'OpenOutputLog' will fail if there is already a current logfile.
 */
 extern UInt OpenOutputLog (
-    Char *              filename );
+    const Char *        filename );
 
 
 /****************************************************************************
@@ -678,13 +697,15 @@ extern UInt CloseOutputLog ( void );
 **  which is the terminal  even   if '*stdout*'  is  redirected to   a  file.
 **  'OpenOutput' passes  those  file names to 'SyFopen'  like any other name,
 **  they are just a convention between the main and the system package.
+**  The function does nothing and returns success for '*stdout*' and '*errout*'
+**  when IgnoreStdoutErrout is true (useful for testing purposes).
 **
 **  It is not neccessary to open the initial output file, 'InitScanner' opens
 **  '*stdout*' for that purpose.  This  file  on the other hand   can not  be
 **  closed by 'CloseOutput'.
 */
 extern UInt OpenOutput (
-    Char *              filename );
+    const Char *        filename );
 
 
 /****************************************************************************
@@ -729,7 +750,7 @@ extern UInt CloseOutput ( void );
 **  description applies to 'OpenAppend' too.
 */
 extern UInt OpenAppend (
-    Char *              filename );
+    const Char *        filename );
 
 
 /****************************************************************************
@@ -783,18 +804,19 @@ extern UInt CloseAppend ( void );
 **
 */
 typedef struct {
-    UInt        isstream;
-    Int         file;
-    Char        name [256];
-    Char        line [32768];
-    Char *      ptr;
-    UInt        symbol;
-    Int         number;
-    Obj         stream;
-    UInt        isstringstream;
-    Obj         sline;
-    Int         spos;
-    UInt        echo;
+  UInt        isstream;
+  Int         file;
+  Char        name [256];
+  Obj         gapname;
+  Char        line [32768];
+  Char *      ptr;
+  UInt        symbol;
+  Int         number;
+  Obj         stream;
+  UInt        isstringstream;
+  Obj         sline;
+  Int         spos;
+  UInt        echo;
 } TypInputFile;
 
 
@@ -838,21 +860,26 @@ extern Char *          In;
 **  'Output' is a pointer to the current output file.  It points to  the  top
 **  of the stack 'OutputFiles'.
 */
+/* the widest allowed screen width */
+#define MAXLENOUTPUTLINE  4096
+/* the maximal number of used line break hints */ 
+#define MAXHINTS 100
 typedef struct {
     UInt        isstream;
     UInt        isstringstream;
     Int         file;
-    Char        line [256];
+    Char        line [MAXLENOUTPUTLINE];
     Int         pos;
     Int         format;
     Int         indent;
-    Int         spos;
-    Int         sindent;
+    /* each hint is a tripel (position, value, indent) */
+    Int         hints[3*MAXHINTS+1];
     Obj         stream;
 } TypOutputFile;
 
 extern TypOutputFile   OutputFiles [16];
 extern TypOutputFile * Output;
+extern TypOutputFile* IgnoreStdoutErrout;
 
 /****************************************************************************
 **
@@ -893,6 +920,13 @@ extern  void            Pr (
 
 extern  void            PrTo (
             KOutputStream   stream,			      
+            const Char *    format,
+            Int                 arg1,
+            Int                 arg2 );
+
+extern  void            SPrTo (
+			       Char * buffer,
+			       UInt maxlen,
             const Char *    format,
             Int                 arg1,
             Int                 arg2 );
@@ -981,7 +1015,7 @@ extern Char            TestLine [256];
 **  closed by 'CloseInput'.
 */
 extern  UInt            OpenInput (
-            Char *              filename );
+            const Char *        filename );
 
 
 /****************************************************************************
@@ -1037,7 +1071,7 @@ extern void FlushRestOfInputLine( void );
 **  closed by 'CloseOutput'.
 */
 extern  UInt            OpenOutput (
-            Char *              filename );
+            const Char *        filename );
 
 
 /****************************************************************************
@@ -1072,7 +1106,7 @@ extern  UInt            CloseOutput ( void );
 **  description applies to 'OpenAppend' too.
 */
 extern  UInt            OpenAppend (
-            Char *              filename );
+            const Char *              filename );
 
 
 /****************************************************************************
@@ -1104,7 +1138,7 @@ extern  UInt            CloseAppend ( void );
 **  'OpenLog' will fail if there is already a current logfile.
 */
 extern  UInt            OpenLog (
-            Char *              filename );
+            const Char *        filename );
 
 
 /****************************************************************************
@@ -1137,7 +1171,7 @@ extern  UInt            CloseLog ( void );
 **  Finally 'OpenInputLog' will fail if there is already a current logfile.
 */
 extern  UInt            OpenInputLog (
-            Char *              filename );
+            const Char *        filename );
 
 
 
@@ -1204,7 +1238,7 @@ extern  UInt            CloseInputLog ( void );
 **  The first symbol is read by 'Read' in the first call to 'Match' call.
 */
 extern  UInt            OpenTest (
-            Char *              filename );
+            const Char *        filename );
 
 
 /****************************************************************************
@@ -1237,6 +1271,8 @@ extern  UInt            CloseTest ( void );
 */
 StructInitInfo * InitInfoScanner ( void );
 
+
+#endif // GAP_SCANNER_H
 
 /****************************************************************************
 **

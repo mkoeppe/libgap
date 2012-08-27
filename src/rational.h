@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  rational.h                  GAP source                   Martin Schoenert
+*W  rational.h                  GAP source                   Martin Schönert
 **
-*H  @(#)$Id: rational.h,v 4.7 2002/04/15 10:03:55 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares  the  functions  for  the  artithmetic  of  rationals.
@@ -18,10 +17,9 @@
 **  integer package.  We will use the  term fraction to  stress the fact that
 **  something must not be an integer.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_rational_h =
-   "@(#)$Id: rational.h,v 4.7 2002/04/15 10:03:55 sal Exp $";
-#endif
+
+#ifndef GAP_RATIONAL_H
+#define GAP_RATIONAL_H
 
 
 /****************************************************************************
@@ -38,9 +36,10 @@ const char * Revision_rational_h =
 StructInitInfo * InitInfoRat ( void );
 
 
+#endif // GAP_RATIONAL_H
+
 /****************************************************************************
 **
 
 *E  rational.c  . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-

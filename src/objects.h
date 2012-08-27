@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  objects.h                   GAP source                   Martin Schoenert
+*W  objects.h                   GAP source                   Martin Schönert
 **
-*H  @(#)$Id: objects.h,v 4.47 2002/04/15 10:03:53 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file defines the functions of the objects package.
@@ -14,10 +13,9 @@
 **  types  (i.e., the numbers  that  Gasman needs  to distinguish types), the
 **  dispatcher for the printing of objects, etc.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_objects_h =
-   "@(#)$Id: objects.h,v 4.47 2002/04/15 10:03:53 sal Exp $";
-#endif
+
+#ifndef GAP_OBJECTS_H
+#define GAP_OBJECTS_H
 
 
 /****************************************************************************
@@ -73,8 +71,16 @@ const char * Revision_objects_h =
 **
 **  'INT_INTOBJ' converts the (immediate) integer object <o> to a C integer.
 */
+/* Note that the C standard does not define what >> does here if the
+ * value is negative. So we have to be careful if the C compiler
+ * chooses to do a logical right shift. */
+#if HAVE_ARITHRIGHTSHIFT
 #define INT_INTOBJ(o) \
     ((Int)(o) >> 2)
+#else
+#define INT_INTOBJ(o) \
+    (((Int)(o)-1) / 4)
+#endif
 
 
 
@@ -110,9 +116,15 @@ const char * Revision_objects_h =
 **  <l> and <r> can be stored as (immediate) integer object  and 0 otherwise.
 **  The sum itself is stored in <o>.
 */
+#if HAVE_ARITHRIGHTSHIFT
 #define SUM_INTOBJS(o,l,r)             \
     ((o) = (Obj)((Int)(l)+(Int)(r)-1), \
     (((Int)(o) << 1) >> 1) == (Int)(o) )
+#else
+#define SUM_INTOBJS(o,l,r)             \
+    ((o) = (Obj)((Int)(l)+(Int)(r)-1), \
+     ((((UInt) (o)) >> (sizeof(UInt)*8-2))-1) > 1)
+#endif
 
 
 /****************************************************************************
@@ -123,9 +135,15 @@ const char * Revision_objects_h =
 **  <l> and <r> can be stored as (immediate) integer object  and 0 otherwise.
 **  The difference itself is stored in <o>.
 */
+#if HAVE_ARITHRIGHTSHIFT
 #define DIFF_INTOBJS(o,l,r)            \
     ((o) = (Bag)((Int)(l)-(Int)(r)+1), \
-    (((Int)(o) << 1) >> 1) == (Int)(o) )
+     (((Int)(o) << 1) >> 1) == (Int)(o) )
+#else
+#define DIFF_INTOBJS(o,l,r)            \
+    ((o) = (Bag)((Int)(l)-(Int)(r)+1), \
+     ((((UInt) (o)) >> (sizeof(UInt)*8-2))-1) > 1)
+#endif
 
 
 /****************************************************************************
@@ -143,6 +161,7 @@ const char * Revision_objects_h =
 #define HALF_A_WORD 16
 #endif
 
+#if HAVE_ARITHRIGHTSHIFT
 static inline Obj prod_intobjs(Int l, Int r)
 {
   Int prod;
@@ -152,7 +171,7 @@ static inline Obj prod_intobjs(Int l, Int r)
     return (Obj)r;
   if (r == (Int)INTOBJ_INT(1))
     return (Obj)l;
-  prod = ((Int)l >> 2) * ((Int)r-1)+1;
+  prod = ((Int)((UInt)l >> 2) * ((UInt)r-1)+1);
   if ((prod << 1)>> 1 !=  prod)
     return (Obj) 0;
   if ((((Int)l)<<HALF_A_WORD)>>HALF_A_WORD == (Int) l &&
@@ -163,6 +182,28 @@ static inline Obj prod_intobjs(Int l, Int r)
   else
     return (Obj) 0;
 }
+#else
+static inline Obj prod_intobjs(Int l, Int r)
+{
+  Int prod;
+  if (l == (Int)INTOBJ_INT(0) || r == (Int)INTOBJ_INT(0))
+    return INTOBJ_INT(0);
+  if (l == (Int)INTOBJ_INT(1))
+    return (Obj)r;
+  if (r == (Int)INTOBJ_INT(1))
+    return (Obj)l;
+  prod = ((Int)((UInt)l >> 2) * ((UInt)r-1)+1);
+  if (((((UInt) (prod)) >> (sizeof(UInt)*8-2))-1) <= 1)
+    return (Obj) 0;
+  if ((((Int)l)<<HALF_A_WORD)>>HALF_A_WORD == (Int) l &&
+      (((Int)r)<<HALF_A_WORD)>>HALF_A_WORD == (Int) r)
+    return (Obj) prod;
+  if ((prod-1) / ((l-1)/4) == r-1)
+    return (Obj) prod;
+  else
+    return (Obj) 0;
+}
+#endif
 
 #define PROD_INTOBJS( o, l, r) ((o) = prod_intobjs((Int)(l),(Int)(r)), \
                                   (o) != (Obj) 0)
@@ -235,13 +276,19 @@ static inline Obj prod_intobjs(Int l, Int r)
 #define T_CHAR                  (FIRST_CONSTANT_TNUM+ 9)
 #define T_FUNCTION              (FIRST_CONSTANT_TNUM+10)
 #define T_FLAGS                 (FIRST_CONSTANT_TNUM+11)
-#define T_FLOAT                 (FIRST_CONSTANT_TNUM+12)
-#define T_RESERVED_BY_GAP       (FIRST_CONSTANT_TNUM+13)   
-#define LAST_CONSTANT_TNUM      T_RESERVED_BY_GAP 
+#define T_MACFLOAT              (FIRST_CONSTANT_TNUM+12)
+#define T_LVARS                 (FIRST_CONSTANT_TNUM+13)   
+#define T_SINGULAR              (FIRST_CONSTANT_TNUM+14)   
+#define T_POLYMAKE              (FIRST_CONSTANT_TNUM+15)
+#define T_SPARE1                (FIRST_CONSTANT_TNUM+16)
+#define T_SPARE2                (FIRST_CONSTANT_TNUM+17)
+#define T_SPARE3                (FIRST_CONSTANT_TNUM+18)
+#define T_SPARE4                (FIRST_CONSTANT_TNUM+19)
+#define LAST_CONSTANT_TNUM      (T_SPARE4)
 
 #define IMMUTABLE               1
 
-#define FIRST_IMM_MUT_TNUM      (LAST_CONSTANT_TNUM+1)       /* Should be even */
+#define FIRST_IMM_MUT_TNUM      (LAST_CONSTANT_TNUM+1)    /* Should be even */
 #define FIRST_RECORD_TNUM       FIRST_IMM_MUT_TNUM
 #define T_PREC                  (FIRST_RECORD_TNUM+ 0)
 #define LAST_RECORD_TNUM        (T_PREC+IMMUTABLE)
@@ -426,9 +473,10 @@ static inline Obj prod_intobjs(Int l, Int r)
 *F  SHARED_TYPE( <kind> ) . . . . . . . . . . . . . . . shared data of a kind
 **
 **  'SHARED_TYPE' returns the shared data of the kind <kind>.
+XXX nowhere used, throw away??? (FL)
 */
-#define SHARED_TYPE(kind)       ELM_PLIST( kind, 3 )
-                        
+/* #define SHARED_TYPE(kind)       ELM_PLIST( kind, 3 )
+*/                        
                         
 /****************************************************************************
 **
@@ -659,6 +707,7 @@ extern void PrintObj (
 extern Obj  PrintObjThis;
 
 extern Int  PrintObjIndex;
+extern Int  PrintObjDepth;
 
 extern Int  PrintObjFull;
 
@@ -785,6 +834,8 @@ extern void (* PrintPathFuncs [ LAST_REAL_TNUM  +1 ]) (
 */
 StructInitInfo * InitInfoObjects ( void );
 
+
+#endif // GAP_OBJECTS_H
 
 /****************************************************************************
 **

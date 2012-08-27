@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  exprs.h                     GAP source                   Martin Schoenert
+*W  exprs.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: exprs.h,v 4.11 2002/04/15 10:03:47 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the expressions package.
@@ -13,10 +12,9 @@
 **  The expressions  package is the  part  of the interpreter  that evaluates
 **  expressions to their values and prints expressions.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_exprs_h =
-   "@(#)$Id: exprs.h,v 4.11 2002/04/15 10:03:47 sal Exp $";
-#endif
+
+#ifndef GAP_EXPRS_H
+#define GAP_EXPRS_H
 
 
 /****************************************************************************
@@ -137,7 +135,7 @@ extern  void            PrintExpr (
 
 
 extern void PrintRecExpr1 ( Expr expr ); /* needed for printing
-					  function calls with options */
+                                          function calls with options */
 
 /****************************************************************************
 **
@@ -164,6 +162,8 @@ extern  void            (* PrintExprFuncs [256] ) ( Expr expr );
 */
 StructInitInfo * InitInfoExprs ( void );
 
+
+#endif // GAP_EXPRS_H
 
 /****************************************************************************
 **

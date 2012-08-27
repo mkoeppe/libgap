@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  set.c                       GAP source                   Martin Schoenert
+*W  set.c                       GAP source                   Martin Schönert
 **
-*H  @(#)$Id: set.c,v 4.45.6.1 2005/06/19 11:17:42 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions which mainly deal with proper sets.
@@ -23,8 +22,6 @@
 #include        <assert.h>              /* assert                          */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_set_c =
-   "@(#)$Id: set.c,v 4.45.6.1 2005/06/19 11:17:42 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -47,9 +44,7 @@ const char * Revision_set_c =
 #include        "lists.h"               /* generic lists                   */
 #include        "listfunc.h"            /* functions for generic lists     */
 #include        "plist.h"               /* plain lists                     */
-#define INCLUDE_DECLARATION_PART
 #include        "set.h"                 /* plain sets                      */
-#undef  INCLUDE_DECLARATION_PART
 #include        "string.h"              /* strings                         */
 
 
@@ -72,16 +67,13 @@ const char * Revision_set_c =
 ** 
 */
 
-#define IS_IMM_PLIST(list)  ((TNUM_OBJ(list) - T_PLIST) % 2)
-
 Int IsSet ( 
     Obj                 list )
 {
     Int                 isSet;          /* result                          */
 
     /* if <list> is a plain list                                           */
-    if ( T_PLIST <= TNUM_OBJ(list)
-      && TNUM_OBJ(list) <= T_PLIST_CYC_SSORT+IMMUTABLE ) {
+    if ( IS_PLIST( list ) ) {
 
         /* if <list> is the empty list, its a set (:-)                     */
         if ( LEN_PLIST(list) == 0 ) {
@@ -141,8 +133,7 @@ Int IsSet (
 *F  SetList( <list> ) . . . . . . . . . . . . . . . .  make a set from a list
 **
 **  'SetList' returns  a new set that contains  the elements of <list>.  Note
-**  that 'SetList' returns a  new list even if <list>  was already a set.  In
-**  this case 'SetList' is equal to 'ShallowCopy'.
+**  that 'SetList' returns a new plain list even if <list> was already a set.
 **
 **  'SetList' makes a copy  of the list  <list>, removes the holes, sorts the
 **  copy and finally removes duplicates, which must appear next to each other
@@ -358,6 +349,7 @@ Obj             FuncIS_SUBSET_SET (
             "you can replace <set2> via 'return <set2>;'" );
     }
     if ( ! IsSet( set1 ) )  set1 = SetList( set1 );
+    if ( ! IsSet( set2 ) )  set2 = SetList( set2 );
 
     /* special case if the second argument is a set                        */
     if ( IsSet( set2 ) ) {
@@ -450,7 +442,6 @@ Obj FuncADD_SET (
 {
   UInt                len;            /* logical length of the list      */
   UInt                pos;            /* position                        */
-  UInt                i;              /* loop variable                   */
   UInt                isCyc;          /* True if the set being added to consists
 					 of kernel cyclotomics           */
   UInt                notpos;         /* position of an original element
@@ -477,12 +468,15 @@ Obj FuncADD_SET (
     SET_LEN_PLIST( set, len+1 );
     {
       Obj *ptr;
-      ptr = PTR_BAG(set) + len+1;
+      ptr = PTR_BAG(set);
+      memmove((void *)(ptr + pos+1),(void*)(ptr+pos),(size_t)(sizeof(Obj)*(len+1-pos)));
+#if 0
       for ( i = len+1; pos < i; i-- ) {
 	*ptr = *(ptr-1);
-	ptr--;
+	ptr--;   */
 	/* SET_ELM_PLIST( set, i, ELM_PLIST(set,i-1) ); */
       }
+#endif
     }
     SET_ELM_PLIST( set, pos, obj );
     CHANGED_BAG( set );
@@ -1176,8 +1170,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoSet ( void )
 {
-    module.revision_c = Revision_set_c;
-    module.revision_h = Revision_set_h;
     FillInVersion( &module );
     return &module;
 }

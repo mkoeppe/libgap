@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  gvars.c                     GAP source                   Martin Schoenert
+*W  gvars.c                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: gvars.c,v 4.49.2.1 2006/08/22 16:28:25 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions of the global variables package.
@@ -29,8 +28,6 @@
 */
 #include        "system.h"              /* Ints, UInts                     */
 
-const char * Revision_gvars_c =
-   "@(#)$Id: gvars.c,v 4.49.2.1 2006/08/22 16:28:25 gap Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -39,9 +36,7 @@ const char * Revision_gvars_c =
 
 #include        "gap.h"                 /* error handling, initialisation  */
 
-#define INCLUDE_DECLARATION_PART
 #include        "gvars.h"               /* global variables                */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "calls.h"               /* generic call mechanism          */
 
@@ -70,7 +65,7 @@ const char * Revision_gvars_c =
 **  'PtrGVars' must be  revalculated afterwards.   This  should be done by  a
 **  function in this package, but is still done in 'VarsAfterCollectBags'.
 */
-Obj   ValGVars = (Obj) 0;
+Obj   ValGVars;
 
 Obj * PtrGVars;
 
@@ -96,7 +91,7 @@ Obj * PtrGVars;
 *V  NameGVars . . . . . . . . . . . . . . . . . . . names of global variables
 *V  WriteGVars  . . . . . . . . . . . . .  writable flags of global variables
 *V  ExprGVars . . . . . . . . . .  expressions for automatic global variables
-*V  BopiesGVars . . . . . . . . . . . . . internal copies of global variables
+*V  CopiesGVars . . . . . . . . . . . . . internal copies of global variables
 *V  FopiesGVars . . . . . . . .  internal function copies of global variables
 *V  CountGVars  . . . . . . . . . . . . . . . . .  number of global variables
 */
@@ -172,7 +167,7 @@ Obj             ErrorMustHaveAssObjHandler (
 **  'AssGVar' assigns the value <val> to the global variable <gvar>.
 */
 
-static Obj REREADING;			/* Copy of GAP global variable REREADING */
+static Obj REREADING;                   /* Copy of GAP global variable REREADING */
 
 void            AssGVar (
     UInt                gvar,
@@ -187,7 +182,7 @@ void            AssGVar (
 
     /* make certain that the variable is not read only                     */
     while ( (REREADING != True) &&
-	    (ELM_PLIST( WriteGVars, gvar ) == INTOBJ_INT(0)) ) {
+            (ELM_PLIST( WriteGVars, gvar ) == INTOBJ_INT(0)) ) {
         ErrorReturnVoid(
             "Variable: '%s' is read only",
             (Int)CSTR_STRING( ELM_PLIST(NameGVars,gvar) ), 0L,
@@ -238,10 +233,10 @@ void            AssGVar (
     /* assign name to a function                                           */
     if ( val != 0 && TNUM_OBJ(val) == T_FUNCTION && NAME_FUNC(val) == 0 ) {
         name = NameGVar(gvar);
-	/*CCC        onam = NEW_STRING(SyStrlen(name));
-	  SyStrncat( CSTR_STRING(onam), name, SyStrlen(name) ); CCC*/
-	len = SyStrlen(name);
-	C_NEW_STRING(onam, len, name);
+        /*CCC        onam = NEW_STRING(strlen(name));
+          SyStrncat( CSTR_STRING(onam), name, strlen(name) ); CCC*/
+        len = strlen(name);
+        C_NEW_STRING(onam, len, name);
         RESET_FILT_LIST( onam, FN_IS_MUTABLE );
         NAME_FUNC(val) = onam;
         CHANGED_BAG(val);
@@ -299,16 +294,33 @@ Char *          NameGVar (
 }
 
 
+#define NSCHAR '@'
+
+Obj CurrNamespace = 0;
+
+Obj FuncSET_NAMESPACE(Obj self, Obj str)
+{
+    CurrNamespace = str;
+    return 0;
+}
+
+Obj FuncGET_NAMESPACE(Obj self)
+{
+    return CurrNamespace;
+}
+
 /****************************************************************************
 **
 *F  GVarName(<name>)  . . . . . . . . . . . . . .  global variable for a name
 **
 **  'GVarName' returns the global variable with the name <name>.
 */
-UInt GVarName (
+UInt GVarName ( 
     const Char *        name )
 {
     Obj                 gvar;           /* global variable (as imm intval) */
+    Char                gvarbuf[1024];  /* temporary copy for namespace    */
+    Char *              cns;            /* Pointer to current namespace    */
     UInt                pos;            /* hash position                   */
     Char                namx [1024];    /* temporary copy of <name>        */
     Obj                 string;         /* temporary string value <name>   */
@@ -317,6 +329,23 @@ UInt GVarName (
     const Char *        p;              /* loop variable                   */
     UInt                i;              /* loop variable                   */
     Int                 len;            /* length of name                  */
+    Int                 len2;           /* length of namespace name        */
+
+    /* First see whether it could be namespace-local: */
+    cns = CSTR_STRING(CurrNamespace);
+    if (*cns) {   /* only if a namespace is set */
+        len = strlen(name);
+        if (name[len-1] == NSCHAR) {
+            gvarbuf[0] = 0;
+            if (len > 512) len = 512;
+            SyStrncat(gvarbuf,name,len);
+            len2 = GET_LEN_STRING(CurrNamespace);
+            if (len2 > 511) len2 = 511;
+            SyStrncat(gvarbuf+len,cns,GET_LEN_STRING(CurrNamespace));
+            name = gvarbuf;
+        }
+    }
+
     /* start looking in the table at the following hash position           */
     pos = 0;
     for ( p = name; *p != '\0'; p++ ) {
@@ -326,7 +355,7 @@ UInt GVarName (
 
     /* look through the table until we find a free slot or the global      */
     while ( (gvar = ELM_PLIST( TableGVars, pos )) != 0
-         && SyStrncmp( NameGVar( INT_INTOBJ(gvar) ), name, 1023 ) ) {
+         && strncmp( NameGVar( INT_INTOBJ(gvar) ), name, 1023 ) ) {
         pos = (pos % SizeGVars) + 1;
     }
 
@@ -336,13 +365,13 @@ UInt GVarName (
         CountGVars++;
         gvar = INTOBJ_INT(CountGVars);
         SET_ELM_PLIST( TableGVars, pos, gvar );
-	/*CCC        namx[0] = '\0';
+        /*CCC        namx[0] = '\0';
         SyStrncat( namx, name, 1023 );
-        string = NEW_STRING( SyStrlen(namx) );
-        SyStrncat( CSTR_STRING(string), namx, SyStrlen(namx) );CCC*/
-	len = SyStrlen(name);
-	memcpy(namx, name, len+1);
-	C_NEW_STRING(string, len, namx);
+        string = NEW_STRING( strlen(namx) );
+        SyStrncat( CSTR_STRING(string), namx, strlen(namx) );CCC*/
+        len = strlen(name);
+        memcpy(namx, name, len+1);
+        C_NEW_STRING(string, len, namx);
         RESET_FILT_LIST( string, FN_IS_MUTABLE );
         GROW_PLIST(    ValGVars,    CountGVars );
         SET_LEN_PLIST( ValGVars,    CountGVars );
@@ -729,7 +758,7 @@ Obj FuncISB_GVAR (
 
     gv = GVarName( CSTR_STRING(gvar) );
     return ( VAL_GVAR( gv ) ||
-	     ELM_PLIST( ExprGVars, gv )) ? True : False;
+             ELM_PLIST( ExprGVars, gv )) ? True : False;
 }
 
 
@@ -756,8 +785,8 @@ Obj FuncVAL_GVAR (
 
     while (val == (Obj) 0)
       val = ErrorReturnObj("VAL_GVAR: No value bound to %s",
-			   (Int)CSTR_STRING(gvar), (Int) 0,
-			   "you can return a value" );
+                           (Int)CSTR_STRING(gvar), (Int) 0,
+                           "you can return a value" );
     return val;
 }
 
@@ -811,7 +840,7 @@ typedef struct  {
 #endif
 
 static StructCopyGVar CopyAndFopyGVars[MAX_COPY_AND_FOPY_GVARS];
-static Int NCopyAndFopyGVars = 0;
+static Int NCopyAndFopyGVars;
 
 
 /****************************************************************************
@@ -883,7 +912,7 @@ void InitFopyGVar (
 **
 *F  UpdateCopyFopyInfo()  . . . . . . . . . .  convert kernel info into plist
 */
-static Int NCopyAndFopyDone = 0;
+static Int NCopyAndFopyDone;
 
 void UpdateCopyFopyInfo ( void )
 {
@@ -1021,6 +1050,12 @@ static StructGVarFunc GVarFuncs [] = {
     { "UNB_GVAR", 1L, "gvar",
       FuncUNB_GVAR, "src/gap.c:UNB_GVAR" },
 
+    { "SET_NAMESPACE", 1L, "str",
+      FuncSET_NAMESPACE, "src/gvars.c:SET_NAMESPACE" },
+
+    { "GET_NAMESPACE", 0L, "",
+      FuncGET_NAMESPACE, "src/gvars.c:GET_NAMESPACE" },
+
     { 0 }
 
 };
@@ -1034,6 +1069,11 @@ static StructGVarFunc GVarFuncs [] = {
 static Int InitKernel (
     StructInitInfo *    module )
 {
+  ValGVars = (Obj) 0;
+  NCopyAndFopyGVars = 0;
+  NCopyAndFopyDone = 0;
+  InitHandlerRegistration();
+  
     /* init global bags and handler                                        */
     InitGlobalBag( &ErrorMustEvalToFuncFunc,
                    "src/gvars.c:ErrorMustEvalToFuncFunc" );
@@ -1053,6 +1093,8 @@ static Int InitKernel (
                    "src/gvars.c:FopiesGVars"  );
     InitGlobalBag( &TableGVars,
                    "src/gvars.c:TableGVars" );
+    InitGlobalBag( &CurrNamespace,
+                   "src/gvars.c:CurrNamespace" );
 
     InitHandlerFunc( ErrorMustEvalToFuncHandler,
                      "src/gvars.c:ErrorMustEvalToFuncHandler" );
@@ -1156,6 +1198,10 @@ static Int InitLibrary (
     TableGVars = NEW_PLIST( T_PLIST, SizeGVars );
     SET_LEN_PLIST( TableGVars, SizeGVars );
 
+    /* Create the current namespace: */
+    CurrNamespace = NEW_STRING(0);
+    SET_LEN_STRING(CurrNamespace,0);
+    
     /* fix C vars                                                          */
     PostRestore( module );
 
@@ -1207,8 +1253,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoGVars ( void )
 {
-    module.revision_c = Revision_gvars_c;
-    module.revision_h = Revision_gvars_h;
     FillInVersion( &module );
     return &module;
 }

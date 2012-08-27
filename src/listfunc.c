@@ -1,19 +1,16 @@
 /****************************************************************************
 **
-*W  listfunc.c                  GAP source                   Martin Schoenert
+*W  listfunc.c                  GAP source                   Martin Schönert
 **
-*H  @(#)$Id: listfunc.c,v 4.58.2.6 2006/02/28 03:42:20 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions for generic lists.
 */
 #include        "system.h"              /* Ints, UInts                     */
 
-const char * Revision_listfunc_c =
-   "@(#)$Id: listfunc.c,v 4.58.2.6 2006/02/28 03:42:20 gap Exp $";
 
 
 #include        "gasman.h"              /* garbage collector               */
@@ -39,16 +36,14 @@ const char * Revision_listfunc_c =
 
 #include        "permutat.h"            /* permutations                    */
 
-#define INCLUDE_DECLARATION_PART
 #include        "listfunc.h"            /* functions for generic lists     */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "plist.h"               /* plain lists                     */
 #include        "set.h"                 /* plain sets                      */
 #include        "range.h"               /* ranges                          */
 
-#include		<string.h>
-
+#include                <string.h>
+#include                <stdlib.h> 
 
 /****************************************************************************
 **
@@ -96,14 +91,14 @@ void            AddPlist (
     else {
       ASS_LIST( list, pos, obj);
       /*  The code below is commented out and replaced by the line above, so
-	  as, at the cost of one extra dispatch, to take advantage of the
-	  special code in AssPlist<things> which maintain as much information
-	  about denseness homogeneity, etc as possible */
+          as, at the cost of one extra dispatch, to take advantage of the
+          special code in AssPlist<things> which maintain as much information
+          about denseness homogeneity, etc as possible */
       /*        RetypeBag( list, T_PLIST );
-		GROW_PLIST( list, pos );
-		SET_LEN_PLIST( list, pos );
-		SET_ELM_PLIST( list, pos, obj );
-		CHANGED_BAG( list ); */
+                GROW_PLIST( list, pos );
+                SET_LEN_PLIST( list, pos );
+                SET_ELM_PLIST( list, pos, obj );
+                CHANGED_BAG( list ); */
     }
 }
 
@@ -115,8 +110,7 @@ Obj FuncADD_LIST (
     Obj                 obj )
 {
     /* dispatch                                                            */
-    if ( T_PLIST          <= TNUM_OBJ( list )
-      && TNUM_OBJ( list ) <= T_PLIST_CYC_SSORT ) {
+    if ( IS_PLIST( list ) ) {
         AddPlist( list, obj );
     }
     else if ( TNUM_OBJ( list ) < FIRST_EXTERNAL_TNUM ) {
@@ -128,6 +122,74 @@ Obj FuncADD_LIST (
 
     /* return nothing                                                      */
     return (Obj)0;
+}
+
+
+/****************************************************************************
+**
+*F  RemList(<list>) . . . . . . . .  add an object to the end of a list
+**
+**  'RemList' removes the last object <obj> from the end  of  the  list  
+** <list>,  and returns it.
+*/
+Obj            RemList (
+    Obj                 list)
+{
+    Int                 pos; 
+    Obj result;
+    pos = LEN_LIST( list ) ;
+    result = ELM_LIST(list, pos);
+    UNB_LIST(list, pos);
+    return result;
+}
+
+extern Obj FuncREM_LIST(
+    Obj                 self,
+    Obj                 list);
+
+Obj            RemPlist (
+                          Obj                 list)
+{
+    Int                 pos;           
+    Obj removed; 
+
+    if ( ! IS_MUTABLE_PLIST(list) ) {
+        list = ErrorReturnObj(
+                "Lists Assignment: <list> must be a mutable list",
+                0L, 0L,
+                "you may replace <list> via 'return <list>;'" );
+        return FuncREM_LIST( 0, list);
+    }
+    pos = LEN_PLIST( list );
+    removed = ELM_PLIST(list, pos);
+    SET_ELM_PLIST(list, pos, (Obj)0L);
+    SET_LEN_PLIST(list, pos-1);
+    if ( pos == 1 ) {
+      RetypeBag(list, T_PLIST_EMPTY);
+    }
+    if (4*pos*sizeof(Obj) < 3*SIZE_BAG(list))
+      SHRINK_PLIST(list, pos);
+    return removed;
+}
+
+Obj RemListOper;
+
+Obj FuncREM_LIST (
+    Obj                 self,
+    Obj                 list)
+
+{
+    /* dispatch                                                            */
+    if ( IS_PLIST( list ) ) {
+        return RemPlist( list);
+    }
+    else if ( TNUM_OBJ( list ) < FIRST_EXTERNAL_TNUM ) {
+        return RemList( list);
+    }
+    else {
+        return DoOperation1Args( self, list);
+    }
+
 }
 
 
@@ -159,23 +221,23 @@ Obj             FuncAPPEND_LIST_INTR (
     /* check the mutability of the first argument */
     while ( !IS_MUTABLE_OBJ( list1) )
       list1 = ErrorReturnObj (
-		"Append: <list1> must be a mutable list",
-		0L, 0L,
-		"you can replace <list1> via 'return <list1>;'");
+                "Append: <list1> must be a mutable list",
+                0L, 0L,
+                "you can replace <list1> via 'return <list1>;'");
     
 
     /* handle the case of strings now */
     if ( IS_STRING_REP(list1) && IS_STRING_REP(list2))
       {
-	len1 = GET_LEN_STRING(list1);
-	len2 = GET_LEN_STRING(list2);
-	GROW_STRING(list1, len1 + len2);
-	SET_LEN_STRING(list1, len1 + len2);
-	memcpy( (void *)(CHARS_STRING(list1) + len1), 
-		(void *)CHARS_STRING(list2), len2 + 1);
+        len1 = GET_LEN_STRING(list1);
+        len2 = GET_LEN_STRING(list2);
+        GROW_STRING(list1, len1 + len2);
+        SET_LEN_STRING(list1, len1 + len2);
+        memmove( (void *)(CHARS_STRING(list1) + len1), 
+                (void *)CHARS_STRING(list2), len2 + 1);
         /* ensure trailing zero */
         *(CHARS_STRING(list1) + len1 + len2) = 0;    
-	return (Obj) 0;
+        return (Obj) 0;
       }
     
     /* check the type of the first argument                                */
@@ -186,13 +248,15 @@ Obj             FuncAPPEND_LIST_INTR (
                 (Int)TNAM_OBJ(list1), 0L,
                 "you can replace <list1> via 'return <list1>;'" );
         }
-        PLAIN_LIST( list1 );
+        if ( ! IS_PLIST( list1 ) ) {
+            PLAIN_LIST( list1 );
+        }
         RetypeBag( list1, T_PLIST );
     }
     len1 = LEN_PLIST( list1 );
 
     /* check the type of the second argument                               */
-    if ( TNUM_OBJ( list2 ) != T_PLIST ) {
+    if ( ! IS_PLIST( list2 ) ) {
         while ( ! IS_SMALL_LIST( list2 ) ) {
             list2 = ErrorReturnObj(
                 "AppendList: <list2> must be a small list (not a %s)",
@@ -212,7 +276,7 @@ Obj             FuncAPPEND_LIST_INTR (
     }
 
     /* add the elements                                                    */
-    if ( TNUM_OBJ(list2) == T_PLIST ) {
+    if ( IS_PLIST(list2) ) {
         ptr1 = ADDR_OBJ(list1) + len1;
         ptr2 = ADDR_OBJ(list2);
         for ( i = 1; i <= len2; i++ ) {
@@ -327,8 +391,7 @@ Obj             FuncPOSITION_SORTED_LIST (
     }
 
     /* dispatch                                                            */
-    if ( T_PLIST_DENSE  <= TNUM_OBJ(list)
-      && TNUM_OBJ(list) <= T_PLIST_CYC_SSORT ) {
+    if ( IS_DENSE_PLIST(list) ) {
         h = PositionSortedDensePlist( list, obj );
     }
     else {
@@ -427,8 +490,7 @@ Obj             FuncPOSITION_SORTED_COMP (
     }
 
     /* dispatch                                                            */
-    if ( T_PLIST_DENSE  <= TNUM_OBJ(list)
-      && TNUM_OBJ(list) <= T_PLIST_CYC_SSORT ) {
+    if ( IS_DENSE_PLIST(list) ) {
         h = PositionSortedDensePlistComp( list, obj, func );
     }
     else {
@@ -502,6 +564,62 @@ Obj             FuncPOSITION_FIRST_COMPONENT_SORTED (
 **  Donald Shell, CACM 2, July 1959, 30-32
 **  Robert Sedgewick, Algorithms 2nd ed., AddWes 1988, 107-123
 */
+
+static void BubbleDown(Obj list, UInt pos, UInt len)
+{
+  UInt lcpos, rcpos;
+  Obj lco, rco,x;
+
+  lcpos = 2*pos;
+  rcpos = 2*pos+1;
+  if (lcpos > len)
+    return;
+  lco = ELM_PLIST(list, lcpos);
+  x = ELM_PLIST(list,pos);
+  if (rcpos > len)
+    {
+      if (LT(x,lco))
+        {
+          SET_ELM_PLIST(list, pos, lco);
+          SET_ELM_PLIST(list, lcpos, x);
+        }
+      return;
+    }
+  rco = ELM_PLIST(list, rcpos);
+  if (LT(lco, rco)){
+    if (LT(x,rco)) {
+      SET_ELM_PLIST(list, pos, rco);
+      SET_ELM_PLIST(list, rcpos, x);
+      BubbleDown(list, rcpos, len);
+    }
+  }  else {
+    if (LT(x,lco)) {
+      SET_ELM_PLIST(list, pos, lco);
+      SET_ELM_PLIST(list, lcpos, x);
+      BubbleDown(list, lcpos, len);
+    }
+  }
+  return;
+}
+
+Obj HEAP_SORT_PLIST ( Obj self, Obj list )
+{
+  UInt len = LEN_LIST(list);
+  UInt i;
+  for (i = (len/2); i > 0 ; i--)
+    BubbleDown(list, i, len);
+  for (i = len; i > 0; i--)
+    {
+      Obj x = ELM_PLIST(list, i);
+      Obj y = ELM_PLIST(list, 1);
+      SET_ELM_PLIST(list, i, y);
+      SET_ELM_PLIST(list, 1, x);
+      BubbleDown(list, 1, i-1);
+    }
+  return (Obj) 0;
+}
+  
+
 void SORT_LIST (
     Obj                 list )
 {
@@ -528,8 +646,7 @@ void SORT_LIST (
         }
         h = h / 3;
     }
-    if (FIRST_PLIST_TNUM <= TNUM_OBJ(list) &&
-	TNUM_OBJ(list) <= LAST_PLIST_TNUM)
+    if (IS_PLIST(list))
       RESET_FILT_LIST(list, FN_IS_NSORT);
 }
 
@@ -602,6 +719,11 @@ void SORT_LISTComp (
     RESET_FILT_LIST(list, FN_IS_SSORT);
     RESET_FILT_LIST(list, FN_IS_NSORT);
 }
+
+
+
+
+
 
 void SortDensePlistComp (
     Obj                 list,
@@ -856,7 +978,7 @@ UInt            RemoveDupsDensePlist (
     /* loop over the other elements, compare them with the current rep.    */
     for ( i = 2; i <= len; i++ ) {
         w = ELM_PLIST( list, i );
-	mutable = (mutable || IS_MUTABLE_OBJ(w));
+        mutable = (mutable || IS_MUTABLE_OBJ(w));
         if ( ! EQ( v, w ) ) {
             if ( l+1 != i ) {
                 SET_ELM_PLIST( list, l+1, w );
@@ -864,7 +986,7 @@ UInt            RemoveDupsDensePlist (
             }
             l += 1;
             v = w;
-	    homog = (!mutable && homog && fam == FAMILY_OBJ(w));
+            homog = (!mutable && homog && fam == FAMILY_OBJ(w));
         }
     }
 
@@ -875,11 +997,11 @@ UInt            RemoveDupsDensePlist (
     /* Set appropriate filters */
     if (!mutable)
       {
-	if (!homog)
-	  SET_FILT_LIST(list, FN_IS_NHOMOG);
-	else
-	  SET_FILT_LIST(list, FN_IS_HOMOG);
-	SET_FILT_LIST(list, FN_IS_SSORT);
+        if (!homog)
+          SET_FILT_LIST(list, FN_IS_NHOMOG);
+        else
+          SET_FILT_LIST(list, FN_IS_HOMOG);
+        SET_FILT_LIST(list, FN_IS_SSORT);
       }
 
     /* return whether the list contains mutable elements                   */
@@ -894,10 +1016,8 @@ UInt            RemoveDupsDensePlist (
 
 /****************************************************************************
 **
-
 *F * * * * * * * * * * * * * * GAP level functions  * * * * * * * * * * * * *
 */
-
 
 /****************************************************************************
 **
@@ -916,8 +1036,7 @@ Obj FuncSORT_LIST (
     }
 
     /* dispatch                                                            */
-    if ( T_PLIST_DENSE  <= TNUM_OBJ(list)
-      && TNUM_OBJ(list) <= T_PLIST_CYC_SSORT ) {
+    if ( IS_DENSE_PLIST(list) ) {
         SortDensePlist( list );
     }
     else {
@@ -958,8 +1077,7 @@ Obj FuncSORT_LIST_COMP (
     }
 
     /* dispatch                                                            */
-    if ( T_PLIST_DENSE  <= TNUM_OBJ(list)
-      && TNUM_OBJ(list) <= T_PLIST_CYC_SSORT ) {
+    if ( IS_DENSE_PLIST(list) ) {
         SortDensePlistComp( list, func );
     }
     else {
@@ -1002,10 +1120,7 @@ Obj FuncSORT_PARA_LIST (
     }
 
     /* dispatch                                                            */
-    if ( T_PLIST_DENSE     <= TNUM_OBJ(list)
-       && TNUM_OBJ(list)   <= T_PLIST_CYC_SSORT
-       && T_PLIST_DENSE    <= TNUM_OBJ(shadow)
-       && TNUM_OBJ(shadow) <= T_PLIST_CYC_SSORT ) {
+    if ( IS_DENSE_PLIST(list) && IS_DENSE_PLIST(shadow) ) {
         SortParaDensePlist( list, shadow );
     }
     else {
@@ -1058,10 +1173,7 @@ Obj FuncSORT_PARA_LIST_COMP (
     }
 
     /* dispatch                                                            */
-    if ( T_PLIST_DENSE     <= TNUM_OBJ(list)
-       && TNUM_OBJ(list)   <= T_PLIST_CYC_SSORT
-       && T_PLIST_DENSE    <= TNUM_OBJ(shadow)
-       && TNUM_OBJ(shadow) <= T_PLIST_CYC_SSORT ) {
+    if ( IS_DENSE_PLIST(list) && IS_DENSE_PLIST(shadow) ) {
         SortParaDensePlistComp( list, shadow, func );
     }
     else {
@@ -1170,11 +1282,11 @@ Obj             FuncOnTuples (
     /* special case for the empty list */
     if ( HAS_FILT_LIST( tuple, FN_IS_EMPTY )) {
       if (IS_MUTABLE_OBJ(tuple)) {
-	img = NEW_PLIST(T_PLIST_EMPTY, 0);
-	SET_LEN_PLIST(img,0);
-	return img;
+        img = NEW_PLIST(T_PLIST_EMPTY, 0);
+        SET_LEN_PLIST(img,0);
+        return img;
       } else {
-	return tuple;
+        return tuple;
       }
     }
     /* special case for permutations                                       */
@@ -1230,15 +1342,15 @@ Obj             FuncOnSets (
     /* special case for the empty list */
     if ( HAS_FILT_LIST( set, FN_IS_EMPTY )) {
       if (IS_MUTABLE_OBJ(set)) {
-	img = NEW_PLIST(T_PLIST_EMPTY, 0);
-	SET_LEN_PLIST(img,0);
-	return img;
+        img = NEW_PLIST(T_PLIST_EMPTY, 0);
+        SET_LEN_PLIST(img,0);
+        return img;
       } else {
-	return set;
+        return set;
       }
     }
-	
-	 
+        
+         
 
     /* special case for permutations                                       */
     if ( TNUM_OBJ(elm) == T_PERM2 || TNUM_OBJ(elm) == T_PERM4 ) {
@@ -1259,13 +1371,13 @@ Obj             FuncOnSets (
     switch (status)
       {
       case 0:
-	break;
-	
+        break;
+        
       case 1:
-	RetypeBag( img, T_PLIST_DENSE_NHOM_SSORT );
+        RetypeBag( img, T_PLIST_DENSE_NHOM_SSORT );
 
       case 2:
-	RetypeBag( img, T_PLIST_HOM_SSORT );
+        RetypeBag( img, T_PLIST_HOM_SSORT );
 
       }
 
@@ -1316,7 +1428,7 @@ Obj             FuncOnLeftAntiOperation (
 
 /****************************************************************************
 **
-*F  FuncOnLeftInverse( <self>, <point>, <elm> )	. . op by mult. from the left
+*F  FuncOnLeftInverse( <self>, <point>, <elm> ) . . op by mult. from the left
 **
 **  'FuncOnLeftInverse' implements the internal function 'OnLeftInverse'.
 **
@@ -1379,77 +1491,77 @@ static Obj FuncSTRONGLY_CONNECTED_COMPONENTS_DIGRAPH(Obj self, Obj digraph)
   for (k = 1; k <= n; k++)
     {
       if (((UInt *)ADDR_OBJ(val))[k] == 0)
-	{
-	  level = 1;
-	  adj = ELM_LIST(digraph, k);
-	  PLAIN_LIST(adj);
-	  fptr = (UInt *)ADDR_OBJ(frames);
-	  fptr[0] = k;
-	  now++;
-	  ((UInt *)ADDR_OBJ(val))[k] = now;
-	  fptr[1] = now;
-	  l = LEN_PLIST(stack);
-	  SET_ELM_PLIST(stack, l+1, INTOBJ_INT(k));
-	  SET_LEN_PLIST(stack, l+1);
-	  fptr[2] = 1;
-	  fptr[3] = (UInt)adj;
-	  while (level > 0 ) {
-	    if (fptr[2] > LEN_PLIST(fptr[3]))
-	      {
-		if (fptr[1] == ((UInt *)ADDR_OBJ(val))[fptr[0]])
-		  {
-		    l = LEN_PLIST(stack);
-		    i = l;
-		    do {
-		      x = INT_INTOBJ(ELM_PLIST(stack, i));
-		      SET_ELM_PLIST(val, x, INTOBJ_INT(n+1));
-		      i--;
-		    } while (x != fptr[0]);
-		    comp = NEW_PLIST(T_PLIST_CYC, l-i);
-		    SET_LEN_PLIST(comp, l-i);
-		    memcpy( (void *)((char *)(ADDR_OBJ(comp)) + sizeof(Obj)), 
-			    (void *)((char *)(ADDR_OBJ(stack)) + (i+1)*sizeof(Obj)), 
-			    (size_t)((l - i )*sizeof(Obj)));
-		    SET_LEN_PLIST(stack, i);
-		    l = LEN_PLIST(comps);
-		    SET_ELM_PLIST(comps, l+1, comp);
-		    SET_LEN_PLIST(comps, l+1);
-		    CHANGED_BAG(comps);
-		    fptr = (UInt *)ADDR_OBJ(frames)+(level-1)*4;
-		  }
-		level--;
-		fptr -= 4;
-		if (level > 0 && fptr[5]  < fptr[1])
-		  fptr[1] = fptr[5];
-	      }
-	    else
-	      {
-		adj = (Obj)fptr[3];
-		t = INT_INTOBJ(ELM_PLIST(adj, (fptr[2])++));
-		if (0 ==(m =  ((UInt *)ADDR_OBJ(val))[t]))
-		  {
-		    level++;
-		    adj = ELM_LIST(digraph, t);
-		    PLAIN_LIST(adj);
-		    fptr = (UInt *)ADDR_OBJ(frames)+(level-1)*4;
-		    fptr[0] = t;
-		    now++;
-		    ((UInt *)ADDR_OBJ(val))[t] = now;
-		    fptr[1] = now;
-		    l = LEN_PLIST(stack);
-		    SET_ELM_PLIST(stack, l+1, INTOBJ_INT(t));
-		    SET_LEN_PLIST(stack, l+1);
-		    fptr[2] = 1;
-		    fptr[3] = (UInt)adj;
-		  }
-		else
-		  {
-		    if (m < fptr[1])
-		      fptr[1] = m;
-		  }
-	      }
-	  }
-	}
+        {
+          level = 1;
+          adj = ELM_LIST(digraph, k);
+          PLAIN_LIST(adj);
+          fptr = (UInt *)ADDR_OBJ(frames);
+          fptr[0] = k;
+          now++;
+          ((UInt *)ADDR_OBJ(val))[k] = now;
+          fptr[1] = now;
+          l = LEN_PLIST(stack);
+          SET_ELM_PLIST(stack, l+1, INTOBJ_INT(k));
+          SET_LEN_PLIST(stack, l+1);
+          fptr[2] = 1;
+          fptr[3] = (UInt)adj;
+          while (level > 0 ) {
+            if (fptr[2] > LEN_PLIST(fptr[3]))
+              {
+                if (fptr[1] == ((UInt *)ADDR_OBJ(val))[fptr[0]])
+                  {
+                    l = LEN_PLIST(stack);
+                    i = l;
+                    do {
+                      x = INT_INTOBJ(ELM_PLIST(stack, i));
+                      SET_ELM_PLIST(val, x, INTOBJ_INT(n+1));
+                      i--;
+                    } while (x != fptr[0]);
+                    comp = NEW_PLIST(T_PLIST_CYC, l-i);
+                    SET_LEN_PLIST(comp, l-i);
+                    memcpy( (void *)((char *)(ADDR_OBJ(comp)) + sizeof(Obj)), 
+                            (void *)((char *)(ADDR_OBJ(stack)) + (i+1)*sizeof(Obj)), 
+                            (size_t)((l - i )*sizeof(Obj)));
+                    SET_LEN_PLIST(stack, i);
+                    l = LEN_PLIST(comps);
+                    SET_ELM_PLIST(comps, l+1, comp);
+                    SET_LEN_PLIST(comps, l+1);
+                    CHANGED_BAG(comps);
+                    fptr = (UInt *)ADDR_OBJ(frames)+(level-1)*4;
+                  }
+                level--;
+                fptr -= 4;
+                if (level > 0 && fptr[5]  < fptr[1])
+                  fptr[1] = fptr[5];
+              }
+            else
+              {
+                adj = (Obj)fptr[3];
+                t = INT_INTOBJ(ELM_PLIST(adj, (fptr[2])++));
+                if (0 ==(m =  ((UInt *)ADDR_OBJ(val))[t]))
+                  {
+                    level++;
+                    adj = ELM_LIST(digraph, t);
+                    PLAIN_LIST(adj);
+                    fptr = (UInt *)ADDR_OBJ(frames)+(level-1)*4;
+                    fptr[0] = t;
+                    now++;
+                    ((UInt *)ADDR_OBJ(val))[t] = now;
+                    fptr[1] = now;
+                    l = LEN_PLIST(stack);
+                    SET_ELM_PLIST(stack, l+1, INTOBJ_INT(t));
+                    SET_LEN_PLIST(stack, l+1);
+                    fptr[2] = 1;
+                    fptr[3] = (UInt)adj;
+                  }
+                else
+                  {
+                    if (m < fptr[1])
+                      fptr[1] = m;
+                  }
+              }
+          }
+        }
       
     }
   SHRINK_PLIST(comps, LEN_PLIST(comps));
@@ -1475,8 +1587,8 @@ static inline Int GetIntObj( Obj list, UInt pos)
   while (!IS_INTOBJ(entry))
     {
       entry = ErrorReturnObj("COPY_LIST_ENTRIES: argument %d  must be a small integer, not a %s",
-			     (Int)pos, (Int)InfoBags[TNUM_OBJ(entry)].name,
-			     "you can return a small integer to continue");
+                             (Int)pos, (Int)InfoBags[TNUM_OBJ(entry)].name,
+                             "you can return a small integer to continue");
     }
   return INT_INTOBJ(entry);
 }
@@ -1503,7 +1615,7 @@ Obj FuncCOPY_LIST_ENTRIES( Obj self, Obj args )
   if (LEN_PLIST(args) != 7)
     {
       ErrorMayQuit("COPY_LIST_ENTRIES: number of arguments must be 7, not %d",
-		   (Int)LEN_PLIST(args), 0L);
+                   (Int)LEN_PLIST(args), 0L);
     }
   srclist = ELM_PLIST(args,1);
   if (!srclist)
@@ -1514,8 +1626,8 @@ Obj FuncCOPY_LIST_ENTRIES( Obj self, Obj args )
   while (!IS_PLIST(srclist))
     {
       srclist = ErrorReturnObj("COPY_LIST_ENTRIES: source must be a plain list not a %s",
-			       (Int)InfoBags[TNUM_OBJ(srclist)].name, 0L,
-			       "you can return a plain list to continue");
+                               (Int)InfoBags[TNUM_OBJ(srclist)].name, 0L,
+                               "you can return a plain list to continue");
     }
 
   srcstart = (UInt)GetIntObj(args,2);
@@ -1529,8 +1641,8 @@ Obj FuncCOPY_LIST_ENTRIES( Obj self, Obj args )
   while (!IS_PLIST(dstlist) || !IS_MUTABLE_OBJ(dstlist))
     {
       dstlist = ErrorReturnObj("COPY_LIST_ENTRIES: destination must be a mutable plain list not a %s",
-			       (Int)InfoBags[TNUM_OBJ(dstlist)].name, 0L,
-			       "you can return a plain list to continue");
+                               (Int)InfoBags[TNUM_OBJ(dstlist)].name, 0L,
+                               "you can return a plain list to continue");
     }
   dststart = (UInt)GetIntObj(args,5);
   dstinc = GetIntObj(args,6);
@@ -1547,51 +1659,51 @@ Obj FuncCOPY_LIST_ENTRIES( Obj self, Obj args )
   if (srcinc == 1 && dstinc == 1)
     {
       memmove((void *) (ADDR_OBJ(dstlist) + dststart),
-	      (void *) (ADDR_OBJ(srclist) + srcstart),
-	      (size_t) number*sizeof(Obj));
+              (void *) (ADDR_OBJ(srclist) + srcstart),
+              (size_t) number*sizeof(Obj));
     }
   else if (srclist != dstlist)
     {
       sptr = ADDR_OBJ(srclist) + srcstart;
       dptr = ADDR_OBJ(dstlist) + dststart;
       for (ct = 0; ct < number ; ct++)
-	{
-	  *dptr = *sptr;
-	  sptr += srcinc;
-	  dptr += dstinc;
-	}
+        {
+          *dptr = *sptr;
+          sptr += srcinc;
+          dptr += dstinc;
+        }
     }
   else if (srcinc == dstinc)
     {
       if (srcstart == dststart)
-	return (Obj)0;
+        return (Obj)0;
       else
-	{
-	  if ((srcstart > dststart) == (srcinc > 0))
-	    {
-	      sptr = ADDR_OBJ(srclist) + srcstart;
-	      dptr = ADDR_OBJ(srclist) + dststart;
-	      for (ct = 0; ct < number ; ct++)
-		{
-		  *dptr = *sptr;
-		  sptr += srcinc;
-		  dptr += srcinc;
-		}
-	    }
-	  else
-	    {
-	      sptr = ADDR_OBJ(srclist) + srcstart + number*srcinc;
-	      dptr = ADDR_OBJ(srclist) + dststart + number*srcinc;
-	      for (ct = 0; ct < number; ct++)
-		{
-		  sptr -= srcinc;
-		  dptr -= srcinc;
-		  *dptr = *sptr;
-		}
-	      
-	    }
-	}
-	      
+        {
+          if ((srcstart > dststart) == (srcinc > 0))
+            {
+              sptr = ADDR_OBJ(srclist) + srcstart;
+              dptr = ADDR_OBJ(srclist) + dststart;
+              for (ct = 0; ct < number ; ct++)
+                {
+                  *dptr = *sptr;
+                  sptr += srcinc;
+                  dptr += srcinc;
+                }
+            }
+          else
+            {
+              sptr = ADDR_OBJ(srclist) + srcstart + number*srcinc;
+              dptr = ADDR_OBJ(srclist) + dststart + number*srcinc;
+              for (ct = 0; ct < number; ct++)
+                {
+                  sptr -= srcinc;
+                  dptr -= srcinc;
+                  *dptr = *sptr;
+                }
+              
+            }
+        }
+              
     }
   else
     {
@@ -1599,19 +1711,19 @@ Obj FuncCOPY_LIST_ENTRIES( Obj self, Obj args )
       Obj *tptr = ADDR_OBJ(tmplist)+1;
       sptr = ADDR_OBJ(srclist)+srcstart;
       for (ct = 0; ct < number; ct++)
-	{
-	  *tptr = *sptr;
-	  tptr++;
-	  sptr += srcinc;
-	}
+        {
+          *tptr = *sptr;
+          tptr++;
+          sptr += srcinc;
+        }
       tptr = ADDR_OBJ(tmplist)+1;
       dptr = ADDR_OBJ(srclist)+dststart;
       for (ct = 0; ct < number; ct++)
-	{
-	  *dptr = *tptr;
-	  tptr++;
-	  dptr += dstinc;
-	}
+        {
+          *dptr = *tptr;
+          tptr++;
+          dptr += dstinc;
+        }
     }
 
   if (dstmax > LEN_PLIST(dstlist))
@@ -1619,10 +1731,10 @@ Obj FuncCOPY_LIST_ENTRIES( Obj self, Obj args )
       dptr = ADDR_OBJ(dstlist)+dstmax;
       ct = dstmax;
       while (!*dptr)
-	{
-	  ct--;
-	  dptr--;
-	}
+        {
+          ct--;
+          dptr--;
+        }
       SET_LEN_PLIST(dstlist, ct);
     }
   if (LEN_PLIST(dstlist) > 0)
@@ -1710,6 +1822,8 @@ Obj FuncBIMULT_MONOMIALS_ALGEBRA_ELEMENT(Obj self,
   return prd;
 }
 
+
+
 /****************************************************************************
 **
 *F  FuncHORSPOOL_LISTS
@@ -1739,11 +1853,11 @@ Obj FuncHORSPOOL_LISTS(Obj self,Obj wrep, Obj subrep, Obj pre)
       while (j>0) {
  /* Pr("i= %d j=%d \n",i,j);  */
         if (ps[j] != pw[i+j]) {
-	  j=-1;
-	}
-	else {
-	  j--;
-	}
+          j=-1;
+        }
+        else {
+          j--;
+        }
       }
       if (j==0) {
         pos=INTOBJ_INT(i+1);
@@ -1751,7 +1865,7 @@ Obj FuncHORSPOOL_LISTS(Obj self,Obj wrep, Obj subrep, Obj pre)
       }
       else {
  /* Pr("pw: %d \n",INT_INTOBJ(pw[i+subsize]),0L);  */
-	      i = i + INT_INTOBJ(pp[INT_INTOBJ(pw[i+subsize])]);
+              i = i + INT_INTOBJ(pp[INT_INTOBJ(pw[i+subsize])]);
       }
     }
   }
@@ -1774,6 +1888,9 @@ static StructGVarOper GVarOpers [] = {
 
     { "ADD_LIST", 2, "list, val", &AddListOper,
       FuncADD_LIST, "src/listfunc.c:ADD_LIST" },
+
+    { "REM_LIST", 1, "list", &RemListOper,
+      FuncREM_LIST, "src/listfunc.c:REM_LIST" },
 
     { "APPEND_LIST", 2, "list, val", &AppendListOper,
       FuncAPPEND_LIST, "src/listfunc.c:APPEND_LIST" },
@@ -1846,6 +1963,9 @@ static StructGVarFunc GVarFuncs [] = {
     { "HORSPOOL_LISTS",3,"list, sub, pre",
       FuncHORSPOOL_LISTS,"src/listfunc.c:HORSPOOL_LISTS" },
 
+    { "HEAP_SORT_PLIST",1,"list",
+      HEAP_SORT_PLIST,"src/listfunc.c:HEAP_SORT_PLIST" },
+
     { 0 }
 
 };
@@ -1905,8 +2025,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoListFunc ( void )
 {
-    module.revision_c = Revision_listfunc_c;
-    module.revision_h = Revision_listfunc_h;
     FillInVersion( &module );
     return &module;
 }

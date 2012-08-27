@@ -2,9 +2,8 @@
 **
 *W  objccoll.c                  GAP source                      Werner Nickel
 **
-*H  @(#)$Id: objccoll.c,v 4.5 2002/04/15 10:03:52 sal Exp $
 **
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file  contains  the collection functions of  combinatorial collectors
@@ -16,8 +15,6 @@
 */
 #include        "system.h"              /* Ints, UInts                     */
 
-const char * Revision_objccoll_c =
-   "@(#)$Id: objccoll.c,v 4.5 2002/04/15 10:03:52 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -44,9 +41,7 @@ const char * Revision_objccoll_c =
 
 #include        "objscoll.h"            /* single collector                */
 
-#define INCLUDE_DECLARATION_PART
 #include        "objccoll.h"            /* combinatorial collector         */
-#undef  INCLUDE_DECLARATION_PART
 
 /****************************************************************************
 **
@@ -296,6 +291,7 @@ Int C8Bits_CombiCollectWord ( Obj sc, Obj vv, Obj w )
 
     vcnj = SC_CONJUGATES(sc);
     lcnj = LEN_PLIST(vcnj);
+    (void) lcnj; /* please compiler -- lcnj not actually used */
     cnj  = ADDR_OBJ(vcnj);
 
     avc = ADDR_OBJ( SC_AVECTOR(sc) );
@@ -757,6 +753,7 @@ Int C16Bits_CombiCollectWord ( Obj sc, Obj vv, Obj w )
 
     vcnj = SC_CONJUGATES(sc);
     lcnj = LEN_PLIST(vcnj);
+    (void) lcnj; /* please compiler -- lcnj not actually used */
     cnj  = ADDR_OBJ(vcnj);
 
     avc = ADDR_OBJ( SC_AVECTOR(sc) );
@@ -1218,6 +1215,7 @@ Int C32Bits_CombiCollectWord ( Obj sc, Obj vv, Obj w )
 
     vcnj = SC_CONJUGATES(sc);
     lcnj = LEN_PLIST(vcnj);
+    (void) lcnj; /* please compiler -- lcnj not actually used */
     cnj  = ADDR_OBJ(vcnj);
 
     avc = ADDR_OBJ( SC_AVECTOR(sc) );
@@ -1463,8 +1461,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoCombiCollector ( void )
 {
-    module.revision_c = Revision_objccoll_c;
-    module.revision_h = Revision_objccoll_h;
     FillInVersion( &module );
     return &module;
 }

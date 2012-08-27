@@ -1,13 +1,12 @@
 /****************************************************************************
 **
 *W  compiler.c                  GAP source                       Frank Celler
-*W                                                         & Ferencz Rakowczi
-*W                                                         & Martin Schoenert
+*W                                                         & Ferenc Ràkòczi
+*W                                                         & Martin Schönert
 **
-*H  @(#)$Id: compiler.c,v 4.53 2002/12/18 14:04:46 gap Exp $
 **
-*Y  Copyright (C)  1997,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1997,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the GAP to C compiler.
@@ -15,8 +14,6 @@
 #include        <stdarg.h>              /* variable argument list macros   */
 #include        "system.h"              /* Ints, UInts                     */
 
-const char * Revision_compiler_c =
-   "@(#)$Id: compiler.c,v 4.53 2002/12/18 14:04:46 gap Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -25,6 +22,7 @@ const char * Revision_compiler_c =
 #include        "gvars.h"               /* global variables                */
 
 #include        "ariths.h"              /* basic arithmetic                */
+#include        "integer.h"
 
 #include        "bool.h"                /* booleans                        */
 
@@ -49,9 +47,7 @@ const char * Revision_compiler_c =
 
 #include        "vars.h"                /* variables                       */
 
-#define INCLUDE_DECLARATION_PART
 #include        "compiler.h"            /* compiler                        */
-#undef  INCLUDE_DECLARATION_PART
 
 
 /****************************************************************************
@@ -74,28 +70,28 @@ Int CompFastIntArith;
 **
 *V  CompFastPlainLists  . option to emit code that handles plain lists faster
 */
-Int CompFastPlainLists = 1;
+Int CompFastPlainLists ;
 
 
 /****************************************************************************
 **
 *V  CompFastListFuncs . . option to emit code that inlines calls to functions
 */
-Int CompFastListFuncs = 1;
+Int CompFastListFuncs;
 
 
 /****************************************************************************
 **
 *V  CompCheckTypes  . . . . option to emit code that assumes all types are ok.
 */
-Int CompCheckTypes = 1;
+Int CompCheckTypes ;
 
 
 /****************************************************************************
 **
 *V  CompCheckListElements .  option to emit code that assumes list elms exist
 */
-Int CompCheckListElements = 1;
+Int CompCheckListElements;
 
 /****************************************************************************
 **
@@ -103,7 +99,7 @@ Int CompCheckListElements = 1;
 **
 */
 
-struct CompOptStruc { Char *extname;
+struct CompOptStruc { const Char *extname;
   Int *variable;
   Int val;};
 
@@ -132,21 +128,21 @@ void SetCompileOpts( Char *opts )
   while (*s)
     {
       while (IsSpace(*s))
-	s++;
+        s++;
       for (i = 0; i < N_CompOpts; i++)
-	{
-	  if (0 == SyStrncmp(CompOptNames[i].extname,
-			     s,
-			     SyStrlen(CompOptNames[i].extname)))
-	    {
-	      *(CompOptNames[i].variable) = CompOptNames[i].val;
-	      break;
-	    }
-	}
+        {
+          if (0 == strncmp(CompOptNames[i].extname,
+                             s,
+                             strlen(CompOptNames[i].extname)))
+            {
+              *(CompOptNames[i].variable) = CompOptNames[i].val;
+              break;
+            }
+        }
       while (*s && *s != ',')
-	s++;
+        s++;
       if (*s == ',')
-	s++;
+        s++;
     }
   return;
 }
@@ -155,7 +151,7 @@ void SetCompileOpts( Char *opts )
 **
 *V  CompCheckPosObjElements .  option to emit code that assumes pos elm exist
 */
-Int CompCheckPosObjElements = 0;
+Int CompCheckPosObjElements;
 
 
 /****************************************************************************
@@ -186,7 +182,7 @@ Int CompCheckPosObjElements = 0;
 **  unneccessary  computations during the first pass,  the  advantage is that
 **  the two passes are guaranteed to do exactely the same computations.
 */
-Int CompPass = 0;
+Int CompPass;
 
 
 /****************************************************************************
@@ -213,8 +209,6 @@ static Char * compilerMagic2;
 
 /****************************************************************************
 **
-
-
 *T  CVar  . . . . . . . . . . . . . . . . . . . . . . .  type for C variables
 **
 **  A C variable represents the result of compiling an expression.  There are
@@ -230,7 +224,7 @@ static Char * compilerMagic2;
 **  expression into a  temporary variable,  and  the C variable contains  the
 **  index of that temporary variable.
 */
-typedef UInt4           CVar;
+typedef UInt           CVar;
 
 #define IS_INTG_CVAR(c) ((((UInt)(c)) & 0x03) == 0x01)
 #define INTG_CVAR(c)    (((Int)(c)) >> 2)
@@ -456,7 +450,7 @@ Int             IsEqInfoCVars (
 typedef UInt4           Temp;
 
 Temp            NewTemp (
-    Char *              name )
+    const Char *        name )
 {
     Temp                temp;           /* new temporary, result           */
     Bag                 info;           /* information bag                 */
@@ -586,7 +580,7 @@ UInt            GetLevlHVar (
 #if 0
         if ( NHVAR_INFO(info) != 0 ) 
 #endif
-	  levl++;
+          levl++;
     }
 
     /* return level (the number steps to go up)                            */
@@ -740,7 +734,7 @@ Int             EmitIndent;
 Int             EmitIndent2;
 
 void            Emit (
-    char *              fmt,
+    const char *        fmt,
     ... )
 {
     Int                 narg;           /* number of arguments             */
@@ -748,9 +742,9 @@ void            Emit (
     Int                 dint;           /* integer argument                */
     CVar                cvar;           /* C variable argument             */
     Char *              string;         /* string argument                 */
-    Char *              p;              /* loop variable                   */
+    const Char *        p;              /* loop variable                   */
     Char *              q;              /* loop variable                   */
-    Char *              hex = "0123456789ABCDEF";
+    const Char *        hex = "0123456789ABCDEF";
 
     /* are we in pass 2?                                                   */
     if ( CompPass != 2 )  return;
@@ -814,7 +808,11 @@ void            Emit (
             else if ( *p == 'c' ) {
                 cvar = va_arg( ap, CVar );
                 if ( IS_INTG_CVAR(cvar) ) {
-                    Pr( "INTOBJ_INT(%d)", INTG_CVAR(cvar), 0L );
+		  Int x = INTG_CVAR(cvar);
+		  if (x >= -(1L <<28) && x < (1L << 28))
+                    Pr( "INTOBJ_INT(%d)", x, 0L );
+		  else
+		    Pr( "C_MAKE_MED_INT(%d)", x, 0L );
                 }
                 else if ( IS_TEMP_CVAR(cvar) ) {
                     Pr( "t_%d", TEMP_CVAR(cvar), 0L );
@@ -1224,7 +1222,7 @@ CVar CompFunccallXArgs (
 *F  CompFunccallXArgs( <expr> ) . . . . . . . . . . . . . .  T_FUNCCALL_OPTS
 */
 CVar CompFunccallOpts(
-		      Expr expr)
+                      Expr expr)
 {
   CVar opts = CompExpr(ADDR_STAT(expr)[0]);
   GVar pushOptions;
@@ -1251,6 +1249,7 @@ CVar CompFuncExpr (
 {
     CVar                func;           /* function, result                */
     CVar                tmp;            /* dummy body                      */
+
     Obj                 fexs;           /* function expressions list       */
     Obj                 fexp;           /* function expression             */
     Int                 nr;             /* number of the function          */
@@ -1271,7 +1270,10 @@ CVar CompFuncExpr (
     /* this should probably be done by 'NewFunction'                       */
     Emit( "ENVI_FUNC( %c ) = CurrLVars;\n", func );
     tmp = CVAR_TEMP( NewTemp( "body" ) );
-    Emit( "%c = NewBag( T_BODY, 0 );\n", tmp );
+    Emit( "%c = NewBag( T_BODY, NUMBER_HEADER_ITEMS_BODY*sizeof(Obj) );\n", tmp );
+    Emit( "STARTLINE_BODY(%c) = INTOBJ_INT(%d);\n", tmp, INT_INTOBJ(STARTLINE_BODY(BODY_FUNC(fexp))));
+    Emit( "ENDLINE_BODY(%c) = INTOBJ_INT(%d);\n", tmp, INT_INTOBJ(ENDLINE_BODY(BODY_FUNC(fexp))));
+    Emit( "FILENAME_BODY(%c) = FileName;\n",tmp);
     Emit( "BODY_FUNC(%c) = %c;\n", func, tmp );
     FreeTemp( TEMP_CVAR( tmp ) );
 
@@ -2368,31 +2370,60 @@ CVar CompPow (
 /****************************************************************************
 **
 *F  CompIntExpr( <expr> ) . . . . . . . . . . . . . . .  T_INTEXPR/T_INT_EXPR
+*
+* This is complicated by the need to produce code that will compile correctly
+* in 32 or 64 bit and with or without GMP.
+*
+* The problem is that when we compile the code, we know the integer representation
+* of the stored literal in the compiling process
+* but NOT the representation which will apply to the compiled code or the endianness
+*
+* The solution to this is macros: C_MAKE_INTEGER_BAG( size, type) 
+*                                 C_SET_LIMB2(bag, limbnumber, value)
+*                                 C_SET_LIMB4(bag, limbnumber, value)
+*                                 C_SET_LIMB8(bag, limbnumber, value)
+*
+* we compile using the one appropriate for the compiling system, but their
+* definition depends on the limb size of the target system.
+*
 */
+
 CVar CompIntExpr (
     Expr                expr )
 {
     CVar                val;
     Int                 siz;
     Int                 i;
+    UInt                typ;
 
     if ( IS_INTEXPR(expr) ) {
         return CVAR_INTG( INT_INTEXPR(expr) );
     }
     else {
         val = CVAR_TEMP( NewTemp( "val" ) );
-        siz = SIZE_EXPR(expr);
-        if ( ((UInt2*)ADDR_EXPR(expr))[0] == 1 ) {
-            Emit( "%c = NewBag( T_INTPOS, %d );\n", val, siz-sizeof(UInt2) );
-	    SetInfoCVar(val, W_INT_POS);
+        siz = SIZE_EXPR(expr) - sizeof(UInt);
+	typ = *(UInt *)ADDR_EXPR(expr);
+	Emit( "%c = C_MAKE_INTEGER_BAG(%d, %d);\n",val, siz, typ);
+        if ( typ == T_INTPOS ) {
+            SetInfoCVar(val, W_INT_POS);
         }
         else {
-            Emit( "%c = NewBag( T_INTNEG, %d );\n", val, siz-sizeof(UInt2) );
+            SetInfoCVar(val, W_INT);
+	}
+
+        for ( i = 0; i < siz/INTEGER_UNIT_SIZE; i++ ) {
+#if INTEGER_UNIT_SIZE == 2
+	    Emit( "C_SET_LIMB2( %c, %d, %d);\n",val, i, ((UInt2 *)((UInt *)ADDR_EXPR(expr) + 1))[i]);
+#else
+#if INTEGER_UNIT_SIZE == 4
+	    Emit( "C_SET_LIMB4( %c, %d, %dL);\n",val, i, ((UInt4 *)((UInt *)ADDR_EXPR(expr) + 1))[i]);
+#else
+	    Emit( "C_SET_LIMB8( %c, %d, %dLL);\n",val, i, ((UInt8*)((UInt *)ADDR_EXPR(expr) + 1))[i]);
+#endif
+#endif
         }
-        for ( i = 1; i < siz/sizeof(UInt2); i++ ) {
-            Emit( "((UInt2*)ADDR_OBJ(%c))[%d-1] = %d;\n",
-                  val, i, ((UInt2*)ADDR_EXPR(expr))[i] );
-        }
+	if (siz <= 8)
+	  Emit("%c = C_NORMALIZE_64BIT(%c);\n", val,val);
         return val;
     }
 }
@@ -2741,10 +2772,10 @@ CVar CompStringExpr (
     /* create the string and copy the stuff                                */
     Emit( "C_NEW_STRING( %c, %d, \"%C\" )\n",
 
-	  /* the sizeof(UInt) offset is to get past the length of the string
-	     which is now stored in the front of the literal */
+          /* the sizeof(UInt) offset is to get past the length of the string
+             which is now stored in the front of the literal */
           string, SIZE_EXPR(expr)-1-sizeof(UInt),
-	  sizeof(UInt)+ (Char*)ADDR_EXPR(expr) );
+          sizeof(UInt)+ (Char*)ADDR_EXPR(expr) );
 
     /* we know that the result is a list                                   */
     SetInfoCVar( string, W_LIST );
@@ -2863,20 +2894,18 @@ void            CompRecExpr2 (
             sub = CompExpr( tmp );
             Emit( "%c = (Obj)RNamObj( %c );\n", rnam, sub );
         }
-        Emit( "SET_RNAM_PREC( %c, %d, (UInt)%c );\n", rec, i, rnam );
-        if ( IS_TEMP_CVAR( rnam ) )  FreeTemp( TEMP_CVAR( rnam ) );
 
         /* if the subexpression is empty (cannot happen for records)       */
         tmp = ADDR_EXPR(expr)[2*i-1];
         if ( tmp == 0 ) {
+            if ( IS_TEMP_CVAR( rnam ) )  FreeTemp( TEMP_CVAR( rnam ) );
             continue;
         }
 
         /* special case if subexpression is a list expression             */
         else if ( TNUM_EXPR( tmp ) == T_LIST_EXPR ) {
             sub = CompListExpr1( tmp );
-            Emit( "SET_ELM_PREC( %c, %d, %c );\n", rec, i, sub );
-            Emit( "CHANGED_BAG( %c );\n", rec );
+            Emit( "AssPRec( %c, (UInt)%c, %c );\n", rec, rnam, sub );
             CompListExpr2( sub, tmp );
             if ( IS_TEMP_CVAR( sub ) )  FreeTemp( TEMP_CVAR( sub ) );
         }
@@ -2884,8 +2913,7 @@ void            CompRecExpr2 (
         /* special case if subexpression is a record expression            */
         else if ( TNUM_EXPR( tmp ) == T_REC_EXPR ) {
             sub = CompRecExpr1( tmp );
-            Emit( "SET_ELM_PREC( %c, %d, %c );\n", rec, i, sub );
-            Emit( "CHANGED_BAG( %c );\n", rec );
+            Emit( "AssPRec( %c, (UInt)%c, %c );\n", rec, rnam, sub );
             CompRecExpr2( sub, tmp );
             if ( IS_TEMP_CVAR( sub ) )  FreeTemp( TEMP_CVAR( sub ) );
         }
@@ -2893,14 +2921,13 @@ void            CompRecExpr2 (
         /* general case                                                    */
         else {
             sub = CompExpr( tmp );
-            Emit( "SET_ELM_PREC( %c, %d, %c );\n", rec, i, sub );
-            if ( ! HasInfoCVar( sub, W_INT_SMALL ) ) {
-                Emit( "CHANGED_BAG( %c );\n", rec );
-            }
+            Emit( "AssPRec( %c, (UInt)%c, %c );\n", rec, rnam, sub );
             if ( IS_TEMP_CVAR( sub ) )  FreeTemp( TEMP_CVAR( sub ) );
         }
 
+        if ( IS_TEMP_CVAR( rnam ) )  FreeTemp( TEMP_CVAR( rnam ) );
     }
+    Emit( "SortPRecRNam( %c, 0 );\n", rec );
 
 }
 
@@ -3900,7 +3927,7 @@ void CompProccallXArgs (
 *F  CompProccallXArgs( <expr> ) . . . . . . . . . . . . . .  T_PROCCALL_OPTS
 */
 void CompProccallOpts(
-		      Stat stat)
+                      Stat stat)
 {
   CVar opts = CompExpr(ADDR_STAT(stat)[0]);
   GVar pushOptions;
@@ -4218,7 +4245,7 @@ void CompFor (
         }
         else /* if ( TNUM_EXPR( ADDR_STAT(stat)[0] ) == T_REF_GVAR ) */ {
             var = (UInt)(ADDR_EXPR( ADDR_STAT(stat)[0] )[0]);
-	    CompSetUseGVar( var, COMP_USE_GVAR_ID );
+            CompSetUseGVar( var, COMP_USE_GVAR_ID );
             vart = 'g';
         }
 
@@ -4230,15 +4257,15 @@ void CompFor (
         /* compile and check the first and last value                      */
         list = CompExpr( ADDR_STAT(stat)[1] );
 
-	/* SL Patch added to try and avoid a bug */
-	if (IS_LVAR_CVAR(list))
-	  {
-	    CVar copylist;
-	    copylist = CVAR_TEMP( NewTemp( "copylist" ) );
-	    Emit("%c = %c;\n",copylist, list);
-	    list = copylist;
-	  }
-	/* end of SL patch */
+        /* SL Patch added to try and avoid a bug */
+        if (IS_LVAR_CVAR(list))
+          {
+            CVar copylist;
+            copylist = CVAR_TEMP( NewTemp( "copylist" ) );
+            Emit("%c = %c;\n",copylist, list);
+            list = copylist;
+          }
+        /* end of SL patch */
 
         /* find the invariant temp-info                                    */
         pass = CompPass;
@@ -5393,6 +5420,7 @@ void CompAssert3 (
 }
 
 
+
 /****************************************************************************
 **
 
@@ -5636,6 +5664,8 @@ Int CompileFunc (
     Emit( "static Obj  NamsFunc[%d];\n", CompFunctionsNr+1 );
     Emit( "static Int  NargFunc[%d];\n", CompFunctionsNr+1 );
     Emit( "static Obj  DefaultName;\n" );
+    Emit( "static Obj FileName;\n" );
+
 
     /* now compile the handlers                                            */
     CompFunc( func );
@@ -5657,6 +5687,8 @@ Int CompileFunc (
     }
     Emit( "\n/* information for the functions */\n" );
     Emit( "InitGlobalBag( &DefaultName, \"%s:DefaultName(%d)\" );\n",
+          magic2, magic1 );
+    Emit( "InitGlobalBag( &FileName, \"%s:FileName(%d)\" );\n",
           magic2, magic1 );
     for ( i = 1; i <= CompFunctionsNr; i++ ) {
         Emit( "InitHandlerFunc( HdlrFunc%d, \"%s:HdlrFunc%d(%d)\" );\n",
@@ -5696,11 +5728,12 @@ Int CompileFunc (
     }
     Emit( "\n/* information for the functions */\n" );
     Emit( "C_NEW_STRING( DefaultName, 14, \"local function\" )\n" );
+    Emit( "C_NEW_STRING( FileName, %d, \"%s\" )\n", strlen(magic2), magic2 );
     for ( i = 1; i <= CompFunctionsNr; i++ ) {
         n = NAME_FUNC(ELM_PLIST(CompFunctions,i));
         if ( n != 0 && IsStringConv(n) ) {
             Emit( "C_NEW_STRING( NameFunc[%d], %d, \"%S\" )\n",
-                  i, SyStrlen(CSTR_STRING(n)), CSTR_STRING(n) );
+                  i, strlen(CSTR_STRING(n)), CSTR_STRING(n) );
         }
         else {
             Emit( "NameFunc[%d] = DefaultName;\n", i );
@@ -5712,7 +5745,7 @@ Int CompileFunc (
     Emit( "func1 = NewFunction(NameFunc[1],NargFunc[1],NamsFunc[1],HdlrFunc1);\n" );
     Emit( "ENVI_FUNC( func1 ) = CurrLVars;\n" );
     Emit( "CHANGED_BAG( CurrLVars );\n" );
-    Emit( "body1 = NewBag( T_BODY, 0);\n" );
+    Emit( "body1 = NewBag( T_BODY, NUMBER_HEADER_ITEMS_BODY*sizeof(Obj));\n" );
     Emit( "BODY_FUNC( func1 ) = body1;\n" );
     Emit( "CHANGED_BAG( func1 );\n");
     Emit( "CALL_0ARGS( func1 );\n" );
@@ -5754,7 +5787,7 @@ Int CompileFunc (
     /* emit the initialization code                                        */
     Emit( "\n/* <name> returns the description of this module */\n" );
     Emit( "static StructInitInfo module = {\n" );
-    if (  SyStrcmp( "Init__Dynamic", name ) ) {
+    if ( ! strcmp( "Init_Dynamic", name ) ) {
         Emit( "/* type        = */ %d,\n",     MODULE_DYNAMIC ); 
     }
     else {
@@ -5903,6 +5936,14 @@ static Int InitKernel (
 {
     Int                 i;              /* loop variable                   */
 
+    CompFastIntArith = 1;
+    CompFastListFuncs = 1;
+    CompFastPlainLists = 1;
+    CompCheckTypes = 1;
+    CompCheckListElements = 1;
+    CompCheckPosObjElements = 0;
+    CompPass = 0;
+    
     /* init filters and functions                                          */
     InitHdlrFuncsFromTable( GVarFuncs );
 
@@ -6170,8 +6211,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoCompiler ( void )
 {
-    module.revision_c = Revision_compiler_c;
-    module.revision_h = Revision_compiler_h;
     FillInVersion( &module );
     return &module;
 }

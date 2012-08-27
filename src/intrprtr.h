@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  intrprtr.h                  GAP source                   Martin Schoenert
+*W  intrprtr.h                  GAP source                   Martin Schönert
 **
-*H  @(#)$Id: intrprtr.h,v 4.22 2002/04/15 10:03:50 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the immediate interpreter package.
@@ -16,10 +15,9 @@
 **  immediately, it switches into coding mode, and  delegates the work to the
 **  coder.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_intrprtr_h =
-   "@(#)$Id: intrprtr.h,v 4.22 2002/04/15 10:03:50 sal Exp $";
-#endif
+
+#ifndef GAP_INTRPRTR_H
+#define GAP_INTRPRTR_H
 
 
 /****************************************************************************
@@ -132,7 +130,7 @@ extern void            IntrFuncCallOptionsEnd ( UInt nr );
 
 /****************************************************************************
 **
-*F  IntrFuncExprBegin(<narg>,<nloc>,<nams>) .  interpret function expr, begin
+*F  IntrFuncExprBegin(<narg>,<nloc>,<nams>,<startline>) .  interpret function expr, begin
 *F  IntrFuncExprEnd(<nr>) . . . . . . . . . . .  interpret function expr, end
 **
 **  'IntrFuncExprBegin' is an action to interpret  a function expression.  It
@@ -148,7 +146,8 @@ extern void            IntrFuncCallOptionsEnd ( UInt nr );
 extern  void            IntrFuncExprBegin (
             Int                 narg,
             Int                 nloc,
-            Obj                 nams );
+            Obj                 nams,
+	    Int                 startLine);
 
 extern  void            IntrFuncExprEnd (
             UInt                nr,
@@ -498,6 +497,18 @@ extern  void            IntrLongIntExpr (
 
 /****************************************************************************
 **
+*F  IntrFloatExpr(<str>)  . . . . . . . .  interpret literal float expression
+**
+**  'IntrFloatExpr' is the action  to  interpret a literal  float expression.
+**  <str> is the float as a (null terminated) C character string.
+*/
+extern  void            IntrFloatExpr (
+            Char *              str );
+extern  void            IntrLongFloatExpr (
+            Obj                 string );
+
+/****************************************************************************
+**
 *F  IntrTrueExpr()  . . . . . . . . . . . . interpret literal true expression
 **
 **  'IntrTrueExpr' is the action to interpret a literal true expression.
@@ -641,10 +652,12 @@ extern  void            IntrIsbHVar (
 *F  IntrAssDVar(<dvar>) . . . . . . . . . . . . interpret assignment to debug
 */
 extern  void            IntrAssDVar (
-            UInt                dvar );
+            UInt                dvar,
+            UInt                depth );
 
 extern  void            IntrUnbDVar (
-            UInt                dvar );
+            UInt                dvar,
+            UInt                depth );
 
 
 /****************************************************************************
@@ -652,10 +665,12 @@ extern  void            IntrUnbDVar (
 *F  IntrRefDVar(<dvar>) . . . . . . . . . . . .  interpret reference to debug
 */
 extern  void            IntrRefDVar (
-            UInt                dvar );
+            UInt                dvar,
+            UInt                depth );
 
 extern  void            IntrIsbDVar (
-            UInt                dvar );
+            UInt                dvar,
+            UInt                depth );
 
 
 /****************************************************************************
@@ -913,6 +928,8 @@ extern void            PushVoidObj ( void );
 */
 StructInitInfo * InitInfoIntrprtr ( void );
 
+
+#endif // GAP_INTRPRTR_H
 
 /****************************************************************************
 **

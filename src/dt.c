@@ -2,10 +2,9 @@
 **
 *W  dt.c                        GAP source                  Wolfgang Merkwitz
 **
-*H  @(#)$Id: dt.c,v 4.29 2002/04/15 10:03:46 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file implements the part of the deep thought package which deals
@@ -54,8 +53,6 @@
 */
 #include       "system.h"
 
-const char * Revision_dt_c =
-   "@(#)$Id: dt.c,v 4.29 2002/04/15 10:03:46 sal Exp $";
 
 
 #include        "gasman.h"              /* garbage collector               */
@@ -67,9 +64,7 @@ const char * Revision_dt_c =
 #include        "gvars.h"               /* global variables                */
 #include        "integer.h"             /* integers                        */
 
-#define INCLUDE_DECLARATION_PART
 #include        "dt.h"                  /* deep thought                    */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "records.h"             /* generic records                 */
 #include        "precord.h"             /* plain records                   */
@@ -551,13 +546,12 @@ UInt    FindTree(
                  Obj     tree,
                  Int     indexx )
 {
-    UInt   i, len; /*     loop variable                                    */
+    UInt   i; /*     loop variable                                    */
 
     /*  return 0 if (<tree>, indexx) is marked                           */
     if ( DT_IS_MARKED(tree, indexx) )
         return  0;
     i = indexx;
-    len = indexx + DT_LENGTH(tree, indexx);
     /*  loop over all nodes of tree(<tree>, indexx) to find a tree with the
     **  properties described above.                                       */
     while( i < indexx + DT_LENGTH(tree, indexx)  )
@@ -771,7 +765,7 @@ Int     Leftof(
                 return   ( DT_POS(tree1, index1) < DT_POS(tree2, index2) );
             else
                 return   ( DT_GEN(tree1, index1) < DT_GEN(tree2, index2) );
-	}
+        }
     }
     if( Earlier(tree1, index1, tree2, index2)  )
         return  !Leftof2( tree2, index2, tree1, index1);
@@ -1869,8 +1863,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoDeepThought ( void )
 {
-    module.revision_c = Revision_dt_c;
-    module.revision_h = Revision_dt_h;
     FillInVersion( &module );
     return &module;
 }

@@ -1,19 +1,17 @@
 /****************************************************************************
 **
-*W  listfunc.h                  GAP source                   Martin Schoenert
+*W  listfunc.h                  GAP source                   Martin Schönert
 **
-*H  @(#)$Id: listfunc.h,v 4.9 2002/04/15 10:03:50 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions for generic lists.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_listfunc_h =
-   "@(#)$Id: listfunc.h,v 4.9 2002/04/15 10:03:50 sal Exp $";
-#endif
+
+#ifndef GAP_LISTFUNC_H
+#define GAP_LISTFUNC_H
 
 
 /****************************************************************************
@@ -133,9 +131,10 @@ extern  UInt            RemoveDupsDensePlist (
 StructInitInfo * InitInfoListFunc ( void );
 
 
+#endif // GAP_LISTFUNC_H
+
 /****************************************************************************
 **
 
 *E  listfunc.h  . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-

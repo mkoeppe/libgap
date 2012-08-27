@@ -1,19 +1,17 @@
 /****************************************************************************
 **
-*W  bool.h                      GAP source                   Martin Schoenert
+*W  bool.h                      GAP source                   Martin Schönert
 **
-*H  @(#)$Id: bool.h,v 4.11 2002/04/15 10:03:43 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions for the boolean package.
 */
-#ifdef INCLUDE_DECLARATION_PART
-const char * Revision_bool_h =
-   "@(#)$Id: bool.h,v 4.11 2002/04/15 10:03:43 sal Exp $";
-#endif
+
+#ifndef GAP_BOOL_H
+#define GAP_BOOL_H
 
 
 /****************************************************************************
@@ -68,12 +66,10 @@ extern Obj SFail;
 StructInitInfo * InitInfoBool ( void );
 
 
+#endif // GAP_BOOL_H
+
 /****************************************************************************
 **
 
 *E  bool.h  . . . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-
-
-
-

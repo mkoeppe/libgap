@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  set.h                       GAP source                   Martin Schoenert
+*W  set.h                       GAP source                   Martin Schönert
 **
-*H  @(#)$Id: set.h,v 4.7 2002/04/15 10:03:58 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declaress the functions which mainly deal with proper sets.
@@ -14,10 +13,9 @@
 **  For the full definition  of sets see chapter "Sets" in the {\GAP} Manual.
 **  Read also section "More about Sets" about the internal flag for sets.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_set_h =
-   "@(#)$Id: set.h,v 4.7 2002/04/15 10:03:58 sal Exp $";
-#endif
+
+#ifndef GAP_SET_H
+#define GAP_SET_H
 
 
 /****************************************************************************
@@ -68,6 +66,8 @@ extern  Int             IsSet (
 */
 StructInitInfo * InitInfoSet ( void );
 
+
+#endif // GAP_SET_H
 
 /****************************************************************************
 **

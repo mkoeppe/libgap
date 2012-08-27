@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  calls.h                     GAP source                   Martin Schoenert
+*W  calls.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: calls.h,v 4.23 2002/04/15 10:03:44 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file  declares the functions of the  generic function call mechanism
@@ -42,10 +41,9 @@
 **  calling  another compiled function, which expects fewer than 4 arguments,
 **  with no profiling, the overhead is only a couple of instructions.
 */
-#ifdef INCLUDE_DECLARATION_PART
-const char * Revision_calls_h =
-   "@(#)$Id: calls.h,v 4.23 2002/04/15 10:03:44 sal Exp $";
-#endif
+
+#ifndef GAP_CALLS_H
+#define GAP_CALLS_H
 
 
 /****************************************************************************
@@ -259,6 +257,9 @@ typedef Obj (* ObjFunc) (/*arguments*/);
 **  saved workspace.  <cookie> should be a  unique  C string, identifying the
 **  handler
 */
+
+extern void InitHandlerRegistration( void );
+
 extern void InitHandlerFunc (
      ObjFunc            hdlr,
      const Char *       cookie );
@@ -359,6 +360,8 @@ extern Obj FuncCALL_FUNC_LIST (
     Obj                 list );
 
 
+extern Obj CallFuncListOper;
+
 /****************************************************************************
 **
 
@@ -372,6 +375,8 @@ extern Obj FuncCALL_FUNC_LIST (
 */
 StructInitInfo * InitInfoCalls ( void );
 
+
+#endif // GAP_CALLS_H
 
 /****************************************************************************
 **

@@ -2,16 +2,14 @@
 **
 *W  objpcgel.h                  GAP source                       Frank Celler
 **
-*H  @(#)$Id: objpcgel.h,v 4.12 2002/04/15 10:03:53 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_objpcgel_h =
-   "@(#)$Id: objpcgel.h,v 4.12 2002/04/15 10:03:53 sal Exp $";
-#endif
+
+#ifndef GAP_OBJPCGEL_H
+#define GAP_OBJPCGEL_H
 
 
 /****************************************************************************
@@ -67,9 +65,10 @@ const char * Revision_objpcgel_h =
 StructInitInfo * InitInfoPcElements ( void );
 
 
+#endif // GAP_OBJPCGEL_H
+
 /****************************************************************************
 **
 
 *E  objpcgel.h  . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-

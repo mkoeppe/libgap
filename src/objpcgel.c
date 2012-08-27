@@ -2,16 +2,13 @@
 **
 *W  objpcgel.c                  GAP source                       Frank Celler
 **
-*H  @(#)$Id: objpcgel.c,v 4.28 2002/04/15 10:03:53 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 */
 #include        "system.h"              /* Ints, UInts                     */
 
-const char * Revision_objpcgel_c =
-   "@(#)$Id: objpcgel.c,v 4.28 2002/04/15 10:03:53 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -35,9 +32,7 @@ const char * Revision_objpcgel_c =
 #include        "objfgelm.h"            /* objects of free groups          */
 #include        "objscoll.h"            /* single collector                */
 
-#define INCLUDE_DECLARATION_PART
 #include        "objpcgel.h"            /* objects of polycyclic groups    */
-#undef  INCLUDE_DECLARATION_PART
 
 
 /****************************************************************************
@@ -751,8 +746,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoPcElements ( void )
 {
-    module.revision_c = Revision_objpcgel_c;
-    module.revision_h = Revision_objpcgel_h;
     FillInVersion( &module );
     return &module;
 }

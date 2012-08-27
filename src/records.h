@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  records.h                   GAP source                   Martin Schoenert
+*W  records.h                   GAP source                   Martin Schönert
 **
-*H  @(#)$Id: records.h,v 4.9 2002/04/15 10:03:56 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the generic record package.
@@ -13,10 +12,9 @@
 **  This package  provides a uniform  interface to  the functions that access
 **  records and the elements for the other packages in the GAP kernel.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_records_h =
-   "@(#)$Id: records.h,v 4.9 2002/04/15 10:03:56 sal Exp $";
-#endif
+
+#ifndef GAP_RECORDS_H
+#define GAP_RECORDS_H
 
 
 /****************************************************************************
@@ -42,7 +40,7 @@ extern  Obj             NamesRNam;
 **  string).
 */
 extern  UInt            RNamName (
-            Char *              name );
+            const Char *        name );
 
 
 /****************************************************************************
@@ -181,9 +179,10 @@ extern UInt completion_rnam (
 StructInitInfo * InitInfoRecords ( void );
 
 
+#endif // GAP_RECORDS_H
+
 /****************************************************************************
 **
 
 *E  records.h . . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-

@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  gvars.h                     GAP source                   Martin Schoenert
+*W  gvars.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: gvars.h,v 4.21 2002/06/25 11:10:16 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the global variables package.
@@ -26,10 +25,9 @@
 **  only reference the same value as the global variable if it is a function.
 **  Otherwise the internal copies reference functions that signal an error.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_gvars_h =
-   "@(#)$Id: gvars.h,v 4.21 2002/06/25 11:10:16 sal Exp $";
-#endif
+
+#ifndef GAP_GVARS_H
+#define GAP_GVARS_H
 
 
 /****************************************************************************
@@ -174,7 +172,7 @@ extern void MakeReadWriteGVar (
     UInt                gvar );
 
 extern Int IsReadOnlyGVar (
-    UInt                gvar );			   
+    UInt                gvar );
 
 /****************************************************************************
 **
@@ -344,6 +342,8 @@ extern void RestoreCopyFopyInfo( void );
 */
 StructInitInfo * InitInfoGVars ( void );
 
+
+#endif // GAP_GVARS_H
 
 /****************************************************************************
 **

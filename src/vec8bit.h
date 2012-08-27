@@ -2,16 +2,14 @@
 **
 *W  vec8bit.h                    GAP source                     Steve Linton
 **
-*H  @(#)$Id: vec8bit.h,v 4.4 2001/12/19 22:35:20 gap Exp $
 **
 *Y  Copyright (C)  1997,  St Andrews
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_vec8bit_h =
-   "@(#)$Id: vec8bit.h,v 4.4 2001/12/19 22:35:20 gap Exp $";
-#endif
 
-	
+#ifndef GAP_VEC8BIT_H
+#define GAP_VEC8BIT_H
+
+
 /****************************************************************************
 **
 *F  RewriteGF2Vec( <vec>, <q> ) . . .
@@ -65,6 +63,8 @@ extern Obj FuncASS_VEC8BIT (
 */
 extern StructInitInfo * InitInfoVec8bit ( void );
 
+
+#endif // GAP_VEC8BIT_H
 
 /****************************************************************************
 **

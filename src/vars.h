@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  vars.h                      GAP source                   Martin Schoenert
+*W  vars.h                      GAP source                   Martin Schönert
 **
-*H  @(#)$Id: vars.h,v 4.14 2002/04/15 10:04:02 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of variables package.
@@ -17,57 +16,19 @@
 **  locals), higher variables (i.e., local variables of enclosing functions),
 **  global variables, list elements, and record elements.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_vars_h =
-   "@(#)$Id: vars.h,v 4.14 2002/04/15 10:04:02 sal Exp $";
-#endif
+
+#ifndef GAP_VARS_H
+#define GAP_VARS_H
 
 
 /****************************************************************************
 **
-
 *S  T_LVARS . . . . . . . . . . . . . . . .  symbolic name for lvars bag type
 **
 **  'T_LVARS' is the type of bags used to store values of local variables.
-*/
+
 #define T_LVARS                 174
-
-
-/****************************************************************************
-**
-*F  SWITCH_TO_NEW_LVARS( <func>, <narg>, <nloc>, <old> )  . . . . . new local
-**
-**  'SWITCH_TO_NEW_LVARS'  creates and switches  to a new local variabes bag,
-**  for  the function    <func>,   with <narg> arguments    and  <nloc> local
-**  variables.  The old local variables bag is saved in <old>.
 */
-#define SWITCH_TO_NEW_LVARS(func,narg,nloc,old)                             \
-                        do {                                                \
-                            (old) = CurrLVars;                              \
-                            CHANGED_BAG( (old) );                           \
-                            CurrLVars = NewBag( T_LVARS,                    \
-                                                sizeof(Obj)*(3+narg+nloc) );\
-                            PtrLVars  = PTR_BAG( CurrLVars );               \
-                            CURR_FUNC = (func);                             \
-                            PtrBody = (Stat*)PTR_BAG(BODY_FUNC(CURR_FUNC)); \
-                            SET_BRK_CALL_FROM( old );                       \
-                        } while ( 0 )
-
-
-/****************************************************************************
-**
-*F  SWITCH_TO_OLD_LVARS( <old> )  . . .  switch to an old local variables bag
-**
-**  'SWITCH_TO_OLD_LVARS' switches back to the old local variables bag <old>.
-*/
-#define SWITCH_TO_OLD_LVARS(old)                                            \
-                        do {                                                \
-                            CHANGED_BAG( CurrLVars );                       \
-                            CurrLVars = (old);                              \
-                            PtrLVars  = PTR_BAG( CurrLVars );               \
-                            PtrBody = (Stat*)PTR_BAG(BODY_FUNC(CURR_FUNC)); \
-                        } while ( 0 )
-
 
 /****************************************************************************
 **
@@ -81,6 +42,10 @@ const char * Revision_vars_h =
 **  collection begins  and then  call  'CHANGED_BAG'  in  'BeginCollectBags'.
 */
 extern  Bag             CurrLVars;
+
+
+
+
 
 
 /****************************************************************************
@@ -125,9 +90,28 @@ extern  Obj *           PtrLVars;
 *F  BRK_CALL_TO() . . . . . . . . . expr. which was called from current frame
 *F  SET_BRK_CALL_TO(expr) . . . set expr. which was called from current frame
 */
+
+#ifdef TRACEFRAMES
+
+extern Obj STEVES_TRACING;
+extern Obj True;
+#include <stdio.h>
+
+static inline void SetBrkCallTo( Expr expr, char * file, int line ) {
+  if (STEVES_TRACING == True) {
+    fprintf(stderr,"SBCT: %i %x %s %i\n",
+            (int)expr, (int)CurrLVars, file, line);
+  }
+  (PtrLVars[1] = (Obj)(Int)(expr));
+}
+
+#else
+#define SetBrkCallTo(expr, file, line)  (PtrLVars[1] = (Obj)(Int)(expr))
+#endif
+
 #ifndef NO_BRK_CALLS
 #define BRK_CALL_TO()                   ((Expr)(Int)(PtrLVars[1]))
-#define SET_BRK_CALL_TO(expr)           (PtrLVars[1] = (Obj)(Int)(expr))
+#define SET_BRK_CALL_TO(expr)           SetBrkCallTo(expr, __FILE__, __LINE__)
 #endif
 #ifdef  NO_BRK_CALLS
 #define BRK_CALL_TO()                   /* do nothing */
@@ -152,7 +136,84 @@ extern  Obj *           PtrLVars;
 
 /****************************************************************************
 **
+*F  SWITCH_TO_NEW_LVARS( <func>, <narg>, <nloc>, <old> )  . . . . . new local
+**
+**  'SWITCH_TO_NEW_LVARS'  creates and switches  to a new local variabes bag,
+**  for  the function    <func>,   with <narg> arguments    and  <nloc> local
+**  variables.  The old local variables bag is saved in <old>.
+*/
 
+extern Obj STEVES_TRACING;
+extern Obj True;
+
+#include <stdio.h>
+
+static inline Obj SwitchToNewLvars(Obj func, UInt narg, UInt nloc
+#ifdef TRACEFRAMES
+, char * file, int line
+#endif
+)
+{
+  Obj old = CurrLVars;
+  CHANGED_BAG( old );
+  CurrLVars = NewBag( T_LVARS,
+                      sizeof(Obj)*(3+narg+nloc) );
+  PtrLVars  = PTR_BAG( CurrLVars );
+  CURR_FUNC = func;
+  PtrBody = (Stat*)PTR_BAG(BODY_FUNC(CURR_FUNC));
+  SET_BRK_CALL_FROM( old );
+#ifdef TRACEFRAMES
+  if (STEVES_TRACING == True) {
+    Obj n = NAME_FUNC(func);
+    Char *s = ((UInt)n) ? (Char *)CHARS_STRING(n) : (Char *)"nameless";
+    fprintf(stderr,"STNL: %s %i\n   func %lx narg %i nloc %i function name %s\n     old lvars %lx new lvars %lx\n",
+            file, line, (UInt) func, (int)narg, (int)nloc,s,(UInt)old, (UInt)CurrLVars);
+  }
+#endif
+  return old;
+}
+
+#ifdef TRACEFRAMES
+#define SWITCH_TO_NEW_LVARS(func, narg, nloc, old)     (old) = SwitchToNewLvars((func), (narg), (nloc), __FILE__, __LINE__)
+#else
+#define SWITCH_TO_NEW_LVARS(func, narg, nloc, old)     (old) = SwitchToNewLvars((func), (narg), (nloc))
+#endif
+
+
+/****************************************************************************
+**
+*F  SWITCH_TO_OLD_LVARS( <old> )  . . .  switch to an old local variables bag
+**
+**  'SWITCH_TO_OLD_LVARS' switches back to the old local variables bag <old>.
+*/
+
+static inline void SwitchToOldLVars( Obj old
+#ifdef TRACEFRAMES
+, char *file, int line
+#endif
+)
+{
+#ifdef TRACEFRAMES
+  if (STEVES_TRACING == True) {
+    fprintf(stderr,"STOL:  %s %i old lvars %lx new lvars %lx\n",
+           file, line, (UInt)CurrLVars,(UInt)old);
+  }
+#endif
+  CHANGED_BAG( CurrLVars );
+  CurrLVars = (old);
+  PtrLVars  = PTR_BAG( CurrLVars );
+  PtrBody = (Stat*)PTR_BAG(BODY_FUNC(CURR_FUNC));
+}
+
+#ifdef TRACEFRAMES
+#define SWITCH_TO_OLD_LVARS(old) SwitchToOldLVars((old), __FILE__,__LINE__)
+#else
+#define SWITCH_TO_OLD_LVARS(old) SwitchToOldLVars((old))
+#endif
+
+
+/****************************************************************************
+**
 *F  ASS_LVAR( <lvar>, <val> ) . . . . . . . . . . .  assign to local variable
 **
 **  'ASS_LVAR' assigns the value <val> to the local variable <lvar>.
@@ -225,6 +286,8 @@ extern  Char *          NAME_HVAR (
 */
 StructInitInfo * InitInfoVars ( void );
 
+
+#endif // GAP_VARS_H
 
 /****************************************************************************
 **

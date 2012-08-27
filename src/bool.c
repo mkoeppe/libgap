@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  bool.c                      GAP source                   Martin Schoenert
+*W  bool.c                      GAP source                   Martin Schönert
 **
-*H  @(#)$Id: bool.c,v 4.28 2002/04/15 10:03:43 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions for the boolean package.
@@ -16,8 +15,6 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_bool_c =
-   "@(#)$Id: bool.c,v 4.28 2002/04/15 10:03:43 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -31,9 +28,7 @@ const char * Revision_bool_c =
 
 #include        "ariths.h"              /* basic arithmetic                */
 
-#define INCLUDE_DECLARATION_PART
 #include        "bool.h"                /* booleans                        */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "records.h"             /* generic records                 */
 #include        "precord.h"             /* plain records                   */
@@ -439,10 +434,7 @@ static Int InitLibrary (
     /* bags are registered in 'InitKernel'                                 */
     True  = NewBag( T_BOOL, 0L );
     False = NewBag( T_BOOL, 0L );
-    if (SyFalseEqFail)
-      Fail = False;
-    else
-      Fail  = NewBag( T_BOOL, 0L );
+    Fail  = NewBag( T_BOOL, 0L );
 
     /* `fail' is a variable not a language construct                       */
     gvar = GVarName( "fail" );
@@ -502,8 +494,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoBool ( void )
 {
-    module.revision_c = Revision_bool_c;
-    module.revision_h = Revision_bool_h;
     FillInVersion( &module );
     return &module;
 }

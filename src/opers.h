@@ -1,20 +1,18 @@
 /****************************************************************************
 **
-*W  opers.h                     GAP source                   Martin Schoenert
+*W  opers.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: opers.h,v 4.25.6.1 2007/10/16 17:36:23 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the  filters, operations, attributes,
 **  and properties package.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_opers_h =
-   "@(#)$Id: opers.h,v 4.25.6.1 2007/10/16 17:36:23 gap Exp $";
-#endif
+
+#ifndef GAP_OPERS_H
+#define GAP_OPERS_H
 
 
 /****************************************************************************
@@ -629,6 +627,8 @@ extern void LoadOperationExtras( Obj oper );
 */
 StructInitInfo * InitInfoOpers ( void );
 
+
+#endif // GAP_OPERS_H
 
 /****************************************************************************
 **

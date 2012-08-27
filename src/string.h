@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  string.h                    GAP source                   Martin Schoenert
+*W  string.h                    GAP source                   Martin Schönert
 **
-*H  @(#)$Id: string.h,v 4.17.6.1 2007/08/31 10:54:17 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions which mainly deal with strings.
@@ -21,11 +20,11 @@
 **  and `SET_ELM_STRING'.
 **  
 **  This  package also contains the   list  function  for ranges, which   are
-**  installed in the appropriate tables by 'InitString'.  */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_string_h =
-   "@(#)$Id: string.h,v 4.17.6.1 2007/08/31 10:54:17 gap Exp $";
-#endif
+**  installed in the appropriate tables by 'InitString'.
+*/
+
+#ifndef GAP_STRING_H
+#define GAP_STRING_H
 
 #include <string.h>  /* for memcpy */
 
@@ -117,7 +116,7 @@ extern Obj NEW_STRING(Int len);
 **  Note that 'GROW_STRING' is a macro, so do not call it with arguments that
 **  have sideeffects.
 */
-#define GROW_STRING(list,len)   ((len) < (SIZE_OBJ(list) - sizeof(UInt) - 1) ? \
+#define GROW_STRING(list,len)   ( ((len) + sizeof(UInt) < SIZE_OBJ(list)) ? \
                                  0L : GrowString(list,len) )
 
 extern  Int             GrowString (
@@ -269,8 +268,9 @@ extern Int IsStringConv (
 ???  */
 #define C_NEW_STRING(string,len,cstr) \
   do { \
-    string = NEW_STRING( len ); \
-    memcpy( CHARS_STRING(string), (cstr), (len) ); \
+    size_t tmp_len = (len); \
+    string = NEW_STRING( tmp_len ); \
+    memcpy( CHARS_STRING(string), (cstr), tmp_len ); \
   } while ( 0 );
 
 /****************************************************************************
@@ -302,6 +302,8 @@ extern Int IsStringConv (
 */
 StructInitInfo * InitInfoString ( void );
 
+
+#endif // GAP_STRING_H
 
 /****************************************************************************
 **

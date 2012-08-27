@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  rational.c                  GAP source                   Martin Schoenert
+*W  rational.c                  GAP source                   Martin Schönert
 **
-*H  @(#)$Id: rational.c,v 4.32 2002/04/15 10:03:55 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains  the  functions  for  the  artithmetic  of  rationals.
@@ -45,8 +44,6 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_rational_c =
-   "@(#)$Id: rational.c,v 4.32 2002/04/15 10:03:55 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 
@@ -64,9 +61,7 @@ const char * Revision_rational_c =
 
 #include        "integer.h"             /* integers                        */
 
-#define INCLUDE_DECLARATION_PART
 #include        "rational.h"            /* rationals                       */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "records.h"             /* generic records                 */
 #include        "precord.h"             /* plain records                   */
@@ -88,7 +83,7 @@ const char * Revision_rational_c =
 
 #if 0
 #define CHECK_RAT(rat) if (TNUM_OBJ(rat) == T_RAT && \
-			   GcdInt(NUM_RAT(rat),DEN_RAT(rat)) != INTOBJ_INT(1)) \
+                           GcdInt(NUM_RAT(rat),DEN_RAT(rat)) != INTOBJ_INT(1)) \
                              ErrorQuit("bad rational",0L,0L)
 #else
 #define CHECK_RAT(rat)
@@ -1047,8 +1042,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoRat ( void )
 {
-    module.revision_c = Revision_rational_c;
-    module.revision_h = Revision_rational_h;
     FillInVersion( &module );
     return &module;
 }

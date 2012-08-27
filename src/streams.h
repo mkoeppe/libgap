@@ -1,21 +1,19 @@
 /****************************************************************************
 **
 *W  streams.h                   GAP source                       Frank Celler
-*W                                                  & Burkhard Hoefling (MAC)
+*W                                                  & Burkhard Höfling (MAC)
 **
-*H  @(#)$Id: streams.h,v 4.10 2002/04/15 10:03:58 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the  various read-eval-print loops and streams related
 **  stuff.  The system depend part is in "sysfiles.c".
 */
-#ifdef INCLUDE_DECLARATION_PART
-const char * Revision_streams_h =
-   "@(#)$Id: streams.h,v 4.10 2002/04/15 10:03:58 sal Exp $";
-#endif
+
+#ifndef GAP_STREAMS_H
+#define GAP_STREAMS_H
 
 
 /****************************************************************************
@@ -27,12 +25,22 @@ const char * Revision_streams_h =
 
 /****************************************************************************
 **
-
 *F  READ()  . . . . . . . . . . . . . . . . . . . . . . .  read current input
 **
 **  Read the current input and close the input stream.
 */
 extern Int READ ( void );
+
+/****************************************************************************
+**
+*F  READ()  . . . . . . . . . . . . . . . . . . . . . . .  read current input
+**
+**  Read the current input and close the input stream. Disable the normal 
+** mechanism which ensures that quitting from a break loop gets you back to a 
+** live prompt. This is initially designed for the files read from the command 
+** line
+*/
+extern Int READ_NORECOVERY ( void );
 
 
 /****************************************************************************
@@ -78,10 +86,10 @@ extern Int READ_GAP_ROOT ( Char * filename );
 StructInitInfo * InitInfoStreams ( void );
 
 
+#endif // GAP_STREAMS_H
+
 /****************************************************************************
 **
 
 *E  streams.h . . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-
-

@@ -1,12 +1,11 @@
 /****************************************************************************
 **
-*W  string.c                    GAP source                     Frank Luebeck,
-*W                                            Frank Celler & Martin Schoenert
+*W  string.c                    GAP source                     Frank Lübeck,
+*W                                            Frank Celler & Martin Schönert
 **
-*H  @(#)$Id: string.c,v 4.72.2.2 2007/08/31 10:54:17 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions which mainly deal with strings.
@@ -53,8 +52,6 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_string_c =
-   "@(#)$Id: string.c,v 4.72.2.2 2007/08/31 10:54:17 gap Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -77,9 +74,7 @@ const char * Revision_string_c =
 #include        "plist.h"               /* plain lists                     */
 #include        "range.h"               /* ranges                          */
 
-#define INCLUDE_DECLARATION_PART
 #include        "string.h"              /* strings                         */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "saveload.h"            /* saving and loading              */
 
@@ -409,6 +404,13 @@ Obj FuncINTLIST_STRING (
   return n;
 }
 
+Obj FuncSINTLIST_STRING (
+    Obj             self,
+    Obj             val )
+{
+  return FuncINTLIST_STRING ( self, val, INTOBJ_INT(-1L) );
+}
+
 /****************************************************************************
 **
 *F  FuncSTRING_SINTLIST( <self>, <string> ) string by signed integer list
@@ -511,6 +513,10 @@ Obj FuncREVNEG_STRING (
 Obj NEW_STRING ( Int len )
 {
   Obj res;
+  if (len < 0)
+       ErrorQuit(
+           "NEW_STRING: Cannot create string of negative length %d",
+           (Int)len, 0L);
   res = NewBag( T_STRING, SIZEBAG_STRINGLEN(len)  ); 
   SET_LEN_STRING(res, len);
   /* it may be sometimes useful to have trailing zero characters */
@@ -604,43 +610,6 @@ Obj TypeString (
 **
 **  'CleanString' is the function in 'CleanObjFuncs' for strings.
 */
-Obj CopyStringXXX (
-    Obj                 list,
-    Int                 mut )
-{
-    Obj                 copy;           /* handle of the copy, result      */
-    UInt                i;              /* loop variable                   */
-
-    /* don't change immutable objects                                      */
-    if ( ! IS_MUTABLE_OBJ(list) ) {
-        return list;
-    }
-
-    /* make a copy                                                         */
-    if ( mut ) {
-        copy = NewBag( TNUM_OBJ(list), SIZE_OBJ(list) );
-    }
-    else {
-        copy = NewBag( IMMUTABLE_TNUM( TNUM_OBJ(list) ), SIZE_OBJ(list) );
-    }
-    ADDR_OBJ(copy)[0] = ADDR_OBJ(list)[0];
-
-    /* leave a forwarding pointer                                          */
-    ADDR_OBJ(list)[0] = copy;
-    CHANGED_BAG( list );
-
-    /* now it is copied                                                    */
-    MARK_LIST( list, COPYING );
-
-    /* copy the subvalues                                                  */
-    for ( i = 1; i < (SIZE_OBJ(copy)+sizeof(Obj)-1)/sizeof(Obj); i++ ) {
-        ADDR_OBJ(copy)[i] = ADDR_OBJ(list)[i];
-    }
-
-    /* return the copy                                                     */
-    return copy;
-}
-
 Obj CopyString (
     Obj                 list,
     Int                 mut )
@@ -659,8 +628,18 @@ Obj CopyString (
     else {
         copy = NewBag( IMMUTABLE_TNUM( TNUM_OBJ(list) ), SIZE_OBJ(list) );
     }
-    memcpy((void*)ADDR_OBJ(copy), (void*)ADDR_OBJ(list), 
-           ((SIZE_OBJ(copy)+sizeof(Obj)-1)/sizeof(Obj)) * sizeof(Obj));
+    ADDR_OBJ(copy)[0] = ADDR_OBJ(list)[0];
+
+    /* leave a forwarding pointer                                          */
+    ADDR_OBJ(list)[0] = copy;
+    CHANGED_BAG( list );
+
+    /* now it is copied                                                    */
+    MARK_LIST( list, COPYING );
+
+    /* copy the subvalues                                                  */
+    memcpy((void*)(ADDR_OBJ(copy)+1), (void*)(ADDR_OBJ(list)+1), 
+           ((SIZE_OBJ(copy)+sizeof(Obj)-1)/sizeof(Obj)-1) * sizeof(Obj));
 
     /* return the copy                                                     */
     return copy;
@@ -1632,12 +1611,12 @@ Obj FuncPOSITION_SUBSTRING(
     return FuncPOSITION_SUBSTRING( self, string, substr, off );
   }
 
-  /* check wether pos is a non-negative integer  */
+  /* check wether <off> is a non-negative integer  */
   if ( ! IS_INTOBJ(off) || (ipos = INT_INTOBJ(off)) < 0 ) {
     off = ErrorReturnObj(
-          "POSITION_SUBSTRING: <pos> must be  non-negative integer (not a %s)",
-          (Int)TNAM_OBJ(substr), 0L,
-          "you can replace <pos> via 'return <pos>;'");
+          "POSITION_SUBSTRING: <off> must be a non-negative integer (not a %s)",
+          (Int)TNAM_OBJ(off), 0L,
+          "you can replace <off> via 'return <off>;'");
     return FuncPOSITION_SUBSTRING( self, string, substr, off );
   }
   
@@ -1974,6 +1953,20 @@ Obj FuncSplitString (
   SPLITSTRINGWSPACE[256] = 0;
 
   return res;
+}
+
+/****************************************************************************
+**
+*F FuncSMALLINT_STR( <self>, <string> )
+**
+** Kernel function to extract parse small integers from strings. Needed before
+** we can conveniently have Int working for things like parsing command line
+** options
+*/
+
+Obj FuncSMALLINT_STR( Obj self, Obj string )
+{
+  return INTOBJ_INT(SyIntString(CSTR_STRING(string)));
 }
 
 /****************************************************************************
@@ -2348,6 +2341,9 @@ static StructGVarFunc GVarFuncs [] = {
     { "INTLIST_STRING", 2, "string, sign",
       FuncINTLIST_STRING, "src/string.c:INTLIST_STRING" },
 
+    { "SINTLIST_STRING", 1, "string",
+      FuncSINTLIST_STRING, "src/string.c:SINTLIST_STRING" },
+
     { "EmptyString", 1, "len",
       FuncEmptyString, "src/string.c:FuncEmptyString" },
     
@@ -2372,6 +2368,9 @@ static StructGVarFunc GVarFuncs [] = {
     { "SplitStringInternal", 3, "string, seps, wspace",
       FuncSplitString, "src/string.c:SplitStringInternal" },
 
+    { "SMALLINT_STR", 1, "string",
+      FuncSMALLINT_STR, "src/string.c:SMALLINT_STR" },
+
     { 0 }
 
 };
@@ -2389,7 +2388,7 @@ static Int InitKernel (
     UInt                t1;
     UInt                t2;
     Int                 i, j;
-    Char *              cookie_base = "src/string.c:Char";
+    const Char *        cookie_base = "src/string.c:Char";
 
     /* check dependencies                                                  */
     RequireModule( module, "lists", 403600000UL );
@@ -2602,8 +2601,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoString ( void )
 {
-    module.revision_c = Revision_string_c;
-    module.revision_h = Revision_string_h;
     FillInVersion( &module );
     return &module;
 }

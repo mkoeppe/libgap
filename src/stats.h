@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  stats.h                     GAP source                   Martin Schoenert
+*W  stats.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: stats.h,v 4.7 2002/04/15 10:03:58 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the statements package.
@@ -13,10 +12,9 @@
 **  The  statements package  is the  part  of  the interpreter that  executes
 **  statements for their effects and prints statements.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_stats_h =
-   "@(#)$Id: stats.h,v 4.7 2002/04/15 10:03:58 sal Exp $";
-#endif
+
+#ifndef GAP_STATS_H
+#define GAP_STATS_H
 
 
 /****************************************************************************
@@ -95,6 +93,8 @@ extern  Stat            CurrStat;
 extern  Obj             ReturnObjStat;
 
 
+extern UInt TakeInterrupt();
+
 /****************************************************************************
 **
 *F  InterruptExecStat() . . . . . . . . interrupt the execution of statements
@@ -104,7 +104,7 @@ extern  Obj             ReturnObjStat;
 **  received.  It is never called on systems that do not support signals.  On
 **  those systems the executors test 'SyIsIntr' at regular intervals.
 */
-extern  void            InterruptExecStat ( void );
+extern  void            InterruptExecStat ( );
 
 
 /****************************************************************************
@@ -145,6 +145,8 @@ extern  void            (* PrintStatFuncs[256] ) ( Stat stat );
 */
 StructInitInfo * InitInfoStats ( void );
 
+
+#endif // GAP_STATS_H
 
 /****************************************************************************
 **

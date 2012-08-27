@@ -2,13 +2,12 @@
 **
 *W  weakptr.c                   GAP source                       Steve Linton
 **
-*H  @(#)$Id: weakptr.c,v 4.19.6.1 2007/09/13 14:50:54 gap Exp $
 **
 *Y  Copyright (C)  1997,  School of Mathematical and Computational Sciences,
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 *Y                        University of St Andrews, Scotland
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions that deal with weak pointer objects
@@ -18,8 +17,6 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_weakptr_c =
-   "@(#)$Id: weakptr.c,v 4.19.6.1 2007/09/13 14:50:54 gap Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -30,9 +27,7 @@ const char * Revision_weakptr_c =
 
 #include        "bool.h"                /* booleans                        */
 
-#define INCLUDE_DECLARATION_PART
 #include        "weakptr.h"             /* weak pointers                   */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "lists.h"               /* generic lists                   */
 #include        "plist.h"               /* plain lists                     */
@@ -455,7 +450,7 @@ void MakeImmutableWPObj( Obj obj )
     {
       elm = ELM_WPOBJ(obj,i);
       if (elm != 0 && IS_WEAK_DEAD_BAG(elm)) 
-	ELM_WPOBJ(obj,i) = 0;
+        ELM_WPOBJ(obj,i) = 0;
     }
   /* Change the type */
   RetypeBag( obj, T_PLIST+IMMUTABLE);
@@ -684,8 +679,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoWeakPtr ( void )
 {
-    module.revision_c = Revision_weakptr_c;
-    module.revision_h = Revision_weakptr_h;
     FillInVersion( &module );
     return &module;
 }

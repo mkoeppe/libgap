@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  stats.c                     GAP source                   Martin Schoenert
+*W  stats.c                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: stats.c,v 4.41.6.1 2005/08/19 22:29:31 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions of the statements package.
@@ -15,8 +14,6 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_stats_c =
-   "@(#)$Id: stats.c,v 4.41.6.1 2005/08/19 22:29:31 gap Exp $";
 
 #include        "sysfiles.h"            /* file input/output               */
 
@@ -47,13 +44,9 @@ const char * Revision_stats_c =
 
 #include        "ariths.h"              /* basic arithmetic                */
 
-#define INCLUDE_DECLARATION_PART
 #include        "stats.h"               /* statements                      */
-#undef  INCLUDE_DECLARATION_PART
 
-#ifdef SYS_IS_MAC_MWC
-#include        "macintr.h"              /* Mac interrupt handlers	      */
-#endif
+#include        <assert.h>
 
 /****************************************************************************
 **
@@ -477,8 +470,8 @@ UInt            ExecFor (
 
             /* execute the statements in the body                          */
             if ( (leave = EXEC_STAT( body )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
 
@@ -510,8 +503,8 @@ UInt            ExecFor (
 
             /* execute the statements in the body                          */
             if ( (leave = EXEC_STAT( body )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
 
@@ -586,13 +579,13 @@ UInt            ExecFor2 (
 
             /* execute the statements in the body                          */
             if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
             if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
 
@@ -624,13 +617,13 @@ UInt            ExecFor2 (
 
             /* execute the statements in the body                          */
             if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
             if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
 
@@ -707,18 +700,18 @@ UInt            ExecFor3 (
 
             /* execute the statements in the body                          */
             if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
             if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
             if ( (leave = EXEC_STAT( body3 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
 
@@ -751,18 +744,18 @@ UInt            ExecFor3 (
 
             /* execute the statements in the body                          */
             if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
             if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
             if ( (leave = EXEC_STAT( body3 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+                if (leave == 8) 
+                    continue;
                 return (leave & 3);
             }
 
@@ -851,9 +844,9 @@ UInt            ExecForRange (
 
         /* execute the statements in the body                              */
         if ( (leave = EXEC_STAT( body )) != 0 ) {
-	  if (leave == 8) 
-	    continue;
-	  return (leave & 3);
+          if (leave == 8) 
+            continue;
+          return (leave & 3);
         }
 
     }
@@ -916,13 +909,13 @@ UInt            ExecForRange2 (
 
         /* execute the statements in the body                              */
         if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
 
@@ -988,18 +981,18 @@ UInt            ExecForRange3 (
 
         /* execute the statements in the body                              */
         if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body3 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
 
@@ -1053,8 +1046,8 @@ UInt ExecWhile (
 
         /* execute the body                                                */
         if ( (leave = EXEC_STAT( body )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         SET_BRK_CURR_STAT( stat );
@@ -1091,13 +1084,13 @@ UInt ExecWhile2 (
 
         /* execute the body                                                */
         if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         SET_BRK_CURR_STAT( stat );
@@ -1136,18 +1129,18 @@ UInt ExecWhile3 (
 
         /* execute the body                                                */
         if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body3 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         SET_BRK_CURR_STAT( stat );
@@ -1202,8 +1195,8 @@ UInt ExecRepeat (
 
         /* execute the body                                                */
         if ( (leave = EXEC_STAT( body )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         SET_BRK_CURR_STAT( stat );
@@ -1240,13 +1233,13 @@ UInt ExecRepeat2 (
 
         /* execute the body                                                */
         if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         SET_BRK_CURR_STAT( stat );
@@ -1285,18 +1278,18 @@ UInt ExecRepeat3 (
 
         /* execute the body                                                */
         if ( (leave = EXEC_STAT( body1 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body2 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         if ( (leave = EXEC_STAT( body3 )) != 0 ) {
-	        if (leave == 8) 
-		  continue;
+            if (leave == 8) 
+                continue;
             return (leave & 3);
         }
         SET_BRK_CURR_STAT( stat );
@@ -1470,20 +1463,19 @@ UInt ExecAssert3Args (
     if ( ! LT(CurrentAssertionLevel, level) ) {
         decision = EVAL_EXPR( ADDR_STAT( stat )[1]);
         while ( decision != True && decision != False ) {
-         decision = ErrorReturnObj(
-         "Assertion condition must evaluate to 'true' or 'false', not a %s",
-         (Int)TNAM_OBJ(decision), 0L,
-         "you may 'return true;' or 'return false;'");
+            decision = ErrorReturnObj(
+            "Assertion condition must evaluate to 'true' or 'false', not a %s",
+            (Int)TNAM_OBJ(decision), 0L,
+            "you may 'return true;' or 'return false;'");
         }
         if ( decision == False ) {
             message = EVAL_EXPR(ADDR_STAT( stat )[2]);
-            if ( message != (Obj) 0 )
-	      {
-		if (IS_STRING_REP( message ))
-		  PrintString1( message );
-		else
-		  PrintObj(message);
-	      }
+            if ( message != (Obj) 0 ) {
+                if (IS_STRING_REP( message ))
+                    PrintString1( message );
+                else
+                    PrintObj(message);
+            }
         }
         return 0;
     }
@@ -1554,6 +1546,38 @@ UInt            ExecReturnVoid (
     return 2;
 }
 
+UInt (* RealExecStatFuncs[256]) ( Stat stat );
+UInt RealExecStatCopied;
+
+
+/****************************************************************************
+**
+*F  UInt TakeInterrupt() . . . . . . . . allow user interrupts
+**
+**  When you call this you promise that the heap is in a normal state, 
+**  allowing GAP execution in the usual way
+**
+**  This will do nothing (pretty quickly) if Ctrl-C has not been pressed and 
+**  return 0. Otherwise it
+**   will respond appropriately.  This may result in a longjmp
+**  or in returning to the caller after arbitrary execution of GAP code
+** including possible garbage collection. In this case 1 is returned.
+*/
+
+UInt TakeInterrupt( void ) {
+  UInt i;
+  if (SyIsIntr()) {
+      assert(RealExecStatCopied);
+      for ( i=0; i<sizeof(ExecStatFuncs)/sizeof(ExecStatFuncs[0]); i++ ) {
+          ExecStatFuncs[i] = RealExecStatFuncs[i];
+      }
+      RealExecStatCopied = 0;
+      ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
+      return 1;
+  }
+  return 0;
+}
+
 
 /****************************************************************************
 **
@@ -1564,8 +1588,6 @@ UInt            ExecReturnVoid (
 **  'ExecStatFuncs' back   to   their original   value,   calls 'Error',  and
 **  redispatches after a return from the break-loop.
 */
-UInt (* RealExecStatFuncs[256]) ( Stat stat );
-UInt RealExecStatCopied = 0;
 
 UInt ExecIntrStat (
     Stat                stat )
@@ -1577,6 +1599,7 @@ UInt ExecIntrStat (
         for ( i=0; i<sizeof(ExecStatFuncs)/sizeof(ExecStatFuncs[0]); i++ ) {
             ExecStatFuncs[i] = RealExecStatFuncs[i];
         }
+        RealExecStatCopied = 0;
     }
     SyIsIntr();
 
@@ -1587,7 +1610,7 @@ UInt ExecIntrStat (
       SyStorOverrun = 0; /* reset */
       ErrorReturnVoid(
         "exceeded the permitted memory (`-o' command line option)",
-	0L, 0L, "you can 'return;'" );
+        0L, 0L, "you can 'return;'" );
     }
     else {
       ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
@@ -1612,10 +1635,10 @@ UInt ExecIntrStat (
 **  'ExecStatFuncs'  to point to  'ExecIntrStat',  which changes  the entries
 **  back, calls 'Error', and redispatches after a return from the break-loop.
 */
-#if !SYS_MAC_MWC
 void InterruptExecStat ( void )
 {
     UInt                i;              /* loop variable                   */
+    /*    assert(reason > 0) */
 
     /* remember the original entries from the table 'ExecStatFuncs'        */
     if ( ! RealExecStatCopied ) {
@@ -1637,12 +1660,16 @@ void InterruptExecStat ( void )
         ExecStatFuncs[i] = ExecIntrStat;
     }
 }
-#endif
 
 /****************************************************************************
 **
 *F  ClearError()  . . . . . . . . . . . . . .  reset execution and error flag
 */
+
+Int BreakLoopPending( void ) {
+     return RealExecStatCopied;
+}
+
 void ClearError ( void )
 {
     UInt        i;
@@ -1652,16 +1679,23 @@ void ClearError ( void )
         for ( i=0; i<sizeof(ExecStatFuncs)/sizeof(ExecStatFuncs[0]); i++ ) {
             ExecStatFuncs[i] = RealExecStatFuncs[i];
         }
+        RealExecStatCopied = 0;
+        /* check for user interrupt */
+        if ( SyIsIntr() ) {
+          Pr("Noticed user interrupt, but you are back in main loop anyway.\n",
+              0L, 0L);
+        }
+        /* and check if maximal memory was overrun */
+        if ( SyStorOverrun != 0 ) {
+          SyStorOverrun = 0; /* reset */
+          Pr("GAP has exceeded the permitted memory (-o option),\n", 0L, 0L);
+          Pr("the maximum is now enlarged to %d kB.\n", (Int)SyStorMax, 0L);
+        }
     }
-
-#ifdef SYS_IS_MAC_MWC
-	ReactivateIntr ();   /* re-enable Mac interrupt check */
-#endif
 
     /* reset <NrError>                                                     */
     NrError = 0;
 }
-
 
 
 /****************************************************************************
@@ -2020,6 +2054,8 @@ static Int InitKernel (
 {
     UInt                i;              /* loop variable                   */
 
+    RealExecStatCopied = 0;
+    
     /* make the global bags known to Gasman                                */
     /* 'InitGlobalBag( &CurrStat );' is not really needed, since we are in */
     /* for a lot of trouble if 'CurrStat' ever becomes the last reference. */
@@ -2134,8 +2170,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoStats ( void )
 {
-    module.revision_c = Revision_stats_c;
-    module.revision_h = Revision_stats_h;
     FillInVersion( &module );
     return &module;
 }

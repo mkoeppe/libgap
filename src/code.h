@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  code.h                      GAP source                   Martin Schoenert
+*W  code.h                      GAP source                   Martin Schönert
 **
-*H  @(#)$Id: code.h,v 4.22.6.1 2004/05/03 07:19:11 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the coder package.
@@ -13,10 +12,9 @@
 **  The  coder package  is   the part of   the interpreter  that creates  the
 **  expressions.  Its functions are called from the reader.
 */
-#ifdef INCLUDE_DECLARATION_PART
-const char * Revision_code_h =
-   "@(#)$Id: code.h,v 4.22.6.1 2004/05/03 07:19:11 gap Exp $";
-#endif
+
+#ifndef GAP_CODE_H
+#define GAP_CODE_H
 
 
 /****************************************************************************
@@ -56,8 +54,14 @@ extern  Stat *          PtrBody;
 **
 **  'FIRST_STAT_CURR_FUNC' is the index of the first statement in a body.
 */
-#define FIRST_STAT_CURR_FUNC    sizeof(Stat)
 
+
+#define FILENAME_BODY(body) (ADDR_OBJ(body)[0])
+#define STARTLINE_BODY(body) (ADDR_OBJ(body)[1])
+#define ENDLINE_BODY(body) (ADDR_OBJ(body)[2])
+#define NUMBER_HEADER_ITEMS_BODY 3
+
+#define FIRST_STAT_CURR_FUNC    (sizeof(Stat)+NUMBER_HEADER_ITEMS_BODY*sizeof(Bag))
 
 /****************************************************************************
 **
@@ -157,7 +161,7 @@ extern  Stat *          PtrBody;
 
 #define T_EMPTY                 (FIRST_STAT_TNUM+78)
 
-#define T_PROCCALL_OPTS        (FIRST_STAT_TNUM+ 79)
+#define T_PROCCALL_OPTS         (FIRST_STAT_TNUM+ 79)
 
 #define LAST_STAT_TNUM          T_PROCCALL_OPTS
 
@@ -352,8 +356,10 @@ extern  Stat *          PtrBody;
 #define T_ISB_COMOBJ_EXPR       (FIRST_EXPR_TNUM+80)
 
 #define T_FUNCCALL_OPTS         (FIRST_EXPR_TNUM+81)
+#define T_FLOAT_EXPR_EAGER      (FIRST_EXPR_TNUM+82)
+#define T_FLOAT_EXPR_LAZY       (FIRST_EXPR_TNUM+83)
 
-#define LAST_EXPR_TNUM          T_FUNCCALL_OPTS
+#define LAST_EXPR_TNUM          T_FLOAT_EXPR_LAZY
 
 
 /****************************************************************************
@@ -522,13 +528,13 @@ extern  void            CodeFuncCallBegin ( void );
 
 extern  void            CodeFuncCallEnd (
             UInt                funccall,
-	    UInt                options,
+            UInt                options,
             UInt                nr );
 
 
 /****************************************************************************
 **
-*F  CodeFuncExprBegin(<narg>,<nloc>,<nams>) . code function expression, begin
+*F  CodeFuncExprBegin(<narg>,<nloc>,<nams>,<startline>) . code function expression, begin
 *F  CodeFuncExprEnd(<nr>) . . . . . . . . . . . code function expression, end
 **
 **  'CodeFuncExprBegin'  is an action to code  a  function expression.  It is
@@ -545,7 +551,8 @@ extern  void            CodeFuncCallEnd (
 extern void CodeFuncExprBegin (
             Int                 narg,
             Int                 nloc,
-            Obj                 nams );
+            Obj                 nams,
+            Int startLine);
 
 extern void CodeFuncExprEnd (
             UInt                nr,
@@ -921,6 +928,16 @@ extern  void            CodeListExprEnd (
 extern  void            CodeStringExpr (
             Obj              str );
 
+/****************************************************************************
+**
+*F  CodeFloatExpr(<str>) . . . . . . . . . .  code literal float expression
+*/
+extern  void            CodeFloatExpr (
+            Char *              str );
+
+extern  void            CodeLongFloatExpr (
+            Obj              str );
+
 
 /****************************************************************************
 **
@@ -1261,11 +1278,11 @@ extern  void            CodeContinue ( void );
 StructInitInfo * InitInfoCode ( void );
 
 
+
+#endif // GAP_CODE_H
+
 /****************************************************************************
 **
 
 *E  code.h  . . . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-
-
-

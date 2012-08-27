@@ -1,12 +1,11 @@
 /****************************************************************************
 **
 *W  finfield.c                  GAP source                      Werner Nickel
-*W                                                         & Martin Schoenert
+*W                                                         & Martin Schönert
 **
-*H  @(#)$Id: finfield.c,v 4.45.6.5 2006/07/06 11:58:17 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the  functions  to compute  with elements  from  small
@@ -52,8 +51,6 @@
 */
 #include        "system.h"              /* Ints, UInts                     */
 
-const char * Revision_finfield_c =
-   "@(#)$Id: finfield.c,v 4.45.6.5 2006/07/06 11:58:17 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -72,9 +69,7 @@ const char * Revision_finfield_c =
 
 #include        "integer.h"             /* integers                        */
 
-#define INCLUDE_DECLARATION_PART
 #include        "finfield.h"            /* finite fields and ff elements   */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "records.h"             /* generic records                 */
 #include        "precord.h"             /* plain records                   */
@@ -1563,12 +1558,10 @@ Obj             PowFFEInt (
     FFV                 vL, vX;         /* value of left, result           */
     Int                 vR;             /* value of right                  */
     FF                  fX;             /* field of result                 */
-    Int                 pX;             /* char. of result                 */
     FF*                 sX;             /* successor table of result field */
 
     /* get the field for the result                                        */
     fX = FLD_FFE( opL );
-    pX = CHAR_FF( fX );
     sX = SUCC_FF( fX );
 
     /* get the right operand                                               */
@@ -1663,6 +1656,7 @@ Obj FuncIS_FFE (
 **  with respect to the root <r> which must lie in the same field like <z>.
 */
 Obj LOG_FFE_LARGE;
+#include <stdio.h>
 
 Obj FuncLOG_FFE_DEFAULT (
     Obj                 self,
@@ -1672,7 +1666,7 @@ Obj FuncLOG_FFE_DEFAULT (
     FFV                 vZ, vR;         /* value of left, right            */
     FF                  fZ, fR, fX;     /* field of left, right, common    */
     UInt                qZ, qR, qX;     /* size  of left, right, common    */
-    UInt                a, b, c, d, t;  /* temporaries                     */
+    Int                 a, b, c, d, t;  /* temporaries                     */
 
     /* check the arguments                                                 */
     if ( ! IS_FFE(opZ) || VAL_FFE(opZ) == 0 ) {
@@ -1727,18 +1721,23 @@ Obj FuncLOG_FFE_DEFAULT (
 
     /* now solve <l> * (<vR>-1) = (<vZ>-1) % (<qX>-1)                      */
     /*N 1990/02/04 mschoene this is likely to explode if 'FFV' is 'UInt4'  */
-    a = 1;     b = 0;
-    c = vR-1;  d = qX-1;
+    a = 1;             b = 0;
+    c = (Int) (vR-1);  d = (Int) (qX-1);
     while ( d != 0 ) {
         t = b;  b = a - (c/d) * b;  a = t;
         t = d;  d = c - (c/d) * d;  c = t;
     }
-    if ( (vZ-1) % c != 0 ) {
+    if ( ((Int) (vZ-1)) % c != 0 ) {
       return Fail;
     }
 
+
+    while (a < 0)
+      a+= (qX -1)/c;
     /* return the logarithm                                                */
-    return INTOBJ_INT( (vZ-1) / c * a );
+    
+
+    return INTOBJ_INT( (((Int) (vZ-1) / c) * a) % ((Int) (qX-1)) );
 
 }
 
@@ -1788,6 +1787,8 @@ Obj INT_FF (
     /* return the conversion table                                           */
     return ELM_PLIST( IntFF, ff );
 }
+
+
 
 Obj FuncINT_FFE_DEFAULT (
     Obj                 self,
@@ -1855,7 +1856,7 @@ Obj FuncZ (
 
     /* check the argument                                                  */
     if ( (TNUM_OBJ(q) == T_INT && (INT_INTOBJ(q) > 65536)) ||
-	 (TNUM_OBJ(q) == T_INTPOS))
+         (TNUM_OBJ(q) == T_INTPOS))
       return CALL_1ARGS(ZOp, q);
     
     if ( TNUM_OBJ(q)!=T_INT || INT_INTOBJ(q)<=1 ) {
@@ -1907,20 +1908,20 @@ Obj FuncZ2 ( Obj self, Obj p, Obj d)
       ip = INT_INTOBJ(p);
       id = INT_INTOBJ(d);
       if (ip > 1 && id > 0 && id <= 16 && ip <= 65536)
-	{
-	  id1 = id;
-	  q = ip;
-	  while (--id1 > 0 && q <= 65536)
-	    q *= ip;
-	  if (q <= 65536)
-	    {
-	      /* get the finite field                                                */
-	      ff = FiniteField( ip, id );
-	      
-	      /* make the root                                                       */
-	      return NEW_FFE( ff, (ip == 2 && id == 1 ? 1 : 2) );
-	    }
-	}
+        {
+          id1 = id;
+          q = ip;
+          while (--id1 > 0 && q <= 65536)
+            q *= ip;
+          if (q <= 65536)
+            {
+              /* get the finite field                                                */
+              ff = FiniteField( ip, id );
+              
+              /* make the root                                                       */
+              return NEW_FFE( ff, (ip == 2 && id == 1 ? 1 : 2) );
+            }
+        }
     }
   return CALL_2ARGS(ZOp, p, d);
 }
@@ -2106,8 +2107,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoFinfield ( void )
 {
-    module.revision_c = Revision_finfield_c;
-    module.revision_h = Revision_finfield_h;
     FillInVersion( &module );
     return &module;
 }

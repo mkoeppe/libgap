@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  funcs.h                     GAP source                   Martin Schoenert
+*W  funcs.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: funcs.h,v 4.8 2002/04/15 10:03:48 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the function interpreter package.
@@ -14,10 +13,9 @@
 **  calls, the  evaluators  for function calls,  the   evaluator for function
 **  expressions, and the handlers for the execution of function bodies.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_funcs_h =
-   "@(#)$Id: funcs.h,v 4.8 2002/04/15 10:03:48 sal Exp $";
-#endif
+
+#ifndef GAP_FUNCS_H
+#define GAP_FUNCS_H
 
 
 /****************************************************************************
@@ -44,6 +42,7 @@ extern  void            ExecEnd (
             UInt                error );
 
 
+extern Int RecursionDepth;
 /****************************************************************************
 **
 
@@ -59,11 +58,10 @@ extern  void            ExecEnd (
 StructInitInfo * InitInfoFuncs ( void );
 
 
+#endif // GAP_FUNCS_H
+
 /****************************************************************************
 **
 
 *E  funcs.c . . . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-
-
-

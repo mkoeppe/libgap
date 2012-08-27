@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  lists.h                     GAP source                   Martin Schoenert
+*W  lists.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: lists.h,v 4.36.2.1 2005/04/26 14:43:43 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions of the generic list package.
@@ -15,10 +14,10 @@
 **  example, 'ExecFor' can loop over the elements  in a list using the macros
 **  'LEN_LIST' and 'ELM_LIST' independently of the type of the list.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_lists_h =
-   "@(#)$Id: lists.h,v 4.36.2.1 2005/04/26 14:43:43 sal Exp $";
-#endif
+
+#ifndef GAP_LISTS_H
+#define GAP_LISTS_H
+
 
 
 extern  Obj             TYPE_LIST_EMPTY_MUTABLE;
@@ -247,9 +246,10 @@ extern Obj (*ElmListFuncs[LAST_REAL_TNUM+1]) ( Obj list, Int pos );
 **  'ELMB_LIST' and install it  in 'ElmbListFuncs[<type>]'.  This function must
 **  signal an error if <pos> is larger than the length of <list> or if <list>
 **  has no assigned object at <pos>.
-*/
+
 extern Obj (*ElmbListFuncs[LAST_REAL_TNUM+1]) ( Obj list, Obj pos );
 
+*/
 
 /****************************************************************************
 **
@@ -269,7 +269,10 @@ extern Obj (*ElmbListFuncs[LAST_REAL_TNUM+1]) ( Obj list, Obj pos );
 **  It is intended as an interface for access to elements of large external
 **  lists, on the rare occasions when the kernel needs to do this.
 */
-#define ELMB_LIST(list,pos)      ((*ElmbListFuncs[TNUM_OBJ(list)])(list,pos))
+extern Obj ELMB_LIST( Obj list, Obj pos);
+
+
+
 
 
 /****************************************************************************
@@ -1008,11 +1011,10 @@ extern void AsssListLevelCheck (
 StructInitInfo * InitInfoLists ( void );
 
 
+#endif // GAP_LISTS_H
+
 /****************************************************************************
 **
 
 *E  lists.h . . . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-
-
-

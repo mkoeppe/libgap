@@ -1,22 +1,20 @@
 /****************************************************************************
 **
 *W  sysfiles.h                  GAP source                       Frank Celler
-*W                                                         & Martin Schoenert
-*W                                                  & Burkhard Hoefling (MAC)
+*W                                                         & Martin Schönert
+*W                                                  & Burkhard Höfling (MAC)
 **
-*H  @(#)$Id: sysfiles.h,v 4.34.6.1 2008/09/03 15:50:39 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  The  file 'system.c'  declares  all operating system  dependent functions
 **  except file/stream handling which is done in "sysfiles.h".
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_sysfiles_h =
-   "@(#)$Id: sysfiles.h,v 4.34.6.1 2008/09/03 15:50:39 sal Exp $";
-#endif
+
+#ifndef GAP_SYSFILES_H
+#define GAP_SYSFILES_H
 
 
 #ifndef SYS_STDIO_H                     /* standard input/output functions */
@@ -35,19 +33,31 @@ const char * Revision_sysfiles_h =
 
 /****************************************************************************
 **
-
-*F  SyFindOrLinkGapRootFile( <filename>, <res>, <len> ) . . . .  load or link
+*F  SyFindOrLinkGapRootFile( <filename>, <crc>, <res> ) . . . .  load or link
 **
 **  'SyFindOrLinkGapRootFile'  tries to find a GAP  file in the root area and
 **  check  if   there is a corresponding    statically  or dynamically linked
 **  module.  If the CRC matches this module  is loaded otherwise the filename
 **  is returned.
+**
+**  The function returns:
+**
+**  0: no file or module was found
+**  1: if a dynamically linked module was found
+**  2: if a statically linked module was found
+**  3: a GAP file was found
+**  4: a GAP file was found and the CRC value didn't match
 */
+
+typedef union {
+  Char pathname[256];
+  StructInitInfo * module_info;
+} TypGRF_Data;
+
 extern Int SyFindOrLinkGapRootFile (
-            Char *          filename,
+            const Char *    filename,
             Int4            crc_gap,
-            Char *          result,
-            Int             len );
+            TypGRF_Data *   result );
 
 
 /****************************************************************************
@@ -58,7 +68,7 @@ extern Int SyFindOrLinkGapRootFile (
 **  one has to certain that such characters are not ignored in strings.
 */
 extern Int4 SyGAPCRC(
-            Char *          name );
+            const Char *    name );
 
 
 /****************************************************************************
@@ -66,17 +76,7 @@ extern Int4 SyGAPCRC(
 *F  SyLoadModule( <name> )  . . . . . . . . . . . . .  load a compiled module
 */
 extern InitInfoFunc SyLoadModule(
-            Char *          name );
-
-
-/****************************************************************************
-**
-*V  SyCanLoadDynamicModules . . . true if system supports dynamical libraries
-*/
-#if SYS_MAC_MWC
-# include <Types.h>
-extern Boolean SyCanLoadDynamicModules;
-#endif
+            const Char *    name );
 
 
 /****************************************************************************
@@ -88,7 +88,6 @@ extern Boolean SyCanLoadDynamicModules;
 
 /****************************************************************************
 **
-
 *F  syWinPut( <fid>, <cmd>, <str> ) . . . . send a line to the window handler
 **
 **  'syWinPut'  send the command   <cmd> and the  string  <str> to the window
@@ -127,39 +126,12 @@ extern Char * SyWinCmd (
 
 /****************************************************************************
 **
-
 *V  syBuf . . . . . . . . . . . . . .  buffer and other info for files, local
 **
 **  'syBuf' is  a array used as  buffers for  file I/O to   prevent the C I/O
 **  routines  from   allocating their  buffers  using  'malloc',  which would
 **  otherwise confuse Gasman.
 */
-#if SYS_MAC_MWC
-/* on the Mac, we need some additional info about the file 
-** fromDoc should really be of type DocumentRecord*, but but this would require "macedit.h", 
-** which gives trouble with some of the other  GAP source files under CW Pro 2,
-** because it refuses to include "List.h" if it has already read <List.h>
-*/
-#include <Files.h>    /* for FSSpec, SIgnedByte and Boolean (from MacTypes.h) */
-
-#define MIN_BUFSIZ 16
-typedef struct {
-    short	     	fp;                     /* reference number for this file      */
-#if 0 
-    FILE *      	echo;                   /* file pointer for the echo       */
-#endif
-    void *		 	fromDoc;				/* the document window from which it reads, if any */
-    Int              bufno;                 /* if non-negative then this file has a buffer in
-					                           syBuffers[bufno]; If negative, this file may not
-					                           be buffered */
-	FSSpec 			fsspec;					/* the file specs for this file */
-	SignedByte		permission;
-	Boolean			binary;                 /* binary file? */
-    UInt       		isTTY;		      /* set in Fopen when this fid is a *stdin* or *errin*
-				       and really is a tty*/
-} SYS_SY_BUF;
-
-#else
 typedef struct {
   int         fp;                     /* file descriptor for this file      */
   int         echo;                   /* file descriptor for the echo       */
@@ -176,8 +148,6 @@ typedef struct {
   UInt       isTTY;		      /* set in Fopen when this fid is a *stdin* or *errin*
 				       and really is a tty*/
 } SYS_SY_BUF;
-
-#endif
 
 #define SYS_FILE_BUF_SIZE 20000
 
@@ -203,7 +173,6 @@ extern UInt SySetBuffering( UInt fid );
 
 /****************************************************************************
 **
-
 *F  SyFopen( <name>, <mode> ) . . . . . . . .  open the file with name <name>
 **
 **  The function 'SyFopen'  is called to open the file with the name  <name>.
@@ -225,8 +194,8 @@ extern UInt SySetBuffering( UInt fid );
 **  'SyFopen' must adjust the mode argument to open the file in binary  mode.
 */
 extern Int SyFopen (
-            Char *              name,
-            Char *              mode );
+            const Char *        name,
+            const Char *        mode );
 
 
 /****************************************************************************
@@ -305,7 +274,6 @@ extern Int SyIsEndOfFile (
 **      <ctr>-_ undo a command.
 **      <esc>-T exchange two words.
 */
-#if !SYS_MAC_MWC
 #if HAVE_SELECT
 extern Obj OnCharReadHookActive;  /* if bound the hook is active */
 extern Obj OnCharReadHookInFds;   /* a list of UNIX file descriptors */
@@ -314,7 +282,6 @@ extern Obj OnCharReadHookOutFds;  /* a list of UNIX file descriptors */
 extern Obj OnCharReadHookOutFuncs;/* a list of GAP functions with 0 args */
 extern Obj OnCharReadHookExcFds;  /* a list of UNIX file descriptors */
 extern Obj OnCharReadHookExcFuncs;/* a list of GAP functions with 0 args */
-#endif
 #endif
 
 extern Char * SyFgets (
@@ -330,7 +297,7 @@ extern Char * SyFgets (
 **  'SyFputs' is called to put the  <line>  to the file identified  by <fid>.
 */
 extern void SyFputs (
-            Char *              line,
+            const Char *        line,
             Int                 fid );
 
 
@@ -347,16 +314,6 @@ extern void SyInstallAnswerIntr ( void );
 
 extern UInt SyIsIntr ( void );
 
-
-/****************************************************************************
-**
-*V  SyInFid . . . 
-**
-*V  SyOutFid
-*/
-#if SYS_MAC_MWC
-extern Int 			SyInFid, SyOutFid; /* for i/o redirection */
-#endif
 
 /****************************************************************************
 **
@@ -448,9 +405,6 @@ extern Int SyPutc
 **
 *V  SyLastMacErrorNo . . . . . . . . . . . . . .last error number, Macintosh
 */
-#ifdef SYS_IS_MAC_MWC
-extern OSErr SyLastMacErrorCode;
-#endif
 
 
 /****************************************************************************
@@ -487,24 +441,6 @@ extern void SySetErrorNo ( void );
 *F * * * * * * * * * * * * * file and execution * * * * * * * * * * * * * * *
 */
 
-
-/****************************************************************************
-**
-
-*F  SyExec( <cmd> ) . . . . . . . . . . . execute command in operating system
-**
-**  'SyExec' executes the command <cmd> (a string) in the operating system.
-**
-**  'SyExec'  should call a command  interpreter  to execute the command,  so
-**  that file name expansion and other common  actions take place.  If the OS
-**  does not support this 'SyExec' should print a message and return.
-**
-**  For UNIX we can use 'system', which does exactly what we want.
-*/
-extern void SyExec (
-    Char *              cmd );
-
-
 /****************************************************************************
 **
 *F  SyExecuteProcess( <dir>, <prg>, <in>, <out>, <args> ) . . . . new process
@@ -524,17 +460,6 @@ extern UInt SyExecuteProcess (
 
 /****************************************************************************
 **
-*V  SyCanExec . . . . . . true if operating system supports launching another 
-**                        application
-*/
-#if SYS_MAC_MWC
-extern Boolean		SyCanExec;
-#endif
-
-
-/****************************************************************************
-**
-
 *F  SyIsExistingFile( <name> )  . . . . . . . . . . . does file <name> exists
 **
 **  'SyIsExistingFile' returns 1 if the  file <name> exists and 0  otherwise.
@@ -542,7 +467,7 @@ extern Boolean		SyCanExec;
 **  is a system dependent description of the file.
 */
 extern Int SyIsExistingFile(
-            Char * name );
+            const Char * name );
 
 
 /****************************************************************************
@@ -553,7 +478,7 @@ extern Int SyIsExistingFile(
 **  otherwise. <name> is a system dependent description of the file.
 */
 extern Int SyIsReadableFile(
-            Char * name );
+            const Char * name );
 
 
 /****************************************************************************
@@ -564,7 +489,7 @@ extern Int SyIsReadableFile(
 **  otherwise. <name> is a system dependent description of the file.
 */
 extern Int SyIsWritableFile(
-            Char * name );
+            const Char * name );
 
 
 /****************************************************************************
@@ -575,7 +500,7 @@ extern Int SyIsWritableFile(
 **  otherwise. <name> is a system dependent description of the file.
 */
 extern Int SyIsExecutableFile(
-            Char * name );
+            const Char * name );
 
 
 /****************************************************************************
@@ -585,22 +510,48 @@ extern Int SyIsExecutableFile(
 **  'SyIsDirectoryPath' returns 1 if the  file <name>  is a directory  and  0
 **  otherwise. <name> is a system dependent description of the file.
 */
-extern Int SyIsDirectoryPath ( Char * name );
+extern Int SyIsDirectoryPath (
+            const Char * name );
 
 
 /****************************************************************************
 **
 *F  SyRemoveFile( <name> )  . . . . . . . . . . . . . . .  remove file <name>
 */
-extern Int SyRemoveFile ( Char * name );
+extern Int SyRemoveFile (
+            const Char * name );
 
+/****************************************************************************
+**
+*F  SyMkDir( <name> )  . . . . . . . . . . . . . . .  remove file <name>
+*/
+extern Int SyMkdir (
+            const Char * name );
+
+/****************************************************************************
+**
+*F  SyRmdir( <name> )  . . . . . . . . . . . . . . .  remove directory <name>
+*/
+extern Int SyRmdir (
+            const Char * name );
+
+/****************************************************************************
+**
+*F  SyIsDir( <name> )  . . . . . . . . . . . . .  test if something is a dir
+**
+**  Returns 'F' for a regular file, 'L' for a symbolic link and 'D'
+**  for a real directory, 'C' for a character device, 'B' for a block
+**  device 'P' for a FIFO (named pipe) and 'S' for a socket.
+*/
+extern Obj SyIsDir (
+            const Char * name );
 
 /****************************************************************************
 **
 *F  SyFindGapRootFile( <filename> ) . . . . . . . .  find file in system area
 */
 extern Char * SyFindGapRootFile (
-            Char *          filename );
+            const Char *    filename );
 
 
 /****************************************************************************
@@ -612,7 +563,6 @@ extern Char * SyFindGapRootFile (
 
 /****************************************************************************
 **
-
 *F  SyTmpname() . . . . . . . . . . . . . . . . . return a temporary filename
 **
 **  'SyTmpname' creates and returns a new temporary name.
@@ -632,29 +582,7 @@ extern Char * SyTmpname ( void );
 **  would   usually   represent   '/usr/tmp/<hint>_<proc_id>_<cnt>/',   e.g.,
 **  '/usr/tmp/guava_17188_1/'.
 */
-extern Char * SyTmpdir ( Char * hint );
-
-/****************************************************************************
-**
-*V  SyTmpVref . . . . . . . . . .. . . volume ref num for temporary directory
-**
-*V  SyTmpDirId . . . . . . . . . . . . . . . . dir id for temporary directory
-*/
-#if SYS_MAC_MWC
-extern short 		SyTmpVref; 
-extern long 		SyTmpDirId;
-#endif
-
-/****************************************************************************
-**
-*F  SyFSMakeNewFSSpec ( <vol>, <dir>, <name>, <newFSSpec>) . .  get an unused
-**                                                              Mac file spec
-**  This returns a Mac file specification for a file in directory <dir> on 
-**  volume <vol>, whose name is based upon the string <name>
-*/
-#if SYS_MAC_MWC
-OSErr SyFSMakeNewFSSpec (short vol, long dir, Str31 name, FSSpecPtr newFSSpec);
-#endif
+extern Char * SyTmpdir ( const Char * hint );
 
 /****************************************************************************
 **
@@ -708,6 +636,8 @@ extern void syWinPut (
 */
 StructInitInfo * InitInfoSysFiles ( void );
 
+
+#endif // GAP_SYSFILES_H
 
 /****************************************************************************
 **

@@ -1,27 +1,22 @@
 /****************************************************************************
 **
-*W  objects.c                   GAP source                   Martin Schoenert
+*W  objects.c                   GAP source                   Martin Schönert
 **
-*H  @(#)$Id: objects.c,v 4.56.2.2 2007/08/15 15:08:14 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions of the objects package.
 */
 #include        "system.h"              /* Ints, UInts, SyIsIntr           */
 
-const char * Revision_objects_c =
-   "@(#)$Id: objects.c,v 4.56.2.2 2007/08/15 15:08:14 gap Exp $";
 
 #include        "sysfiles.h"            /* file input/output               */
 
 #include        "gasman.h"              /* garbage collector               */
 
-#define INCLUDE_DECLARATION_PART
 #include        "objects.h"             /* objects                         */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "scanner.h"             /* scanner                         */
 
@@ -501,10 +496,12 @@ Obj CopyObjComObj (
     if ( mut ) {
         copy = NewBag( TNUM_OBJ(obj), SIZE_OBJ(obj) );
         ADDR_OBJ(copy)[0] = ADDR_OBJ(obj)[0];
+        SET_LEN_PREC(copy,LEN_PREC(obj));
     }
     else {
         copy = NewBag( TNUM_OBJ(obj), SIZE_OBJ(obj) );
         ADDR_OBJ(copy)[0] = ADDR_OBJ(obj)[0];
+        SET_LEN_PREC(copy,LEN_PREC(obj));
         CALL_2ARGS( RESET_FILTER_OBJ, copy, IsMutableObjFilt );
     }
 
@@ -520,11 +517,10 @@ Obj CopyObjComObj (
     RetypeBag( obj, TNUM_OBJ(obj) + COPYING );
 
     /* copy the subvalues                                                  */
-    for ( i = 1; i < SIZE_OBJ(obj)/sizeof(Obj); i += 2 ) {
-        tmp = ADDR_OBJ(obj)[i];
-        ADDR_OBJ(copy)[i] = tmp;
-        tmp = COPY_OBJ( ADDR_OBJ(obj)[i+1], mut );
-        ADDR_OBJ(copy)[i+1] = tmp;
+    for ( i = 1; i <= LEN_PREC(obj); i++) {
+        SET_RNAM_PREC(copy,i,GET_RNAM_PREC(obj,i));
+        tmp = COPY_OBJ( GET_ELM_PREC(obj,i), mut );
+        SET_ELM_PREC(copy,i,tmp);
         CHANGED_BAG( copy );
     }
 
@@ -572,8 +568,8 @@ void CleanObjComObjCopy (
     RetypeBag( obj, TNUM_OBJ(obj) - COPYING );
 
     /* clean the subvalues                                                 */
-    for ( i = 1; i < SIZE_OBJ(obj)/sizeof(Obj); i += 2 ) {
-        CLEAN_OBJ( ADDR_OBJ(obj)[i+1] );
+    for ( i = 1; i <= LEN_PREC(obj); i++ ) {
+        CLEAN_OBJ( GET_ELM_PREC(obj,i) );
     }
 
 }
@@ -822,8 +818,8 @@ static inline UInt IS_MARKED( Obj obj )
   return 0;
 }
      
-#define MARK(obj)
-#define UNMARK(obj)
+#define MARK(obj)     do {} while (0)
+#define UNMARK(obj)   do {} while (0)
 
 /* This variable is used to allow a ViewObj method to call PrintObj on
    the same object without triggering use of ~ */
@@ -833,7 +829,7 @@ static UInt LastPV = 0; /* This variable contains one of the values
 			   is no dynamically enc losing call to
 			   PrintObj or ViewObj still open (0), or the
 			   innermost such is Print (1) or View (2) */
-     
+
 void            PrintObj (
     Obj                 obj )
 {
@@ -845,7 +841,6 @@ void            PrintObj (
     /* check for interrupts                                                */
     if ( SyIsIntr() ) {
         i = PrintObjDepth;
-        PrintObjDepth = 0;
         Pr( "%c%c", (Int)'\03', (Int)'\04' );
         ErrorReturnVoid(
             "user interrupt while printing",
@@ -1279,6 +1274,7 @@ void SaveComObj( Obj comobj)
   UInt len,i;
   SaveSubObj(TYPE_COMOBJ( comobj ));
   len = LEN_PREC(comobj);
+  SaveUInt(len);
   for (i = 1; i <= len; i++)
     {
       SaveUInt(GET_RNAM_PREC(comobj, i));
@@ -1337,7 +1333,8 @@ void LoadComObj( Obj comobj)
 {
   UInt len,i;
   TYPE_COMOBJ( comobj) = LoadSubObj( );
-  len = LEN_PREC(comobj);
+  len = LoadUInt();
+  SET_LEN_PREC(comobj,len);
   for (i = 1; i <= len; i++)
     {
       SET_RNAM_PREC(comobj, i, LoadUInt());
@@ -1779,8 +1776,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoObjects ( void )
 {
-    module.revision_c = Revision_objects_c;
-    module.revision_h = Revision_objects_h;
     FillInVersion( &module );
     return &module;
 }

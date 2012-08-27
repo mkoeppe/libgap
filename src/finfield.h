@@ -1,12 +1,11 @@
 /****************************************************************************
 **
 *W  finfield.h                  GAP source                      Werner Nickel
-**                                                         & Martin Schoenert
+**                                                         & Martin Schönert
 **
-*H  @(#)$Id: finfield.h,v 4.13 2002/04/15 10:03:48 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the  functions  to compute  with elements  from  small
@@ -34,7 +33,7 @@
 **  If the  value is 0,  then the element is the  zero from the finite field.
 **  Otherwise the integer is the logarithm of this  element with respect to a
 **  fixed generator of the multiplicative group of the finite field plus one.
-**  In the following desriptions we denote this generator always with $z$, it
+**  In the following descriptions we denote this generator always with $z$, it
 **  is an element of order $o-1$, where $o$ is the order of the finite field.
 **  Thus 1 corresponds to $z^{1-1} = z^0 = 1$, i.e., the  one from the field.
 **  Likewise 2 corresponds to $z^{2-1} = z^1 = z$, i.e., the root itself.
@@ -42,7 +41,7 @@
 **  This representation  makes multiplication very easy,  we only have to add
 **  the values and subtract 1 , because  $z^{a-1} * z^{b-1} = z^{(a+b-1)-1}$.
 **  Addition is reduced to * by the formula $z^a +  z^b = z^b * (z^{a-b}+1)$.
-**  This makes it neccessary to know the successor $z^a + 1$ of every value.
+**  This makes it necessary to know the successor $z^a + 1$ of every value.
 **
 **  The  finite field  bag contains  the  successor for  every nonzero value,
 **  i.e., 'SUCC_FF(<ff>)[<a>]' is  the successor of  the element <a>, i.e, it
@@ -50,10 +49,9 @@
 **  Zech-Logarithm  table.  The zeroth  entry in the  finite field bag is the
 **  order of the finite field minus one.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_finfield_h =
-   "@(#)$Id: finfield.h,v 4.13 2002/04/15 10:03:48 sal Exp $";
-#endif
+
+#ifndef GAP_FINFIELD_H
+#define GAP_FINFIELD_H
 
 
 /****************************************************************************
@@ -288,7 +286,7 @@ typedef UInt2           FFV;
 **  If the finite field element is 0 the power is also 0, otherwise  we  have
 **  $a^n ~ (z^{a-1})^n = z^{(a-1)*n} = z^{(a-1)*n % (o-1)} ~ (a-1)*n % (o-1)$
 **
-**  In the first macro one needs to be careful to convert a and n to UInt4. 
+**  In the first macro one needs to be careful to convert a and n to UInt4.
 **  Before performing the multiplication, ANSI-C will only convert to Int
 **  since UInt2 fits into Int.
 */
@@ -414,6 +412,8 @@ extern  Obj             TypeFFE (
 */
 StructInitInfo * InitInfoFinfield ( void );
 
+
+#endif // GAP_FINFIELD_H
 
 /****************************************************************************
 **

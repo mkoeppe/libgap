@@ -1,17 +1,17 @@
 /****************************************************************************
 **
-*W  read.h                      GAP source                   Martin Schoenert
+*W  read.h                      GAP source                   Martin Schönert
 **
-*H  @(#)$Id: read.h,v 4.16.2.1 2008/04/22 10:53:05 sal Exp $
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+**
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This module declares the functions to read  expressions  and  statements.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_read_h =
-   "@(#)$Id: read.h,v 4.16.2.1 2008/04/22 10:53:05 sal Exp $";
-#endif
+
+#ifndef GAP_READ_H
+#define GAP_READ_H
 
 
 /****************************************************************************
@@ -23,11 +23,11 @@ const char * Revision_read_h =
 **  the interpretation of  an expression  or  statement lead to an  error (in
 **  which case 'ReadEvalError' jumps back to 'READ_ERROR' via 'longjmp').
 */
-extern jmp_buf ReadJmpError;
+extern syJmp_buf ReadJmpError;
 
 #ifndef DEBUG_READ_ERROR
 
-#define READ_ERROR()    (NrError || (NrError+=setjmp(ReadJmpError)))
+#define READ_ERROR()    (NrError || (NrError+=sySetjmp(ReadJmpError)))
 
 #else
 
@@ -65,7 +65,7 @@ extern Obj ReadEvalResult;
 **  read the  first symbol of the  next  input.
 **
 */
-extern UInt ReadEvalCommand ( void );
+extern UInt ReadEvalCommand ( Obj context );
 
 
 /****************************************************************************
@@ -87,7 +87,7 @@ extern UInt ReadEvalFile ( void );
 */
 extern void ReadEvalError ( void );
 
-extern ExecStatus ReadEvalDebug ( void );
+/* extern ExecStatus ReadEvalDebug ( void ); */
 
 /****************************************************************************
 **
@@ -138,6 +138,8 @@ Obj Call1ArgsInNewReader(Obj f,Obj a);
 */
 StructInitInfo * InitInfoRead ( void );
 
+
+#endif // GAP_READ_H
 
 /****************************************************************************
 **

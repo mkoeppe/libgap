@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  vars.c                      GAP source                   Martin Schoenert
+*W  vars.c                      GAP source                   Martin Schönert
 **
-*H  @(#)$Id: vars.c,v 4.34.6.1 2007/08/08 10:52:47 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions of variables package.
@@ -19,11 +18,10 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_vars_c =
-   "@(#)$Id: vars.c,v 4.34.6.1 2007/08/08 10:52:47 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
+#include        "ariths.h"              /* equality */
 #include        "scanner.h"             /* scanner                         */
 
 #include        "gap.h"                 /* error handling, initialisation  */
@@ -44,9 +42,7 @@ const char * Revision_vars_c =
 
 #include        "code.h"                /* coder                           */
 
-#define INCLUDE_DECLARATION_PART
 #include        "vars.h"                /* variables                       */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "exprs.h"               /* expressions                     */
 #include        "stats.h"               /* statements                      */
@@ -66,7 +62,7 @@ const char * Revision_vars_c =
 **  'CHANGED_BAG' for  each of such change.  Instead we wait until  a garbage
 **  collection begins  and then  call  'CHANGED_BAG'  in  'BeginCollectBags'.
 */
-Bag CurrLVars = (Bag)0;
+Bag CurrLVars;
 
 
 /****************************************************************************
@@ -1154,28 +1150,28 @@ UInt            ExecAssList (
     rhs = EVAL_EXPR( ADDR_STAT(stat)[2] );
 
     if (IS_INTOBJ(pos))
-	{
-	  p = INT_INTOBJ(pos);
-	  
-	  /* special case for plain list                                         */
-	  if ( TNUM_OBJ(list) == T_PLIST ) {
-	    if ( LEN_PLIST(list) < p ) {
-	      GROW_PLIST( list, p );
-	      SET_LEN_PLIST( list, p );
-	    }
-	    SET_ELM_PLIST( list, p, rhs );
-	    CHANGED_BAG( list );
-	  }
-	  
-	  /* generic case                                                        */
-	  else
-	    {
-	      ASS_LIST( list, p, rhs );
-	    }
-	}
+        {
+          p = INT_INTOBJ(pos);
+          
+          /* special case for plain list                                         */
+          if ( TNUM_OBJ(list) == T_PLIST ) {
+            if ( LEN_PLIST(list) < p ) {
+              GROW_PLIST( list, p );
+              SET_LEN_PLIST( list, p );
+            }
+            SET_ELM_PLIST( list, p, rhs );
+            CHANGED_BAG( list );
+          }
+          
+          /* generic case                                                        */
+          else
+            {
+              ASS_LIST( list, p, rhs );
+            }
+        }
     else
       ASSB_LIST(list, pos, rhs);
-	  
+          
 
     /* return 0 (to indicate that no leave-statement was executed)         */
     return 0;
@@ -1385,40 +1381,32 @@ Obj             EvalElmList (
     Obj                 list;           /* list, left operand              */
     Obj                 pos;            /* position, right operand         */
     Int                 p;              /* position, as C integer          */
-    UInt                tnum;
 
     /* evaluate the list (checking is done by 'ELM_LIST')                  */
     list = EVAL_EXPR( ADDR_EXPR(expr)[0] );
 
     /* evaluate and check the position                                     */
     pos = EVAL_EXPR( ADDR_EXPR(expr)[1] );
-    while ( TNUM_OBJ(pos) != T_INTPOS && (! IS_INTOBJ(pos) || INT_INTOBJ(pos) <= 0) ) {
-        pos = ErrorReturnObj(
-            "List Element: <position> must be a positive integer (not a %s)",
-            (Int)TNAM_OBJ(pos), 0L,
-            "you can replace <position> via 'return <position>;'" );
-    }
-    if (IS_INTOBJ(pos))
+    
+    if (IS_INTOBJ(pos) && (p = INT_INTOBJ( pos )) > 0)
       {
-	p = INT_INTOBJ( pos );
-	
-	/* special case for plain lists (use generic code to signal errors)    */
-	tnum = TNUM_OBJ(list);
-	if ( FIRST_PLIST_TNUM <= tnum && tnum <= LAST_PLIST_TNUM )
-	  {
-	    if ( LEN_PLIST(list) < p ) {
-	      return ELM_LIST( list, p );
-	    }
-	    elm = ELM_PLIST( list, p );
-	    if ( elm == 0 ) {
-	      return ELM_LIST( list, p );
-	    }
-	  }
-	/* generic case                                                        */
-	else
-	  {
-	    elm = ELM_LIST( list, p );
-	  }
+        
+        /* special case for plain lists (use generic code to signal errors)    */
+        if ( IS_PLIST( list ) )
+          {
+            if ( LEN_PLIST(list) < p ) {
+              return ELM_LIST( list, p );
+            }
+            elm = ELM_PLIST( list, p );
+            if ( elm == 0 ) {
+              return ELM_LIST( list, p );
+            }
+          }
+        /* generic case                                                        */
+        else
+          {
+            elm = ELM_LIST( list, p );
+          }
       }
     else
       elm = ELMB_LIST(list, pos);
@@ -1570,8 +1558,8 @@ Obj             EvalIsbList (
     pos = EVAL_EXPR( ADDR_EXPR(expr)[1] );
     if (IS_INTOBJ(pos))
       {
-	p = INT_INTOBJ( pos );
-	return (ISB_LIST( list, p ) ? True : False);
+        p = INT_INTOBJ( pos );
+        return (ISB_LIST( list, p ) ? True : False);
       }
     else
       return ISBB_LIST(list, pos) ? True : False;
@@ -1664,7 +1652,7 @@ void            PrintIsbList (
     Pr("%<[",0L,0L);
     PrintExpr( ADDR_EXPR(expr)[1] );
     Pr("%<]",0L,0L);
-    Pr( ")", 0L, 0L );
+    Pr( " )", 0L, 0L );
 }
 
 
@@ -2696,6 +2684,57 @@ void            PrintIsbComObjExpr (
 
 /****************************************************************************
 **
+*F  FuncGetCurrentLVars
+*F  FuncGetBottomLVars
+*F  FuncParentLVars
+*F  FuncContentsLVars
+**
+**  Provide access to local variable bags at GAP level. Mainly for use in 
+**  error handling. 
+**
+*/
+
+
+Obj FuncGetCurrentLVars( Obj self )
+{
+  return CurrLVars;
+}
+
+Obj FuncGetBottomLVars( Obj self )
+{
+  return BottomLVars;
+}
+
+Obj FuncParentLVars( Obj self, Obj lvars )
+{
+  if (lvars == BottomLVars)
+    return Fail;
+  return ADDR_OBJ(lvars)[2];
+}
+
+Obj FuncContentsLVars (Obj self, Obj lvars )
+{
+  Obj contents = NEW_PREC(0);
+  Obj func = PTR_BAG(lvars)[0];
+  Obj nams = NAMS_FUNC(func);
+  UInt len = (SIZE_BAG(lvars) - 2*sizeof(Obj) - sizeof(UInt))/sizeof(Obj);
+  Obj values = NEW_PLIST(T_PLIST+IMMUTABLE, len);
+  if (lvars == BottomLVars)
+    return False;
+  AssPRec(contents, RNamName("func"), func);  
+  AssPRec(contents,RNamName("names"), nams);
+  memcpy((void *)(1+ADDR_OBJ(values)), (void *)(3+ADDR_OBJ(lvars)), len*sizeof(Obj));
+  while (ELM_PLIST(values, len) == 0)
+    len--;
+  SET_LEN_PLIST(values, len);
+  AssPRec(contents, RNamName("values"), values);
+  if (ENVI_FUNC(func) != BottomLVars)
+    AssPRec(contents, RNamName("higher"), ENVI_FUNC(func));
+  return contents;  
+}
+
+/****************************************************************************
+**
 *F  VarsBeforeCollectBags() . . . . . . . . actions before garbage collection
 *F  VarsAfterCollectBags()  . . . . . . . .  actions after garbage collection
 */
@@ -2756,11 +2795,52 @@ void LoadLVars( Obj lvars )
   return;
 }
 
+Obj TYPE_LVARS;
+
+Obj TypeLVars( Obj lvars )
+{
+  return TYPE_LVARS;
+}
+
+void PrintLVars( Obj lvars )
+{
+  Pr("<lvars bag>", 0,0);
+}
+
+Int EqLVars (Obj x, Obj y)
+{
+  return (x == y);
+}
+
+Int EqLVarsX (Obj x, Obj y)
+{
+  return 0;
+}
+
 /****************************************************************************
 **
 
-*F * * * * * * * * * * * * * initialize package * * * * * * * * * * * * * * *
+*F * * * * * * * * * * * * * Initialize Package * * * * * * * * * * * * * * *
 */
+
+/****************************************************************************
+**
+*V  GVarFuncs . . . . . . . . . . . . . . . . . . list of functions to export
+*/
+static StructGVarFunc GVarFuncs [] = {
+  { "GetCurrentLVars", 0, "",
+    FuncGetCurrentLVars, "src/vars.c: GetCurrentLVars"},
+
+  { "GetBottomLVars", 0, "",
+    FuncGetBottomLVars, "src/vars.c: GetBottomLVars"},
+
+  { "ParentLVars", 1, "lvars",
+    FuncParentLVars, "src/vars.c: ParentLVars"},
+
+  { "ContentsLVars", 1, "lvars",
+    FuncContentsLVars, "src/vars.c: ContentsLVars"},
+
+  { 0} };
 
 
 /****************************************************************************
@@ -2772,7 +2852,8 @@ static Int InitKernel (
     StructInitInfo *    module )
 {
     UInt                i;              /* loop variable                   */
-
+    CurrLVars = (Bag) 0;
+    
     /* make 'CurrLVars' known to Gasman                                    */
     InitGlobalBag( &CurrLVars,   "src/vars.c:CurrLVars"   );
     InitGlobalBag( &BottomLVars, "src/vars.c:BottomLVars" );
@@ -2784,6 +2865,18 @@ static Int InitKernel (
     /* and the save restore functions */
     SaveObjFuncs[ T_LVARS ] = SaveLVars;
     LoadObjFuncs[ T_LVARS ] = LoadLVars;
+
+    /* and a type */
+
+    TypeObjFuncs[ T_LVARS ] = TypeLVars;
+    PrintObjFuncs[ T_LVARS ] = PrintLVars;
+    EqFuncs[T_LVARS][T_LVARS] = EqLVars;
+    for (i = FIRST_REAL_TNUM; i <= LAST_REAL_TNUM; i++)
+      {
+        EqFuncs[T_LVARS][i] = EqLVarsX;
+        EqFuncs[i][T_LVARS] = EqLVarsX;
+      }
+   
 
     /* install executors, evaluators, and printers for local variables     */
     ExecStatFuncs [ T_ASS_LVAR       ] = ExecAssLVar;
@@ -2929,6 +3022,11 @@ static Int InitKernel (
     /* install before and after actions for garbage collections            */
     InitCollectFuncBags( VarsBeforeCollectBags, VarsAfterCollectBags );
 
+    /* init filters and functions                                          */
+    InitHdlrFuncsFromTable( GVarFuncs );
+
+    InitCopyGVar("TYPE_LVARS",&TYPE_LVARS);
+
     /* return success                                                      */
     return 0;
 }
@@ -2962,8 +3060,11 @@ static Int InitLibrary (
     BottomLVars = NewBag( T_LVARS, 3*sizeof(Obj) );
     tmp = NewFunctionC( "bottom", 0, "", 0 );
     PTR_BAG(BottomLVars)[0] = tmp;
-    tmp = NewBag( T_BODY, 0 );
+    tmp = NewBag( T_BODY, NUMBER_HEADER_ITEMS_BODY*sizeof(Obj) );
     BODY_FUNC( PTR_BAG(BottomLVars)[0] ) = tmp;
+
+    /* init filters and functions                                          */
+    InitGVarFuncsFromTable( GVarFuncs );
 
     /* return success                                                      */
     return PostRestore( module );
@@ -2991,8 +3092,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoVars ( void )
 {
-    module.revision_c = Revision_vars_c;
-    module.revision_h = Revision_vars_h;
     FillInVersion( &module );
     return &module;
 }

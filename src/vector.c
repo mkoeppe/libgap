@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  vector.c                    GAP source                   Martin Schoenert
+*W  vector.c                    GAP source                   Martin Schönert
 **
-*H  @(#)$Id: vector.c,v 4.33 2002/04/15 10:04:03 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions  that mainly  operate  on vectors  whose
@@ -19,8 +18,6 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_vector_c =
-   "@(#)$Id: vector.c,v 4.33 2002/04/15 10:04:03 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -43,9 +40,7 @@ const char * Revision_vector_c =
 #include        "plist.h"               /* plain lists                     */
 #include        "string.h"              /* strings                         */
 
-#define INCLUDE_DECLARATION_PART
 #include        "vector.h"              /* functions for plain vectors     */
-#undef  INCLUDE_DECLARATION_PART
 
 #include        "range.h"               /* ranges                          */
 
@@ -179,14 +174,14 @@ Obj             SumVectorVector (
     lenR = LEN_PLIST( vecR );
     if (lenL < lenR)
       {
-	lenmin = lenL;
-	len = lenR;
+        lenmin = lenL;
+        len = lenR;
       } else {
-	lenmin = lenR;
-	len = lenL;
+        lenmin = lenR;
+        len = lenL;
       }
     vecS = NEW_PLIST( (IS_IMM_PLIST(vecL) && IS_IMM_PLIST(vecR)) ?
-		      T_PLIST_CYC+IMMUTABLE : T_PLIST_CYC, len );
+                      T_PLIST_CYC+IMMUTABLE : T_PLIST_CYC, len );
     SET_LEN_PLIST( vecS, len );
 
     /* loop over the elements and add                                      */
@@ -207,11 +202,11 @@ Obj             SumVectorVector (
     }
     if (lenL < lenR)
       for (;i <= lenR; i++) {
-	ptrS[i] = ptrR[i];
+        ptrS[i] = ptrR[i];
       }
     else
       for (;i <= lenL; i++) {
-	ptrS[i] = ptrL[i];
+        ptrS[i] = ptrL[i];
       }
     /* return the result                                                   */
     CHANGED_BAG( vecS );
@@ -245,7 +240,7 @@ Obj             DiffIntVector (
     /* make the result list                                                */
     len = LEN_PLIST( vecR );
     vecD = NEW_PLIST( IS_MUTABLE_OBJ(vecR) ?
-		      T_PLIST_CYC :T_PLIST_CYC+IMMUTABLE, len );
+                      T_PLIST_CYC :T_PLIST_CYC+IMMUTABLE, len );
     SET_LEN_PLIST( vecD, len );
 
     /* loop over the elements and subtract                                 */
@@ -344,16 +339,15 @@ Obj             DiffVectorVector (
     /* make the result list                                                */
     lenL = LEN_PLIST( vecL );
     lenR = LEN_PLIST( vecR );
-    if (lenL < lenR)
-      {
-	lenmin = lenL;
-	len = lenR;
-      } else {
-	lenmin = lenR;
-	len = lenL;
-      }
+    if (lenL < lenR) {
+        lenmin = lenL;
+        len = lenR;
+    } else {
+        lenmin = lenR;
+        len = lenL;
+    }
     vecD = NEW_PLIST( (IS_IMM_PLIST(vecL) && IS_IMM_PLIST(vecR)) ?
-		      T_PLIST_CYC+IMMUTABLE : T_PLIST_CYC, len );
+                      T_PLIST_CYC+IMMUTABLE : T_PLIST_CYC, len );
     SET_LEN_PLIST( vecD, len );
 
     /* loop over the elements and subtract                                   */
@@ -385,7 +379,7 @@ Obj             DiffVectorVector (
       }
     else
       for (;i <= lenL; i++) {
-	ptrD[i] = ptrL[i];
+        ptrD[i] = ptrL[i];
       }
     /* return the result                                                   */
     CHANGED_BAG( vecD );
@@ -419,7 +413,7 @@ Obj             ProdIntVector (
     /* make the result list                                                */
     len = LEN_PLIST( vecR );
     vecP = NEW_PLIST( IS_MUTABLE_OBJ(vecR) ?
-		      T_PLIST_CYC : T_PLIST_CYC+IMMUTABLE, len );
+                      T_PLIST_CYC : T_PLIST_CYC+IMMUTABLE, len );
     SET_LEN_PLIST( vecP, len );
 
     /* loop over the entries and multiply                                  */
@@ -468,7 +462,7 @@ Obj             ProdVectorInt (
     /* make the result list                                                */
     len = LEN_PLIST( vecL );
     vecP = NEW_PLIST( IS_MUTABLE_OBJ(vecL) ?
-		      T_PLIST_CYC :T_PLIST_CYC+IMMUTABLE, len );
+                      T_PLIST_CYC :T_PLIST_CYC+IMMUTABLE, len );
     SET_LEN_PLIST( vecP, len );
 
     /* loop over the entries and multiply                                  */
@@ -594,8 +588,8 @@ Obj             ProdVectorMatrix (
     /* make the result list */
     
     vecP = NEW_PLIST( (IS_MUTABLE_OBJ(vecL) || IS_MUTABLE_OBJ(ELM_PLIST(matR,1))) ?
-		      T_PLIST_CYC : T_PLIST_CYC+IMMUTABLE,
-		      col);
+                      T_PLIST_CYC : T_PLIST_CYC+IMMUTABLE,
+                      col);
     SET_LEN_PLIST( vecP, col);
     for ( i = 1; i <= col; i++)
       SET_ELM_PLIST( vecP, i, INTOBJ_INT(0));
@@ -608,56 +602,56 @@ Obj             ProdVectorMatrix (
         ptrR = ADDR_OBJ( vecR );
         ptrP = ADDR_OBJ( vecP  );
         if ( elmL == INTOBJ_INT( 1L ) ) {
-	  for ( k = 1; k <= col; k++ ) {
-	    elmT = ptrR[k];
-	    elmP = ptrP[k];
-	    if ( ! ARE_INTOBJS(elmP,elmT)
-		 || ! SUM_INTOBJS(elmS,elmP,elmT) ) {
-	      CHANGED_BAG( vecP );
-	      elmS = SUM( elmP, elmT );
-	      ptrR = ADDR_OBJ( vecR );
-	      ptrP = ADDR_OBJ( vecP );
-	    }
-	    ptrP[k] = elmS;
-	  }
+          for ( k = 1; k <= col; k++ ) {
+            elmT = ptrR[k];
+            elmP = ptrP[k];
+            if ( ! ARE_INTOBJS(elmP,elmT)
+                 || ! SUM_INTOBJS(elmS,elmP,elmT) ) {
+              CHANGED_BAG( vecP );
+              elmS = SUM( elmP, elmT );
+              ptrR = ADDR_OBJ( vecR );
+              ptrP = ADDR_OBJ( vecP );
+            }
+            ptrP[k] = elmS;
+          }
         }
         else if ( elmL == INTOBJ_INT( -1L ) ) {
             for ( k = 1; k <= col; k++ ) {
-	      elmT = ptrR[k];
-	      elmP = ptrP[k];
-	      if ( ! ARE_INTOBJS(elmP,elmT)
-		   || ! DIFF_INTOBJS(elmS,elmP,elmT) ) {
-		CHANGED_BAG( vecP );
-		elmS = DIFF( elmP, elmT );
-		ptrR = ADDR_OBJ( vecR );
-		ptrP = ADDR_OBJ( vecP );
-	      }
-		    ptrP[k] = elmS;
+              elmT = ptrR[k];
+              elmP = ptrP[k];
+              if ( ! ARE_INTOBJS(elmP,elmT)
+                   || ! DIFF_INTOBJS(elmS,elmP,elmT) ) {
+                CHANGED_BAG( vecP );
+                elmS = DIFF( elmP, elmT );
+                ptrR = ADDR_OBJ( vecR );
+                ptrP = ADDR_OBJ( vecP );
+              }
+                    ptrP[k] = elmS;
 
             }
         }
         else if ( elmL != INTOBJ_INT( 0L ) ) {
             for ( k = 1; k <= col; k++ ) {
-	      elmR = ptrR[k];
-	      if (elmR != INTOBJ_INT(0L))
-		{
-		  if ( ! ARE_INTOBJS(elmL,elmR)
-		       || ! PROD_INTOBJS(elmT,elmL,elmR) ) {
-		    CHANGED_BAG( vecP );
-		    elmT = PROD( elmL, elmR );
-		    ptrR = ADDR_OBJ( vecR );
-		    ptrP = ADDR_OBJ( vecP );
-		  }
-		  elmP = ptrP[k];
-		  if ( ! ARE_INTOBJS(elmP,elmT)
-		       || ! SUM_INTOBJS(elmS,elmP,elmT) ) {
-		    CHANGED_BAG( vecP );
-		    elmS = SUM( elmP, elmT );
-		    ptrR = ADDR_OBJ( vecR );
-		    ptrP = ADDR_OBJ( vecP );
-		  }
-		  ptrP[k] = elmS;
-		}
+              elmR = ptrR[k];
+              if (elmR != INTOBJ_INT(0L))
+                {
+                  if ( ! ARE_INTOBJS(elmL,elmR)
+                       || ! PROD_INTOBJS(elmT,elmL,elmR) ) {
+                    CHANGED_BAG( vecP );
+                    elmT = PROD( elmL, elmR );
+                    ptrR = ADDR_OBJ( vecR );
+                    ptrP = ADDR_OBJ( vecP );
+                  }
+                  elmP = ptrP[k];
+                  if ( ! ARE_INTOBJS(elmP,elmT)
+                       || ! SUM_INTOBJS(elmS,elmP,elmT) ) {
+                    CHANGED_BAG( vecP );
+                    elmS = SUM( elmP, elmT );
+                    ptrR = ADDR_OBJ( vecR );
+                    ptrP = ADDR_OBJ( vecP );
+                  }
+                  ptrP[k] = elmS;
+                }
             }
         }
     }
@@ -687,7 +681,7 @@ Obj ZeroVector( Obj vec )
   UInt i, len;
   Obj res;
   assert(TNUM_OBJ(vec) >= T_PLIST_CYC && \
-	 TNUM_OBJ(vec) <= T_PLIST_CYC_SSORT+IMMUTABLE);
+         TNUM_OBJ(vec) <= T_PLIST_CYC_SSORT+IMMUTABLE);
   len = LEN_PLIST(vec);
   res = NEW_PLIST( IS_MUTABLE_OBJ(vec) ? T_PLIST_CYC : T_PLIST_CYC+IMMUTABLE, len);
   SET_LEN_PLIST(res, len);
@@ -701,7 +695,7 @@ Obj ZeroMutVector( Obj vec )
   UInt i, len;
   Obj res;
   assert(TNUM_OBJ(vec) >= T_PLIST_CYC && \
-	 TNUM_OBJ(vec) <= T_PLIST_CYC_SSORT+IMMUTABLE);
+         TNUM_OBJ(vec) <= T_PLIST_CYC_SSORT+IMMUTABLE);
   len = LEN_PLIST(vec);
   res = NEW_PLIST( T_PLIST_CYC, len);
   SET_LEN_PLIST(res, len);
@@ -804,8 +798,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoVector ( void )
 {
-    module.revision_c = Revision_vector_c;
-    module.revision_h = Revision_vector_h;
     FillInVersion( &module );
     return &module;
 }

@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  vector.h                    GAP source                   Martin Schoenert
+*W  vector.h                    GAP source                   Martin Schönert
 **
-*H  @(#)$Id: vector.h,v 4.6 2002/04/15 10:04:03 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions  that mainly  operate  on vectors  whose
@@ -28,10 +27,9 @@
 **  'T_RANGE' might still be a vector over the rationals  or cyclotomics.  It
 **  is just that the kernel does not known this.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_vector_h =
-   "@(#)$Id: vector.h,v 4.6 2002/04/15 10:04:03 sal Exp $";
-#endif
+
+#ifndef GAP_VECTOR_H
+#define GAP_VECTOR_H
 
 
 /****************************************************************************
@@ -48,6 +46,8 @@ const char * Revision_vector_h =
 */
 StructInitInfo * InitInfoVector ( void );
 
+
+#endif // GAP_VECTOR_H
 
 /****************************************************************************
 **

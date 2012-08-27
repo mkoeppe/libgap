@@ -2,10 +2,9 @@
 **
 *W  weakptr.h                   GAP source                       Steve Linton
 **
-*H  @(#)$Id: weakptr.h,v 4.6 2002/04/15 10:04:03 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions that deal with weak pointer objects
@@ -17,11 +16,9 @@
 **
 **
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_weakptr_h =
-   "@(#)$Id: weakptr.h,v 4.6 2002/04/15 10:04:03 sal Exp $";
-#endif
 
+#ifndef GAP_WEAKPTR_H
+#define GAP_WEAKPTR_H
 
 /****************************************************************************
 **
@@ -37,6 +34,8 @@ const char * Revision_weakptr_h =
 */
 StructInitInfo * InitInfoWeakPtr ( void );
 
+
+#endif // GAP_WEAKPTR_H
 
 /****************************************************************************
 **

@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  plist.c                     GAP source                   Martin Schoenert
+*W  plist.c                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: plist.c,v 4.78.2.3 2007/12/05 20:27:51 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions that deal with plain lists.
@@ -37,8 +36,6 @@
 */
 #include        "system.h"              /* system dependent part           */
 
-const char * Revision_plist_c =
-   "@(#)$Id: plist.c,v 4.78.2.3 2007/12/05 20:27:51 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -60,9 +57,7 @@ const char * Revision_plist_c =
 #include        "precord.h"             /* plain records                   */
 
 #include        "lists.h"               /* generic lists                   */
-#define INCLUDE_DECLARATION_PART
 #include        "plist.h"               /* plain lists                     */
-#undef  INCLUDE_DECLARATION_PART
 #include        "range.h"               /* ranges                          */
 #include        "string.h"              /* strings                         */
 #include        "blister.h"             /* boolean lists                   */
@@ -1708,7 +1703,7 @@ void AssPlistFfe   (
 	UInt otherpos;
 
 	/* Here we select an other element to compare the field and
-	   possibly characteristic of the assigned value to This will
+	   possibly characteristic of the assigned value to. This
 	   code will never select pos, where the assignment has
 	   already been done, unless we are replacing the only entry
 	   of a length 1 list, in which case the result will always
@@ -2336,6 +2331,12 @@ Int             IsSSortPlistYes (
     return 2L;
 }
 
+Obj FuncSetIsSSortedPlist (Obj self, Obj list)
+{
+  SET_FILT_LIST(list, FN_IS_SSORT);
+  return (Obj)0;
+}
+
 
 /****************************************************************************
 **
@@ -2633,6 +2634,7 @@ void MakeImmutablePlistInHom( Obj list )
 {
   UInt i;
   Obj elm;
+  RetypeBag( list, IMMUTABLE_TNUM(TNUM_OBJ(list)));
   for (i = 1; i <= LEN_PLIST(list); i++)
     {
       elm = ELM_PLIST( list, i);
@@ -2642,7 +2644,6 @@ void MakeImmutablePlistInHom( Obj list )
 	  CHANGED_BAG(list);
 	}
     }
-  RetypeBag( list, IMMUTABLE_TNUM(TNUM_OBJ(list)));
 }
 
 /****************************************************************************
@@ -4382,6 +4383,9 @@ static StructGVarFunc GVarFuncs [] = {
     
     { "IsRectangularTablePlist", 1, "plist",
       FuncIsRectangularTablePlist, "src/lists.c:IsRectangularTablePlist" },
+
+    { "SET_IS_SSORTED_PLIST", 1, "list",
+      FuncSetIsSSortedPlist, "src/lists.c:SET_IS_SSORTED_PLIST" },
     
     { "EmptyPlist", 1, "len",
       FuncEmptyPlist, "src/lists.c:FuncEmptyPlist" },
@@ -4848,6 +4852,10 @@ static Int InitKernel (
     for (t1 = T_PLIST_DENSE_NHOM; t1 <= T_PLIST_FFE; t1 += 2 ) 
       MakeImmutableObjFuncs[ t1 ] = MakeImmutablePlistNoMutElms;
 
+    /* mutable tables may have mutable rows */
+      MakeImmutableObjFuncs[T_PLIST_TAB] = MakeImmutablePlistInHom;
+    
+
 
       
     
@@ -4893,8 +4901,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoPlist ( void )
 {
-    module.revision_c = Revision_plist_c;
-    module.revision_h = Revision_plist_h;
     FillInVersion( &module );
     return &module;
 }

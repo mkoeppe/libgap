@@ -3,18 +3,17 @@
 *W  tietze.c                    GAP source                       Frank Celler
 *W                                                           & Volkmar Felsch
 **
-*H  @(#)$Id: tietze.c,v 4.30 2002/04/15 10:04:01 sal Exp $
 **
-*Y  Copyright 1990-1992,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright 1990-1992,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file contains the functions for computing with finite presentations.
 */
 #include        "system.h"              /* system dependent part           */
+#include        "code.h"
+#include        "stats.h"               /* for TakeInterrupt */
 
-const char * Revision_tietze_c = 
-  "@(#)$Id: tietze.c,v 4.30 2002/04/15 10:04:01 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -33,9 +32,7 @@ const char * Revision_tietze_c =
 #include        "plist.h"               /* plain lists                     */
 #include        "string.h"              /* strings                         */
 
-#define INCLUDE_DECLARATION_PART
 #include        "tietze.h"              /* tietze helper functions         */
-#undef  INCLUDE_DECLARATION_PART
 
 
 /****************************************************************************
@@ -52,7 +49,7 @@ const char * Revision_tietze_c =
 #define TZ_LENGTHS               7
 #define TZ_FLAGS                 8
 #define TZ_FREEGENS              9
-#define TZ_LENGTHTIETZE         20
+#define TZ_LENGTHTIETZE         21
 
 
 /****************************************************************************
@@ -107,7 +104,7 @@ void CheckTietzeInverses (
     Obj *               ptTietze,
     Obj *               invs,
     Obj * *             ptInvs,
-    Int *              numgens )
+    Int *               numgens )
 {
     /* get and check the Tietze inverses list                              */
     *invs    = ptTietze[TZ_INVERSES];
@@ -203,7 +200,7 @@ Obj FuncTzSortC (
 {
     Obj *               ptTietze;       /* pointer to the Tietze stack     */
     Obj                 rels;           /* relators list                   */
-    Obj *               ptRels  ;       /* pointer to this list            */
+    Obj *               ptRels;         /* pointer to this list            */
     Obj                 lens;           /* lengths list                    */
     Obj *               ptLens;         /* pointer to this list            */
     Obj                 flags;          /* handle of the flags list        */
@@ -481,6 +478,9 @@ Obj FuncTzSubstituteGen (
     Int                 wleng;          /* length of the replacing word    */
     Int                 occ;            /* number of occurrences           */
     Int                 i, j;           /* loop variables                  */
+    Int                 alen,len;       /* number of changed relators */
+    Obj                 Idx;
+    Obj *               ptIdx;          /* List of changed relators */
 
     /* check the Tietze stack                                              */
     CheckTietzeStack( tietze, &ptTietze );
@@ -529,6 +529,13 @@ Obj FuncTzSubstituteGen (
     /* check list <lens> to contain the relator lengths                    */
     CheckTietzeRelLengths( ptTietze, ptRels, ptLens, numrels, &total );
 
+    /* list of changed relator indices */
+    len=0;
+    alen=20;
+    Idx=NEW_PLIST( T_PLIST, alen );
+    SET_LEN_PLIST(Idx,alen);
+    ptIdx=ADDR_OBJ(Idx);
+
     /* allocate a bag for the inverse of the replacing word                */
     iwrd   = NEW_PLIST( T_PLIST, wleng );
     ptRels = ADDR_OBJ( rels );
@@ -551,6 +558,9 @@ Obj FuncTzSubstituteGen (
 
     /* loop over all relators                                              */
     for ( i = 1;  i <= numrels;  i++ ) {
+        /* We assume that ptRels, ptLens and ptIdx are valid at the 
+           beginning of this loop (and not rendered invalid by a 
+           garbage collection)! */
         rel = ptRels[i];
         ptRel = ADDR_OBJ(rel);
         leng = INT_INTOBJ(ptLens[i]);
@@ -574,9 +584,22 @@ Obj FuncTzSubstituteGen (
             continue;
         }
 
+        /* mark that the relator changed */
+        if (len>=alen) {
+          alen+=100; /* more relators changed */
+          GROW_PLIST(Idx,alen);
+          SET_LEN_PLIST(Idx,alen);
+          ptIdx=ADDR_OBJ(Idx);
+        }
+        len+=1;
+        ptIdx[len]=INTOBJ_INT(i);
+        CHANGED_BAG(Idx);
+
         /* allocate a bag for the modified Tietze relator                  */
         new = NEW_PLIST( T_PLIST, leng + occ * (wleng - 1) );
+        /* Now renew saved pointers into bags: */
         pt2 = ptNew = ADDR_OBJ( new );
+        ptIdx  = ADDR_OBJ( Idx );
         ptLens = ADDR_OBJ( lens );
         ptInvs = ADDR_OBJ( invs ) + (numgens + 1);
         ptWrd  = ADDR_OBJ( word );
@@ -624,15 +647,20 @@ Obj FuncTzSubstituteGen (
         SHRINK_PLIST( new, newleng );
         ptRels = ADDR_OBJ( rels );
         ptLens = ADDR_OBJ( lens );
+        ptIdx  = ADDR_OBJ( Idx );
         ptRels[i] = new;
         ADDR_OBJ( flags )[i] = INTOBJ_INT( 1 );
         CHANGED_BAG(rels);
     }
 
+    SHRINK_PLIST(Idx,len);
+    SET_LEN_PLIST(Idx,len);
+    CHANGED_BAG(Idx);
+
     ptTietze = ADDR_OBJ( tietze );
     ptTietze[TZ_TOTAL] = INTOBJ_INT( total );
 
-    return 0;
+    return Idx;
 }
 
 
@@ -720,7 +748,7 @@ Obj FuncTzOccurrences (
     /* allocate an auxiliary list                                          */
     ptAux = 0;
     if ( numgens > 1 ) {
-        aux   = NEW_STRING( (numgens+1)*sizeof(Int4) );
+        aux   = NEW_STRING( (numgens+1)*sizeof(Int) );
         ptAux = (Int*)ADDR_OBJ(aux);
         ptAux[0] = numgens;
         for ( k = 1;  k <= numgens;  k++ )
@@ -1529,6 +1557,7 @@ Obj  FuncReduceLetterRepWordsRewSys (
  
  /* while i in [ 1 .. n ] od */
  while (i<=n) {
+   TakeInterrupt();
   
   /* k := 1; */
   k=1;
@@ -1580,8 +1609,8 @@ Obj  FuncReduceLetterRepWordsRewSys (
        nw=NEW_PLIST(T_PLIST_EMPTY,0);
      }
      else {
-	/* make space for the new word */
-	nw = NEW_PLIST(TNUM_OBJ(w),newlen);
+        /* make space for the new word */
+        nw = NEW_PLIST(TNUM_OBJ(w),newlen);
 
        /* addresses */
        wa=ADDR_OBJ(w);
@@ -1592,7 +1621,7 @@ Obj  FuncReduceLetterRepWordsRewSys (
        /* for a in [ 1 .. p ] do */
        /* Add( nw, w[a] ); */
        for (a=1; a<=p;a++) {
- 	 *nwa++=*wa++;
+         *nwa++=*wa++;
        }
        /* od */
 
@@ -1605,7 +1634,7 @@ Obj  FuncReduceLetterRepWordsRewSys (
        /* for a in [ 1 .. Length( rul ) ] do */
        /* Add( nw, rul[a] ); */
        for (a=1;a<=rlen;a++) {
-	 *nwa++=*wa++;
+         *nwa++=*wa++;
        }
        /* od */
 
@@ -1614,7 +1643,7 @@ Obj  FuncReduceLetterRepWordsRewSys (
        wa=(Obj*) &(ADDR_OBJ(w)[i+1]);
        /* Add( nw, w[a] ); */
        for (a=i+1;a<=n;a++) {
-	 *nwa++=*wa++;
+         *nwa++=*wa++;
        }
        /* od */
 
@@ -1752,8 +1781,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoTietze ( void )
 {
-    module.revision_c = Revision_tietze_c;
-    module.revision_h = Revision_tietze_h;
     FillInVersion( &module );
     return &module;
 }

@@ -2,10 +2,9 @@
 **
 *W  objfgelm.c                  GAP source                       Frank Celler
 **
-*H  @(#)$Id: objfgelm.c,v 4.45 2002/04/15 10:03:53 sal Exp $
-**
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This  file contains the  C functions for free  group elements.  There are
@@ -75,8 +74,6 @@
 #include        <assert.h>              /* assert                          */
 #include        "system.h"              /* Ints, UInts                     */
 
-const char * Revision_objfgelm_c =
-   "@(#)$Id: objfgelm.c,v 4.45 2002/04/15 10:03:53 sal Exp $";
 
 #include        "gasman.h"              /* garbage collector               */
 #include        "objects.h"             /* objects                         */
@@ -98,9 +95,7 @@ const char * Revision_objfgelm_c =
 
 #include        "bool.h"                /* booleans                        */
 
-#define INCLUDE_DECLARATION_PART
 #include        "objfgelm.h"            /* objects of free groups          */
-#undef  INCLUDE_DECLARATION_PART
 
 
 /****************************************************************************
@@ -373,8 +368,6 @@ Obj Func8Bits_HeadByNumber (
     Obj         r )
 {
     Int         ebits;          /* number of bits in the exponent          */
-    UInt        expm;           /* signed exponent mask                    */
-    UInt        exps;           /* sign exponent mask                      */
     UInt        genm;           /* generator mask                          */
     Int         sl;             /* start position in <obj>                 */
     Int         nl;             /* number of pairs to consider in <l>      */
@@ -389,9 +382,6 @@ Obj Func8Bits_HeadByNumber (
     /* get the number of bits for exponents                                */
     ebits = EBITS_WORD(l);
 
-    /* get the exponent masks                                              */
-    exps = 1UL << (ebits-1);
-    expm = exps - 1;
 
     /* get the generator mask                                              */
     genm = ((1UL << (8-ebits)) - 1) << ebits;
@@ -1084,9 +1074,9 @@ Obj Func8Bits_LengthWord (
     {
       pair = data[i];
       if (pair & exps)
-	uexp = INTOBJ_INT(exps - (pair & expm));
+        uexp = INTOBJ_INT(exps - (pair & expm));
       else
-	uexp = INTOBJ_INT(pair & expm);
+        uexp = INTOBJ_INT(pair & expm);
       C_SUM_FIA(len,len,uexp);
     }
   return len;
@@ -1361,8 +1351,6 @@ Obj Func16Bits_HeadByNumber (
     Obj         r )
 {
     Int         ebits;          /* number of bits in the exponent          */
-    UInt        expm;           /* signed exponent mask                    */
-    UInt        exps;           /* sign exponent mask                      */
     UInt        genm;           /* generator mask                          */
     Int         sl;             /* start position in <obj>                 */
     Int         nl;             /* number of pairs to consider in <l>      */
@@ -1376,10 +1364,6 @@ Obj Func16Bits_HeadByNumber (
 
     /* get the number of bits for exponents                                */
     ebits = EBITS_WORD(l);
-
-    /* get the exponent masks                                              */
-    exps = 1UL << (ebits-1);
-    expm = exps - 1;
 
     /* get the generator mask                                              */
     genm = ((1UL << (16-ebits)) - 1) << ebits;
@@ -2052,9 +2036,9 @@ Obj Func16Bits_LengthWord (
     {
       pair = data[i];
       if (pair & exps)
-	uexp = INTOBJ_INT(exps - (pair & expm));
+        uexp = INTOBJ_INT(exps - (pair & expm));
       else
-	uexp = INTOBJ_INT(pair & expm);
+        uexp = INTOBJ_INT(pair & expm);
       C_SUM_FIA(len,len,uexp);
     }
   return len;
@@ -2330,8 +2314,6 @@ Obj Func32Bits_HeadByNumber (
     Obj         r )
 {
     Int         ebits;          /* number of bits in the exponent          */
-    UInt        expm;           /* signed exponent mask                    */
-    UInt        exps;           /* sign exponent mask                      */
     UInt        genm;           /* generator mask                          */
     Int         sl;             /* start position in <obj>                 */
     Int         nl;             /* number of pairs to consider in <l>      */
@@ -2345,10 +2327,6 @@ Obj Func32Bits_HeadByNumber (
 
     /* get the number of bits for exponents                                */
     ebits = EBITS_WORD(l);
-
-    /* get the exponent masks                                              */
-    exps = 1UL << (ebits-1);
-    expm = exps - 1;
 
     /* get the generator mask                                              */
     genm = ((1UL << (32-ebits)) - 1) << ebits;
@@ -2684,7 +2662,7 @@ Obj Func32Bits_Power (
         ex = (*pl&expm);
         if ( *pl & exps )  ex -= exps;
         exs = ex;
-        ex  = ex * pow;
+        ex  = (Int)((UInt)ex * (UInt)pow);
 
         /* check that n*pow fits into the exponent                         */
         if ( ex/pow!=exs || (0<ex && expm<ex) || (ex<0 && expm<-ex) ) {
@@ -3023,9 +3001,9 @@ Obj Func32Bits_LengthWord (
     {
       pair = data[i];
       if (pair & exps)
-	uexp = INTOBJ_INT(exps - (pair & expm));
+        uexp = INTOBJ_INT(exps - (pair & expm));
       else
-	uexp = INTOBJ_INT(pair & expm);
+        uexp = INTOBJ_INT(pair & expm);
       C_SUM_FIA(len,len,uexp);
     }
   return len;
@@ -3058,7 +3036,7 @@ Obj FuncNBits_NumberSyllables (
 Obj FuncMultWorLettrep (
     Obj         self,
     Obj         a,
-    Obj	        b)
+    Obj         b)
 {
   UInt l,m,i,j,newlen,as,bs,ae,be;
   Obj n;
@@ -3143,7 +3121,7 @@ Obj FuncMultWorLettrep (
   /* fi; */
   }
   /* make the new list */
-  n=NEW_PLIST(TNUM_OBJ(a),newlen);
+  n=NEW_PLIST(T_PLIST_CYC,newlen);
   q=ADDR_OBJ(n);
   q++;
   j=as;
@@ -3172,7 +3150,7 @@ Obj FuncMultWorLettrep (
 Obj FuncMultBytLettrep (
     Obj         self,
     Obj         a,
-    Obj	        b)
+    Obj         b)
 {
   UInt l,m,i,j,newlen,as,bs,ae,be;
   Obj n;
@@ -3508,8 +3486,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoFreeGroupElements ( void )
 {
-    module.revision_c = Revision_objfgelm_c;
-    module.revision_h = Revision_objfgelm_h;
     FillInVersion( &module );
     return &module;
 }

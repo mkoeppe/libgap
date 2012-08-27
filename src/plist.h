@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  plist.h                     GAP source                   Martin Schoenert
+*W  plist.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: plist.h,v 4.16 2002/04/15 10:03:55 sal Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions that deal with plain lists.
@@ -23,10 +22,9 @@
 **  This package also contains the list functions for  plain lists, which are
 **  installed in the appropriate tables by 'InitPlist'.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_plist_h =
-   "@(#)$Id: plist.h,v 4.16 2002/04/15 10:03:55 sal Exp $";
-#endif
+
+#ifndef GAP_PLIST_H
+#define GAP_PLIST_H
 
 
 /****************************************************************************
@@ -65,10 +63,10 @@ extern  Int             GrowPlist (
 **
 *F  SHRINK_PLIST(<list>,<plen>) . . . . . . . . . . . . . shrink a plain list
 **
-**  'SHINK_PLIST' shrinks  the plain list <list>  if possible  so that it has
+**  'SHRINK_PLIST' shrinks  the plain list <list>  if possible  so that it has
 **  still room for at least <plen> elements.
 **
-**  Note that 'SHINK_PLIST' is a macro, so do not call it with arguments that
+**  Note that 'SHRINK_PLIST' is a macro, so do not call it with arguments that
 **  have sideeffects.
 */
 #define SHRINK_PLIST(list,plen)         ResizeBag(list,((plen)+1)*sizeof(Obj))
@@ -142,6 +140,19 @@ extern  Int             GrowPlist (
 
 /****************************************************************************
 **
+*F  IS_DENSE_PLIST( <list> )  . . . . . check if <list> is a dense plain list
+**
+** Note that this only checks for plists that are known to be dense.  This is  
+** very fast.  If you want  to also handle plists  for which it  is now known      
+** whether they  are dense or not  (i.e. of type T_PLIST),  use IS_DENSE_LIST 
+** instead.                                                                   
+*/
+#define IS_DENSE_PLIST( list ) \
+  (T_PLIST_DENSE <= TNUM_OBJ(list) && TNUM_OBJ(list) <= LAST_PLIST_TNUM)
+
+
+/****************************************************************************
+**
 *F  IS_MUTABLE_PLIST( <list> )  . . . . . . . . . . . is a plain list mutable
 */
 #define IS_MUTABLE_PLIST(list)  (!((TNUM_OBJ(list) - T_PLIST) % 2))
@@ -193,6 +204,8 @@ void            UnbPlistImm (
 */
 StructInitInfo * InitInfoPlist ( void );
 
+
+#endif // GAP_PLIST_H
 
 /****************************************************************************
 **

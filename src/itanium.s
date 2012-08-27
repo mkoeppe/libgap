@@ -42,8 +42,7 @@ ItaniumRegisterStackTop:
 	nop.i 0
 	nop.i 0 ;;
 }
-{
-	 .mii
+ {   .mii
 	mov	r8=ar.bsp				 //0:  2    2
 	nop.i	0				
 	nop.i	0 ;;				

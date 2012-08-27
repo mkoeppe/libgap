@@ -1,11 +1,10 @@
 /****************************************************************************
 **
-*W  range.h                     GAP source                   Martin Schoenert
+*W  range.h                     GAP source                   Martin Schönert
 **
-*H  @(#)$Id: range.h,v 4.9.2.1 2007/06/14 09:40:34 gap Exp $
 **
-*Y  Copyright (C)  1996,  Lehrstuhl D fuer Mathematik,  RWTH Aachen,  Germany
-*Y  (C) 1998 School Math and Comp. Sci., University of St.  Andrews, Scotland
+*Y  Copyright (C)  1996,  Lehrstuhl D für Mathematik,  RWTH Aachen,  Germany
+*Y  (C) 1998 School Math and Comp. Sci., University of St Andrews, Scotland
 *Y  Copyright (C) 2002 The GAP Group
 **
 **  This file declares the functions that deal with ranges.
@@ -22,10 +21,9 @@
 **  This package  also contains  the  list  functions  for ranges, which  are
 **  installed in the appropriate tables by 'InitRange'.
 */
-#ifdef  INCLUDE_DECLARATION_PART
-const char * Revision_range_h =
-   "@(#)$Id: range.h,v 4.9.2.1 2007/06/14 09:40:34 gap Exp $";
-#endif
+
+#ifndef GAP_RANGE_H
+#define GAP_RANGE_H
 
 
 /****************************************************************************
@@ -195,6 +193,8 @@ extern Obj Range3Check (
 */
 StructInitInfo * InitInfoRange ( void );
 
+
+#endif // GAP_RANGE_H
 
 /****************************************************************************
 **
