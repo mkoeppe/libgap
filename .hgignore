@@ -1,8 +1,15 @@
+\.#\..*
 .*\.o
 .*\.lo
 .*\.Plo
 src/.deps/\.*
 config\.log
+config\.sh
+config\.status
+config\.h
+libtool
+autom4te\.cache
+.*Makefile
 .*~
 .*\.rej
 stamp-h1

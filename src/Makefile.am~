@@ -1,0 +1,3 @@
+lib_LTLIBRARIES = libgap.la
+
+libgettext_la_SOURCES = gettext.c gettext.h ...
