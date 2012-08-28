@@ -38,6 +38,8 @@
 #include        "records.h"             /* generic records                 */
 #include        "bool.h"                /* Global True and False           */
 
+#include        "libgap.h"              /* GAP shared library              */
+
 #include        <assert.h>
 #include        <fcntl.h>
 
@@ -82,7 +84,6 @@ extern int errno;
 #if SYS_IS_CYGWIN32
 # include       <process.h>
 #endif
-
 
 /* utility to check return value of 'write'  */
 ssize_t writeandcheck(int fd, const char *buf, size_t count) {
@@ -2989,7 +2990,13 @@ Char * SyFgets (
     UInt                length,
     Int                 fid)
 {
-  return syFgets( line, length, fid, 1);
+  if(fid!=0 && fid!=2) {
+    // not stdin/stderr; probably file IO. Do the standard thing.
+    // printf("SyFgets fid=%i\n", fid);
+    return syFgets( line, length, fid, 1);
+  }
+  return libgap_get_input(line, length);
+  // return syFgets( line, length, fid, 1);
 }
 
 

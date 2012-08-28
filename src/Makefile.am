@@ -21,13 +21,15 @@ libgap_la_SOURCES = \
   compstat.c  funcs.h     objccoll.c  range.c     string.c                \
   compstat.h  gap.c       objccoll.h  range.h     intfuncs.c intfuncs.h   \
   c_oper1.c   objcftl.c   rational.c  sysfiles.c              \
-  costab.c                objcftl.h   rational.h               \
-  costab.h    gasman.c    objects.c   read.c      system.c
+  costab.c                objcftl.h   rational.h              \
+  costab.h    gasman.c    objects.c   read.c      system.c    \
+  libgap.c
 
 libgapincludedir = @includedir@/gap
 libgapinclude_HEADERS = \
+  libgap.h    \
   system.h    gap.h       scanner.h   sysfiles.h  plist.h     gasman.h    \
-  string.h    iostream.h  read.h      objects.h   
+  string.h    iostream.h  read.h      objects.h   config.h
 
 
 libgap_la_CFLAGS = \

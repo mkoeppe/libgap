@@ -9,6 +9,9 @@ config\.status
 config\.h
 libtool
 autom4te\.cache
+compile
+test/test
+test/shell
 .*Makefile
 .*~
 .*\.rej

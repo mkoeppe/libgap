@@ -215,17 +215,17 @@ typedef struct {
 #endif
 
 static StructImportedGVars ImportedGVars[MAX_IMPORTED_GVARS];
-static Int NrImportedGVars;
+Int NrImportedGVars;
 
 static StructImportedGVars ImportedFuncs[MAX_IMPORTED_GVARS];
-static Int NrImportedFuncs;
+Int NrImportedFuncs;
 
 /* int restart_argc; 
    char **restart_argv; */
 
 char *original_argv0;
-static char **sysargv;
-static char **sysenviron;
+char **sysargv;
+char **sysenviron;
 
 /* 
 syJmp_buf SyRestartBuf;
@@ -740,11 +740,7 @@ int DoFixGac(char *myself)
 }
 #endif
 
-#ifdef COMPILECYGWINDLL
-#define main realmain
-#endif
-
-int main (
+int gap_main_loop (
           int                 argc,
           char *              argv [],
           char *              environ [] )

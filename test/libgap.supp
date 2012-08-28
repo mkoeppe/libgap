@@ -1,0 +1,33 @@
+{
+   libGAP
+   Memcheck:Cond
+   fun:GenStackFuncBags
+   fun:CollectBags
+}
+
+{
+   libGAP
+   Memcheck:Cond
+   fun:CollectBags
+}
+
+{
+   libGAP
+   Memcheck:Value8
+   fun:GenStackFuncBags
+   fun:CollectBags
+}
+
+{
+   libGAP
+   Memcheck:Value8
+   fun:CollectBags
+}
+
+{
+   libGAP
+   Memcheck:Cond
+   fun:MarkAllSubBags
+   fun:CollectBags
+}
+

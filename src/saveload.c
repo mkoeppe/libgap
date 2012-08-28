@@ -647,7 +647,6 @@ static void WriteSaveHeader( void )
     }
 }
 
-static Obj ProtectFname;
 
 Obj SaveWorkspace( Obj fname )
 {
@@ -667,13 +666,9 @@ Obj SaveWorkspace( Obj fname )
         return Fail;
       }
   
-  /* For some reason itanium GC seems unable to spot fname */
-  ProtectFname = fname;
   /* Do a full garbage collection */
   CollectBags( 0, 1);
   
-  ProtectFname = (Obj)0L;
-
   /* Add indices in link words of all bags, for saving inter-bag references */
   NextSaveIndex = 1;
   CallbackForAllBags( AddSaveIndex );
@@ -1022,8 +1017,7 @@ static Int InitKernel (
   SaveFile = -1;
   LBPointer = LoadBuffer;
   LBEnd = LoadBuffer;
-  InitGlobalBag(&ProtectFname, "Protected Filename for SaveWorkspace");
-
+  
     /* init filters and functions                                          */
     InitHdlrFuncsFromTable( GVarFuncs );
 

@@ -5,11 +5,12 @@ AM_INIT_AUTOMAKE
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/gap.h])
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([src/config.h])
 
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
+  test/Makefile
 ])
 
 
@@ -57,7 +58,7 @@ AC_DEFINE([HAVE_DOTGAPRC],[1],[define as 1 if the user resource file is .gaprc])
 AC_DEFINE([HAVE_SLASH_SEPARATOR],[1],[if your directory separator is forward slash])
 
 # Checks for programs.
-AC_PROG_CC
+AM_PROG_CC_C_O
 AC_C_CONST
 AC_C_INLINE
 AC_C_BIGENDIAN
@@ -71,13 +72,13 @@ LT_INIT([dlopen])
 AC_CHECK_HEADERS([math.h assert.h sys/sysmacros.h fcntl.h sys/stat.h mach/mach.h sys/mman.h])
 AC_CHECK_HEADERS([sgtty.h stdlib.h string.h sys/ioctl.h sys/param.h sys/time.h sys/resource.h])
 AC_CHECK_HEADERS([termio.h termios.h unistd.h signal.h stdio.h libc.h sys/times.h sys/wait.h])
-AC_CHECK_HEADERS([vfork.h dirent.h errno.h])
+AC_CHECK_HEADERS([vfork.h dirent.h errno.h setjmp.h])
 
 AC_FUNC_VFORK
 AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([getpseudotty _getpty getpt ptsname_r])
-AC_CHECK_FUNCS([setpgid])
+AC_CHECK_FUNCS([setpgid setjmp sigsetjmp sbrk])
 AC_CHECK_FUNCS([rld_load])
 AC_CHECK_FUNCS([times getrusage])
 AC_CHECK_FUNCS([vm_allocate])

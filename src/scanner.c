@@ -59,6 +59,8 @@
 #include        "opers.h"               /* DoFilter...                     */
 #include        "read.h"                /* Call0ArgsInNewReader            */
 
+#include        "libgap.h"              /* GAP shared library              */
+
 #include <assert.h>
 #include <limits.h>
 
@@ -2656,152 +2658,9 @@ void PutChrTo (
          KOutputStream stream,
          Char                ch )
 {
-  Int                 i, hint, spos;
-  Char                str [MAXLENOUTPUTLINE];
-
-
-
-  /* '\01', increment indentation level                                  */
-  if ( ch == '\01' ) {
-
-    if (!stream->format)
-      return;
-
-    /* add hint to break line  */
-    addLineBreakHint(stream, stream->pos, 16*stream->indent, 1);
-  }
-
-  /* '\02', decrement indentation level                                  */
-  else if ( ch == '\02' ) {
-
-    if (!stream -> format)
-      return;
-
-    /* if this is a better place to split the line remember it         */
-    addLineBreakHint(stream, stream->pos, 16*stream->indent, -1);
-  }
-
-  /* '\03', print line                                                   */
-  else if ( ch == '\03' ) {
-
-    /* print the line                                                  */
-    if (stream->pos != 0)
-      {
-        stream->line[ stream->pos ] = '\0';
-        PutLineTo(stream, stream->pos );
-
-        /* start the next line                                         */
-        stream->pos      = 0;
-      }
-    /* reset line break hints                                          */
-    stream->hints[0] = -1;
-
-  }
-
-  /* <newline> or <return>, print line, indent next                      */
-  else if ( ch == '\n' || ch == '\r' ) {
-
-    /* put the character on the line and terminate it                  */
-    stream->line[ stream->pos++ ] = ch;
-    stream->line[ stream->pos   ] = '\0';
-
-    /* print the line                                                  */
-    PutLineTo( stream, stream->pos );
-
-    /* and dump it from the buffer */
-    stream->pos = 0;
-    if (stream -> format)
-      {
-        /* indent for next line                                         */
-        for ( i = 0;  i < stream->indent; i++ )
-          stream->line[ stream->pos++ ] = ' ';
-      }
-    /* reset line break hints                                       */
-    stream->hints[0] = -1;
-
-  }
-
-  /* normal character, room on the current line                          */
-  else if ( stream->pos < SyNrCols-2-NoSplitLine ) {
-
-    /* put the character on this line                                  */
-    stream->line[ stream->pos++ ] = ch;
-
-  }
-
-  else
-    {
-      /* position to split                                              */
-      if ( (hint = nrLineBreak(stream)) != -1 )
-        spos = stream->hints[3*hint];
-      else
-        spos = 0;
-
-      /* if we are going to split at the end of the line, and we are
-         formatting discard blanks */
-      if ( stream->format && spos == stream->pos && ch == ' ' ) {
-        ;
-      }
-
-      /* full line, acceptable split position                              */
-      else if ( stream->format && spos != 0 ) {
-
-        /* add character to the line, terminate it                         */
-        stream->line[ stream->pos++ ] = ch;
-        stream->line[ stream->pos++ ] = '\0';
-
-        /* copy the rest after the best split position to a safe place     */
-        for ( i = spos; i < stream->pos; i++ )
-          str[ i-spos ] = stream->line[ i ];
-        str[ i-spos] = '\0';
-
-        /* print line up to the best split position                        */
-        stream->line[ spos++ ] = '\n';
-        stream->line[ spos   ] = '\0';
-        PutLineTo( stream, spos );
-        spos--;
-
-        /* indent for the rest                                             */
-        stream->pos = 0;
-        for ( i = 0; i < stream->hints[3*hint+2]; i++ )
-          stream->line[ stream->pos++ ] = ' ';
-        spos -= stream->hints[3*hint+2];
-
-        /* copy the rest onto the next line                                */
-        for ( i = 0; str[ i ] != '\0'; i++ )
-          stream->line[ stream->pos++ ] = str[ i ];
-        /* recover line break hints for copied rest                      */
-        for ( i = hint+1; stream->hints[3*i] != -1; i++ )
-        {
-          stream->hints[3*(i-hint-1)] = stream->hints[3*i]-spos;
-          stream->hints[3*(i-hint-1)+1] = stream->hints[3*i+1];
-          stream->hints[3*(i-hint-1)+2] = stream->hints[3*i+2];
-        }
-        stream->hints[3*(i-hint-1)] = -1;
-      }
-
-      /* full line, no split position                                       */
-      else {
-
-        if (stream->format)
-          {
-            /* append a '\',*/
-            stream->line[ stream->pos++ ] = '\\';
-            stream->line[ stream->pos++ ] = '\n';
-          }
-        /* and print the line                                */
-        stream->line[ stream->pos   ] = '\0';
-        PutLineTo( stream, stream->pos );
-
-        /* add the character to the next line                              */
-        stream->pos = 0;
-        stream->line[ stream->pos++ ] = ch;
-
-        if (stream->format)
-          stream->hints[0] = -1;
-      }
-
-    }
+  if (ch <= 3)  // GAP control characters
+    return;
+  libgap_append_output(ch);
 }
 
 /****************************************************************************
