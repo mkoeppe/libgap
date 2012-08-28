@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set +e
+cd src
+./configure --with-sage="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
+make
+make install
+set -e
