@@ -10,7 +10,7 @@ rm -rf libgap-*
 CWD=`pwd`
 cd ..
 
-VERSION=`grep '^#define VERSION' config.log | cut -d \" -f 2`
+VERSION=`grep AC_INIT configure.ac | cut -d \] -f 2 | cut -d \[ -f 2`
 LIBGAP_DIR="libgap-$VERSION"
 SPKG_ROOT="$CWD/$LIBGAP_DIR"
 

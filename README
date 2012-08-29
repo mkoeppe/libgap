@@ -1,1 +1,2 @@
-libGAP
+libGAP -- a C library version of the GAP kernel (http://www.gap-system.org)
+

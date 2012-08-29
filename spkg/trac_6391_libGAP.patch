@@ -1,0 +1,4014 @@
+
+Trac #6391: llibGAP, a Cython library interface to gap
+
+diff --git a/doc/en/reference/libs.rst b/doc/en/reference/libs.rst
+--- a/doc/en/reference/libs.rst
++++ b/doc/en/reference/libs.rst
+@@ -25,6 +25,7 @@
+ .. toctree::
+    :maxdepth: 2
+    
++   sage/libs/gap/libgap
+    sage/libs/flint/fmpz_poly
+    sage/libs/libecm
+    sage/libs/lrcalc/lrcalc
+diff --git a/module_list.py b/module_list.py
+--- a/module_list.py
++++ b/module_list.py
+@@ -662,6 +662,11 @@
+               sources = ["sage/libs/ratpoints.pyx"],
+               depends = [SAGE_INC + 'ratpoints.h'],
+               libraries = ["ratpoints", "gmp"]),
++
++    Extension('sage.libs.gap.libgap',
++              sources = ["sage/libs/gap/libgap.pyx"],
++              libraries = ['gap', 'gmp', 'm'],
++              include_dirs = [SAGE_LOCAL + '/include/']),
+     
+     Extension('sage.libs.singular.singular',
+               sources = ['sage/libs/singular/singular.pyx'],
+diff --git a/sage/libs/all.py b/sage/libs/all.py
+--- a/sage/libs/all.py
++++ b/sage/libs/all.py
+@@ -12,3 +12,8 @@
+ 
+ from cremona.all import CremonaModularSymbols
+ 
++
++#from sage.misc.lazy_import import lazy_import
++#lazy_import('sage.libs.gap.libgap', 'libgap')
++
++from sage.libs.gap.libgap import libgap
+diff --git a/sage/libs/gap/__init__.py b/sage/libs/gap/__init__.py
+new file mode 100644
+--- /dev/null
++++ b/sage/libs/gap/__init__.py
+@@ -0,0 +1,1 @@
++# libgap
+diff --git a/sage/libs/gap/all.py b/sage/libs/gap/all.py
+new file mode 100644
+--- /dev/null
++++ b/sage/libs/gap/all.py
+@@ -0,0 +1,2 @@
++
++
+diff --git a/sage/libs/gap/gap_functions.py b/sage/libs/gap/gap_functions.py
+new file mode 100644
+--- /dev/null
++++ b/sage/libs/gap/gap_functions.py
+@@ -0,0 +1,1438 @@
++###############################################################################
++#
++#   SAGE: Open Source Mathematical Software
++#
++#       Copyright (C) 2009, William Stein <wstein@gmail.com>
++#
++#  Distributed under the terms of the GNU General Public License (GPL) v2+.
++#  The full text of the GPL is available at: http://www.gnu.org/licenses/
++###############################################################################
++
++
++# selected gap functions to use in tab completion
++common_gap_functions = [
++  'AbelianGroup',
++  'AbelianInvariants',
++  'AbelianInvariantsMultiplier',
++  'AbelianInvariantsOfList',
++  'AbelianNumberField',
++  'AbsInt',
++  'AbsoluteValue',
++  'Action',
++  'ActionHomomorphism',
++  'Add',
++  'AddCoeffs',
++  'AddGenerator',
++  'AddRelator',
++  'AddRowVector',
++  'AddRule',
++  'AddSet',
++  'AdjointMatrix',
++  'Algebra',
++  'AlternatingGroup',
++  'AntiSymmetricParts',
++  'Append',
++  'AppendTo',
++  'Apply',
++  'AsGroup',
++  'Assert',
++  'AutomorphismGroup',
++  'BaseOfGroup',
++  'Basis',
++  'BasisVectors',
++  'Binomial',
++  'BlockMatrix',
++  'Blocks',
++  'CartanMatrix',
++  'CartanSubalgebra',
++  'Cartesian',
++  'Center',
++  'CentralCharacter',
++  'Centralizer',
++  'CentralizerInGLnZ',
++  'CentralizerModulo',
++  'Centre',
++  'CentreOfCharacter',
++  'Character',
++  'CharacterDegrees',
++  'CharacterNames',
++  'CharacterTable',
++  'Characteristic',
++  'CharacteristicPolynomial',
++  'CheckFixedPoints',
++  'ChevalleyBasis',
++  'ChiefNormalSeriesByPcgs',
++  'ChiefSeries',
++  'ChineseRem',
++  'Chomp',
++  'ClassElementLattice',
++  'ClassFunction',
++  'ClassFunctionSameType',
++  'ClassOrbit',
++  'ClassPermutation',
++  'ClassRoots',
++  'ClassesSolvableGroup',
++  'CoKernel',
++  'Coefficients',
++  'CoefficientsRing',
++  'CoeffsCyc',
++  'CoeffsMod',
++  'CollapsedMat',
++  'Collected',
++  'Combinations',
++  'CombinatorialCollector',
++  'CommutatorFactorGroup',
++  'CommutatorLength',
++  'CommutatorSubgroup',
++  'Compacted',
++  'CompanionMat',
++  'ComplexConjugate',
++  'ComplexificationQuat',
++  'CompositionMapping',
++  'CompositionMapping2',
++  'CompositionMaps',
++  'Concatenation',
++  'Conductor',
++  'ConjugacyClass',
++  'ConjugacyClassSubgroups',
++  'ConjugacyClasses',
++  'ConjugateGroup',
++  'ConjugateSubgroup',
++  'ConjugateSubgroups',
++  'ConstituentsCompositionMapping',
++  'ContainedMaps',
++  'ContinuedFractionApproximationOfRoot',
++  'ContinuedFractionExpansionOfRoot',
++  'ConvertToCharacterTable',
++  'ConvertToMatrixRep',
++  'ConvertToRangeRep',
++  'ConvertToStringRep',
++  'ConvertToTableOfMarks',
++  'ConvertToVectorRep',
++  'ConwayPolynomial',
++  'CosetTable',
++  'CosetTableInWholeGroup',
++  'Cycle',
++  'CycleLength',
++  'CycleLengths',
++  'CycleStructureClass',
++  'CycleStructurePerm',
++  'Cycles',
++  'CyclicGroup',
++  'CyclotomicField',
++  'CyclotomicPolynomial',
++  'Cyclotomics',
++  'DefiningPolynomial',
++  'Degree',
++  'DegreeFFE',
++  'DenominatorCyc',
++  'DenominatorOfRationalFunction',
++  'DenominatorRat',
++  'Derivations',
++  'Derivative',
++  'DerivedLength',
++  'DerivedSeries',
++  'DerivedSeriesOfGroup',
++  'DerivedSubgroup',
++  'Determinant',
++  'DeterminantIntMat',
++  'DeterminantMat',
++  'DeterminantMatDivFree',
++  'DeterminantOfCharacter',
++  'DiagonalMat',
++  'DihedralGroup',
++  'Dimension',
++  'DimensionOfMatrixGroup',
++  'DimensionsMat',
++  'DirectProduct',
++  'Discriminant',
++  'Display',
++  'DivisorsInt',
++  'DnLattice',
++  'DominantCharacter',
++  'DominantWeights',
++  'DoubleCoset',
++  'DoubleCosetRepsAndSizes',
++  'DoubleCosets',
++  'DoubleHashArraySize',
++  'DuplicateFreeList',
++  'E',
++  'Eigenspaces',
++  'Eigenvalues',
++  'Eigenvectors',
++  'ElementOfFpGroup',
++  'ElementOfFpSemigroup',
++  'ElementOrdersPowerMap',
++  'Elements',
++  'ElementsStabChain',
++  'EpimorphismFromFreeGroup',
++  'EpimorphismNilpotentQuotient',
++  'EpimorphismPGroup',
++  'EpimorphismQuotientSystem',
++  'EpimorphismSchurCover',
++  'EuclideanQuotient',
++  'EuclideanRemainder',
++  'EulerianFunction',
++  'Exponent',
++  'Extension',
++  'ExteriorCentre',
++  'ExteriorPower',
++  'Extract',
++  'FactorGroup',
++  'Factorial',
++  'Factorization',
++  'Factors',
++  'FactorsInt',
++  'Fibonacci',
++  'Field',
++  'FieldExtension',
++  'FieldOfMatrixGroup',
++  'Filtered',
++  'First',
++  'FittingSubgroup',
++  'Flat',
++  'ForAll',
++  'ForAny',
++  'FreeGroup',
++  'FreeProduct',
++  'FreeSemigroup',
++  'FrobeniusAutomorphism',
++  'GF',
++  'GL',
++  'GQuotients',
++  'GaloisCyc',
++  'GaloisField',
++  'GaloisGroup',
++  'GaloisMat',
++  'GaloisStabilizer',
++  'GaussianIntegers',
++  'GaussianRationals',
++  'Gcd',
++  'GcdInt',
++  'GcdOp',
++  'GeneralLinearGroup',
++  'GeneralOrthogonalGroup',
++  'GeneralUnitaryGroup',
++  'GeneralisedEigenspaces',
++  'GeneralisedEigenvalues',
++  'GeneralizedEigenspaces',
++  'GeneralizedEigenvalues',
++  'GeneratorsOfField',
++  'GeneratorsOfGroup',
++  'GeneratorsOfIdeal',
++  'GlobalMersenneTwister',
++  'GroebnerBasis',
++  'Group',
++  'GroupHomomorphismByFunction',
++  'GroupHomomorphismByImages',
++  'GroupRing',
++  'HermiteNormalFormIntegerMat',
++  'HermiteNormalFormIntegerMatTransform',
++  'Hom',
++  'IdGroup',
++  'Ideal',
++  'IdealByGenerators',
++  'Idempotents',
++  'Identifier',
++  'Identity',
++  'Image',
++  'Images',
++  'Index',
++  'InfoAlgebra',
++  'InfoAttributes',
++  'InfoBckt',
++  'InfoCharacterTable',
++  'InfoCoh',
++  'InfoComplement',
++  'InfoCoset',
++  'InfoFpGroup',
++  'InfoGroebner',
++  'InfoGroup',
++  'InfoLattice',
++  'InfoLevel',
++  'InfoMatrix',
++  'InfoMonomial',
++  'InfoNumtheor',
++  'InfoOptions',
++  'InfoPcSubgroup',
++  'InfoText',
++  'InnerAutomorphism',
++  'InnerAutomorphismsAutomorphismGroup',
++  'Int',
++  'IntFFE',
++  'IntFFESymm',
++  'IntHexString',
++  'IntScalarProducts',
++  'IntVecFFE',
++  'Integers',
++  'IntersectSet',
++  'Intersection',
++  'InvariantBilinearForm',
++  'InvariantElementaryAbelianSeries',
++  'InvariantLattice',
++  'InvariantQuadraticForm',
++  'InvariantSesquilinearForm',
++  'Inverse',
++  'InverseMap',
++  'Irr',
++  'IrrBaumClausen',
++  'IrrConlon',
++  'IrrDixonSchneider',
++  'IrreducibleModules',
++  'IrreducibleRepresentations',
++  'IrreducibleRepresentationsDixon',
++  'IsAbelian',
++  'IsAbelianNumberField',
++  'IsAbelianNumberFieldPolynomialRing',
++  'IsAdditiveElement',
++  'IsAdditiveElementWithInverse',
++  'IsAdditiveElementWithZero',
++  'IsAdditiveGroup',
++  'IsAdditiveGroupGeneralMapping',
++  'IsAdditiveGroupHomomorphism',
++  'IsAdditivelyCommutative',
++  'IsAdditivelyCommutativeElement',
++  'IsAlgebra',
++  'IsAlgebraGeneralMapping',
++  'IsAlgebraHomomorphism',
++  'IsAlgebraModule',
++  'IsAlgebraWithOne',
++  'IsAlgebraWithOneHomomorphism',
++  'IsAlgebraicElement',
++  'IsAlgebraicExtension',
++  'IsAlternatingGroup',
++  'IsAnticommutative',
++  'IsAntisymmetricBinaryRelation',
++  'IsAssocWord',
++  'IsAssocWordWithInverse',
++  'IsAssocWordWithOne',
++  'IsAssociated',
++  'IsAssociative',
++  'IsAutomorphismGroup',
++  'IsBasis',
++  'IsBijective',
++  'IsBinaryRelation',
++  'IsBlockMatrixRep',
++  'IsBool',
++  'IsBound',
++  'IsBoundGlobal',
++  'IsBrauerTable',
++  'IsBravaisGroup',
++  'IsBuiltFromGroup',
++  'IsBuiltFromSemigroup',
++  'IsCanonicalBasis',
++  'IsCanonicalBasisFullMatrixModule',
++  'IsCanonicalBasisFullRowModule',
++  'IsCanonicalNiceMonomorphism',
++  'IsCentral',
++  'IsCentralFactor',
++  'IsChar',
++  'IsCharacter',
++  'IsCharacterTable',
++  'IsCharacterTableInProgress',
++  'IsCharacteristicSubgroup',
++  'IsClosedStream',
++  'IsCochain',
++  'IsCochainCollection',
++  'IsCommutative',
++  'IsComponentObjectRep',
++  'IsCompositionMappingRep',
++  'IsConfluent',
++  'IsConjugate',
++  'IsCopyable',
++  'IsCyc',
++  'IsCyclic',
++  'IsCyclotomic',
++  'IsCyclotomicField',
++  'IsCyclotomicMatrixGroup',
++  'IsDenseList',
++  'IsDiagonalMat',
++  'IsDictionary',
++  'IsDigitChar',
++  'IsDivisionRing',
++  'IsDomain',
++  'IsDoneIterator',
++  'IsDoubleCoset',
++  'IsDuplicateFree',
++  'IsDuplicateFreeList',
++  'IsElementaryAbelian',
++  'IsEmpty',
++  'IsEmptyString',
++  'IsEuclideanRing',
++  'IsFFE',
++  'IsField',
++  'IsFinite',
++  'IsFiniteDimensional',
++  'IsFinitelyGeneratedGroup',
++  'IsFixedStabilizer',
++  'IsFpGroup',
++  'IsFpMonoid',
++  'IsFpSemigroup',
++  'IsFreeGroup',
++  'IsFreeLeftModule',
++  'IsFullHomModule',
++  'IsFullMatrixModule',
++  'IsFullRowModule',
++  'IsFunction',
++  'IsGL',
++  'IsGaussInt',
++  'IsGaussRat',
++  'IsGaussianIntegers',
++  'IsGaussianRationals',
++  'IsGaussianSpace',
++  'IsGeneralLinearGroup',
++  'IsGroup',
++  'IsGroupHomomorphism',
++  'IsGroupOfAutomorphisms',
++  'IsGroupRing',
++  'IsHasseDiagram',
++  'IsHomogeneousList',
++  'IsIdempotent',
++  'IsInfinity',
++  'IsInjective',
++  'IsInnerAutomorphism',
++  'IsInt',
++  'IsIntegerMatrixGroup',
++  'IsIntegers',
++  'IsIntegralBasis',
++  'IsIntegralCyclotomic',
++  'IsIntegralRing',
++  'IsIrreducible',
++  'IsIrreducibleCharacter',
++  'IsIrreducibleRingElement',
++  'IsIterator',
++  'IsJacobianRing',
++  'IsLaurentPolynomial',
++  'IsLaurentPolynomialDefaultRep',
++  'IsLexicographicallyLess',
++  'IsLieAbelian',
++  'IsLieAlgebra',
++  'IsLieMatrix',
++  'IsLieObject',
++  'IsLieObjectCollection',
++  'IsLieSolvable',
++  'IsLinearMapping',
++  'IsLinearMappingsModule',
++  'IsList',
++  'IsMapping',
++  'IsMatchingSublist',
++  'IsMatrix',
++  'IsMatrixGroup',
++  'IsMatrixModule',
++  'IsMatrixSpace',
++  'IsMonomial',
++  'IsMonomialGroup',
++  'IsMonomialMatrix',
++  'IsMonomialOrdering',
++  'IsMultiplicativeZero',
++  'IsMutable',
++  'IsMutableBasis',
++  'IsNilpotent',
++  'IsNilpotentElement',
++  'IsNilpotentGroup',
++  'IsNormal',
++  'IsNormalBasis',
++  'IsNotIdenticalObj',
++  'IsNumberField',
++  'IsObject',
++  'IsOddInt',
++  'IsOne',
++  'IsOrdering',
++  'IsOrdinaryMatrix',
++  'IsOrdinaryTable',
++  'IsPGroup',
++  'IsPSolvable',
++  'IsPcGroup',
++  'IsPcgs',
++  'IsPerfect',
++  'IsPerfectGroup',
++  'IsPerm',
++  'IsPermGroup',
++  'IsPolycyclicGroup',
++  'IsPolynomial',
++  'IsPolynomialRing',
++  'IsPosInt',
++  'IsPosRat',
++  'IsPositiveIntegers',
++  'IsPrime',
++  'IsPrimeField',
++  'IsPrimeInt',
++  'IsPrimePowerInt',
++  'IsPrimitive',
++  'IsPrimitiveCharacter',
++  'IsPrimitivePolynomial',
++  'IsProbablyPrimeInt',
++  'IsPurePadicNumber',
++  'IsQuaternion',
++  'IsQuickPositionList',
++  'IsQuotientSemigroup',
++  'IsRandomSource',
++  'IsRange',
++  'IsRat',
++  'IsRationalFunction',
++  'IsRationalMatrixGroup',
++  'IsRationals',
++  'IsRecord',
++  'IsReduced',
++  'IsReductionOrdering',
++  'IsReflexiveBinaryRelation',
++  'IsRegular',
++  'IsRegularSemigroup',
++  'IsRegularSemigroupElement',
++  'IsRing',
++  'IsRingElement',
++  'IsRingGeneralMapping',
++  'IsRingWithOne',
++  'IsRingWithOneGeneralMapping',
++  'IsRingWithOneHomomorphism',
++  'IsRowModule',
++  'IsRowSpace',
++  'IsRowVector',
++  'IsSL',
++  'IsSSortedList',
++  'IsScalar',
++  'IsSet',
++  'IsSimple',
++  'IsSimpleAlgebra',
++  'IsSimpleGroup',
++  'IsSimpleSemigroup',
++  'IsSingleValued',
++  'IsSolvable',
++  'IsSolvableGroup',
++  'IsSortedList',
++  'IsSpecialLinearGroup',
++  'IsSporadicSimple',
++  'IsString',
++  'IsStringRep',
++  'IsSubgroup',
++  'IsSubgroupFpGroup',
++  'IsSubgroupOfWholeGroupByQuotientRep',
++  'IsSubgroupSL',
++  'IsSubset',
++  'IsSubsetSet',
++  'IsSubspace',
++  'IsSupersolvable',
++  'IsSupersolvableGroup',
++  'IsSurjective',
++  'IsSymmetricGroup',
++  'IsTable',
++  'IsTotal',
++  'IsTotalOrdering',
++  'IsTransformation',
++  'IsTransitive',
++  'IsTransitiveBinaryRelation',
++  'IsTrivial',
++  'IsTuple',
++  'IsUniqueFactorizationRing',
++  'IsUnit',
++  'IsUnivariatePolynomial',
++  'IsUnivariatePolynomialRing',
++  'IsUnivariateRationalFunction',
++  'IsUpperAlphaChar',
++  'IsUpperTriangularMat',
++  'IsValidIdentifier',
++  'IsVector',
++  'IsVectorSpace',
++  'IsVirtualCharacter',
++  'IsWeylGroup',
++  'IsWord',
++  'IsZero',
++  'IsZeroGroup',
++  'IsZeroSimpleSemigroup',
++  'IsZeroSquaredRing',
++  'IsZmodnZObj',
++  'IsZmodnZObjNonprime',
++  'IsZmodpZObj',
++  'IsZmodpZObjLarge',
++  'IsZmodpZObjSmall',
++  'IsomorphicSubgroups',
++  'IsomorphismFpAlgebra',
++  'IsomorphismFpGroup',
++  'IsomorphismFpGroupByGenerators',
++  'IsomorphismFpGroupByPcgs',
++  'IsomorphismFpSemigroup',
++  'IsomorphismGroups',
++  'IsomorphismMatrixAlgebra',
++  'IsomorphismPcGroup',
++  'IsomorphismPermGroup',
++  'IsomorphismPermGroupImfGroup',
++  'IsomorphismReesMatrixSemigroup',
++  'IsomorphismRefinedPcGroup',
++  'IsomorphismSimplifiedFpGroup',
++  'IsomorphismSpecialPcGroup',
++  'IsomorphismTransformationSemigroup',
++  'IsomorphismTypeInfoFiniteSimpleGroup',
++  'Iterated',
++  'Iterator',
++  'IteratorByBasis',
++  'IteratorByFunctions',
++  'IteratorList',
++  'IteratorSorted',
++  'Jacobi',
++  'JenningsLieAlgebra',
++  'JenningsSeries',
++  'JordanDecomposition',
++  'Kernel',
++  'KernelOfAdditiveGeneralMapping',
++  'KernelOfCharacter',
++  'KernelOfMultiplicativeGeneralMapping',
++  'KernelOfTransformation',
++  'KillingMatrix',
++  'KnuthBendixRewritingSystem',
++  'KroneckerProduct',
++  'KuKGenerators',
++  'LLL',
++  'LLLReducedBasis',
++  'LLLReducedGramMat',
++  'Lambda',
++  'LargestElementGroup',
++  'LargestElementStabChain',
++  'LargestMovedPoint',
++  'LastSystemError',
++  'LatticeByCyclicExtension',
++  'LatticeSubgroups',
++  'Lcm',
++  'LcmInt',
++  'LcmOp',
++  'LeadingCoefficient',
++  'LeadingCoefficientOfPolynomial',
++  'LeadingExponentOfPcElement',
++  'LeadingMonomial',
++  'LeadingMonomialOfPolynomial',
++  'LeadingTermOfPolynomial',
++  'Legendre',
++  'Length',
++  'LenstraBase',
++  'LessThanFunction',
++  'LessThanOrEqualFunction',
++  'LetterRepAssocWord',
++  'LevelsOfGenerators',
++  'LeviMalcevDecomposition',
++  'LexicographicOrdering',
++  'LieAlgebra',
++  'LieAlgebraByStructureConstants',
++  'LieBracket',
++  'LieCenter',
++  'LieCentralizer',
++  'LieCentre',
++  'LieCoboundaryOperator',
++  'LieDerivedSeries',
++  'LieDerivedSubalgebra',
++  'LieLowerCentralSeries',
++  'LieNilRadical',
++  'LieNormalizer',
++  'LieObject',
++  'LieSolvableRadical',
++  'LieUpperCentralSeries',
++  'LiftedInducedPcgs',
++  'LiftedPcElement',
++  'LinearAction',
++  'LinearActionLayer',
++  'LinearCharacters',
++  'LinearCombination',
++  'LinearCombinationPcgs',
++  'LinearIndependentColumns',
++  'LinearOperation',
++  'LinearOperationLayer',
++  'LinesOfStraightLineProgram',
++  'List',
++  'ListN',
++  'ListPerm',
++  'ListStabChain',
++  'ListWithIdenticalEntries',
++  'ListX',
++  'LoadDynamicModule',
++  'LoadPackage',
++  'Log',
++  'LogFFE',
++  'LogInt',
++  'LogMod',
++  'LogModShanks',
++  'LogTo',
++  'LongestWeylWordPerm',
++  'LookupDictionary',
++  'LowIndexSubgroupsFpGroup',
++  'LowIndexSubgroupsFpGroupIterator',
++  'LowerCentralSeries',
++  'LowerCentralSeriesOfGroup',
++  'LowercaseString',
++  'Lucas',
++  'MakeConfluent',
++  'MakeImmutable',
++  'MakeReadOnlyGlobal',
++  'MakeReadWriteGlobal',
++  'MappedWord',
++  'MappingByFunction',
++  'MappingPermListList',
++  'MatAlgebra',
++  'MatClassMultCoeffsCharTable',
++  'MatLieAlgebra',
++  'MatScalarProducts',
++  'MathieuGroup',
++  'MatrixAlgebra',
++  'MatrixAutomorphisms',
++  'MatrixByBlockMatrix',
++  'MatrixLieAlgebra',
++  'MatrixOfAction',
++  'MaximalAbelianQuotient',
++  'MaximalBlocks',
++  'MaximalNormalSubgroups',
++  'MaximalSubgroupClassReps',
++  'MaximalSubgroups',
++  'MaximalSubgroupsLattice',
++  'Maximum',
++  'MaximumList',
++  'MeetEquivalenceRelations',
++  'MeetMaps',
++  'MinimalElementCosetStabChain',
++  'MinimalGeneratingSet',
++  'MinimalNonmonomialGroup',
++  'MinimalNormalSubgroups',
++  'MinimalPolynomial',
++  'MinimalStabChain',
++  'MinimalSupergroupsLattice',
++  'MinimizedBombieriNorm',
++  'Minimum',
++  'MinimumList',
++  'MinusCharacter',
++  'ModuleByRestriction',
++  'ModuleOfExtension',
++  'ModuloPcgs',
++  'MoebiusMu',
++  'MolienSeries',
++  'MolienSeriesInfo',
++  'MolienSeriesWithGivenDenominator',
++  'Monoid',
++  'MonoidByGenerators',
++  'MonoidByMultiplicationTable',
++  'MonoidOfRewritingSystem',
++  'MonomialComparisonFunction',
++  'MonomialExtGrlexLess',
++  'MonomialExtrepComparisonFun',
++  'MonomialGrevlexOrdering',
++  'MonomialGrlexOrdering',
++  'MonomialLexOrdering',
++  'MonomialTotalDegreeLess',
++  'MostFrequentGeneratorFpGroup',
++  'MovedPoints',
++  'MultRowVector',
++  'MultiplicationTable',
++  'MultiplicativeNeutralElement',
++  'MultiplicativeZero',
++  'MultiplicativeZeroOp',
++  'NF',
++  'NK',
++  'NameFunction',
++  'NaturalCharacter',
++  'NaturalHomomorphismByGenerators',
++  'NaturalHomomorphismByIdeal',
++  'NaturalHomomorphismByNormalSubgroup',
++  'NaturalHomomorphismBySubAlgebraModule',
++  'NaturalHomomorphismBySubspace',
++  'NearAdditiveGroup',
++  'NearAdditiveGroupByGenerators',
++  'NegativeRootVectors',
++  'NegativeRoots',
++  'NextIterator',
++  'NextPrimeInt',
++  'NiceBasis',
++  'NiceBasisFiltersInfo',
++  'NiceFreeLeftModule',
++  'NiceFreeLeftModuleInfo',
++  'NiceMonomorphism',
++  'NiceMonomorphismAutomGroup',
++  'NiceObject',
++  'NiceVector',
++  'NilpotencyClassOfGroup',
++  'NonabelianExteriorSquare',
++  'Norm',
++  'NormalBase',
++  'NormalClosure',
++  'NormalFormIntMat',
++  'NormalIntersection',
++  'NormalSeriesByPcgs',
++  'NormalSubgroups',
++  'NormalizeWhitespace',
++  'NormalizedWhitespace',
++  'Normalizer',
++  'NormalizerInGLnZ',
++  'NormalizerInGLnZBravaisGroup',
++  'NormedRowVector',
++  'NrArrangements',
++  'NrBasisVectors',
++  'NrCombinations',
++  'NrConjugacyClasses',
++  'NrConjugacyClassesGL',
++  'NrConjugacyClassesGU',
++  'NrConjugacyClassesPGL',
++  'NrConjugacyClassesPGU',
++  'NrConjugacyClassesPSL',
++  'NrConjugacyClassesPSU',
++  'NrConjugacyClassesSL',
++  'NrConjugacyClassesSLIsogeneous',
++  'NrConjugacyClassesSU',
++  'NrConjugacyClassesSUIsogeneous',
++  'NrDerangements',
++  'NrInputsOfStraightLineProgram',
++  'NrMovedPoints',
++  'NrOrderedPartitions',
++  'NrPartitionTuples',
++  'NrPartitions',
++  'NrPartitionsSet',
++  'NrPermutationsList',
++  'NrPolyhedralSubgroups',
++  'NrRestrictedPartitions',
++  'NrTuples',
++  'NrUnorderedTuples',
++  'NullAlgebra',
++  'NullMat',
++  'NullspaceIntMat',
++  'NullspaceMat',
++  'NullspaceMatDestructive',
++  'NullspaceModQ',
++  'Number',
++  'NumberArgumentsFunction',
++  'NumberFFVector',
++  'NumberPerfectGroups',
++  'NumberPerfectLibraryGroups',
++  'NumberSmallGroups',
++  'NumberSyllables',
++  'NumeratorOfModuloPcgs',
++  'NumeratorOfRationalFunction',
++  'NumeratorRat',
++  'Objectify',
++  'ObjectifyWithAttributes',
++  'OctaveAlgebra',
++  'OldGeneratorsOfPresentation',
++  'Omega',
++  'OnBreak',
++  'OnBreakMessage',
++  'OnIndeterminates',
++  'OnLeftInverse',
++  'OnLines',
++  'OnPairs',
++  'OnPoints',
++  'OnRight',
++  'OnSets',
++  'OnSetsDisjointSets',
++  'OnSetsSets',
++  'OnSetsTuples',
++  'OnSubspacesByCanonicalBasis',
++  'OnTuples',
++  'OnTuplesSets',
++  'OnTuplesTuples',
++  'One',
++  'OneAttr',
++  'OneCoboundaries',
++  'OneCocycles',
++  'OneFactorBound',
++  'OneImmutable',
++  'OneMutable',
++  'OneOfPcgs',
++  'OneOp',
++  'OneSM',
++  'OneSameMutability',
++  'OperationAlgebraHomomorphism',
++  'Orbit',
++  'OrbitFusions',
++  'OrbitLength',
++  'OrbitLengths',
++  'OrbitLengthsDomain',
++  'OrbitPerms',
++  'OrbitPowerMaps',
++  'OrbitStabChain',
++  'OrbitStabilizer',
++  'OrbitStabilizerAlgorithm',
++  'Orbits',
++  'OrbitsDomain',
++  'OrbitsPerms',
++  'Order',
++  'OrderMod',
++  'OrderingOnGenerators',
++  'Ordinal',
++  'OrdinaryCharacterTable',
++  'OrthogonalComponents',
++  'OrthogonalEmbeddings',
++  'OrthogonalEmbeddingsSpecialDimension',
++  'PCentralLieAlgebra',
++  'PCentralNormalSeriesByPcgsPGroup',
++  'PCentralSeries',
++  'PClassPGroup',
++  'PCore',
++  'PGL',
++  'PGU',
++  'POW',
++  'PQuotient',
++  'PROD',
++  'PSL',
++  'PSP',
++  'PSU',
++  'PSp',
++  'PadicCoefficients',
++  'PadicNumber',
++  'PadicValuation',
++  'Parametrized',
++  'Parent',
++  'ParentPcgs',
++  'PartialFactorization',
++  'PartialOrderByOrderingFunction',
++  'PartialOrderOfHasseDiagram',
++  'Partition',
++  'PartitionTuples',
++  'Partitions',
++  'PartitionsGreatestEQ',
++  'PartitionsGreatestLE',
++  'PartitionsSet',
++  'PcGroupCode',
++  'PcGroupCodeRec',
++  'PcGroupFpGroup',
++  'PcGroupWithPcgs',
++  'PcSeries',
++  'Pcgs',
++  'PcgsCentralSeries',
++  'PcgsChiefSeries',
++  'PcgsElementaryAbelianSeries',
++  'PcgsPCentralSeriesPGroup',
++  'Pcgs_OrbitStabilizer',
++  'PerfectGroup',
++  'PerfectIdentification',
++  'PerfectResiduum',
++  'Perform',
++  'PermBounds',
++  'PermCharInfo',
++  'PermCharInfoRelative',
++  'PermChars',
++  'PermComb',
++  'PermLeftQuoTransformation',
++  'PermList',
++  'PermListList',
++  'Permanent',
++  'Permutation',
++  'PermutationCharacter',
++  'PermutationCycle',
++  'PermutationCycleOp',
++  'PermutationGModule',
++  'PermutationMat',
++  'PermutationsList',
++  'Permuted',
++  'Phi',
++  'PolynomialByExtRep',
++  'PolynomialCoefficientsOfPolynomial',
++  'PolynomialDivisionAlgorithm',
++  'PolynomialModP',
++  'PolynomialReducedRemainder',
++  'PolynomialReduction',
++  'PolynomialRing',
++  'PopOptions',
++  'Position',
++  'PositionBound',
++  'PositionCanonical',
++  'PositionFirstComponent',
++  'PositionNonZero',
++  'PositionNot',
++  'PositionNthOccurrence',
++  'PositionProperty',
++  'PositionSet',
++  'PositionSorted',
++  'PositionStream',
++  'PositionSublist',
++  'PositionWord',
++  'PositionsOp',
++  'PositiveRoots',
++  'PossibleClassFusions',
++  'PossiblePowerMaps',
++  'PowerMap',
++  'PowerMapOp',
++  'PowerModCoeffs',
++  'PowerModInt',
++  'PowerPartition',
++  'PreImage',
++  'PreImageElm',
++  'PreImages',
++  'PreImagesElm',
++  'PreImagesRange',
++  'PreImagesRepresentative',
++  'PreImagesSet',
++  'PrefrattiniSubgroup',
++  'PreimagesOfTransformation',
++  'PresentationFpGroup',
++  'PresentationNormalClosure',
++  'PresentationNormalClosureRrs',
++  'PresentationSubgroup',
++  'PresentationSubgroupMtc',
++  'PresentationSubgroupRrs',
++  'PresentationViaCosetTable',
++  'PrevPrimeInt',
++  'PrimaryGeneratorWords',
++  'PrimeBlocks',
++  'PrimeBlocksOp',
++  'PrimeField',
++  'PrimePGroup',
++  'PrimePowersInt',
++  'PrimeResidues',
++  'Primes',
++  'PrimitiveElement',
++  'PrimitiveGroup',
++  'PrimitiveIdentification',
++  'PrimitivePolynomial',
++  'PrimitiveRoot',
++  'PrimitiveRootMod',
++  'Print',
++  'PrintAmbiguity',
++  'PrintArray',
++  'PrintCharacterTable',
++  'PrintFactorsInt',
++  'PrintFormattingStatus',
++  'PrintHashWithNames',
++  'PrintObj',
++  'PrintTo',
++  'Process',
++  'Product',
++  'ProductCoeffs',
++  'ProductSpace',
++  'ProductX',
++  'ProjectedInducedPcgs',
++  'ProjectedPcElement',
++  'Projection',
++  'ProjectionMap',
++  'ProjectiveActionHomomorphismMatrixGroup',
++  'ProjectiveActionOnFullSpace',
++  'ProjectiveGeneralLinearGroup',
++  'ProjectiveGeneralUnitaryGroup',
++  'ProjectiveOrder',
++  'ProjectiveSpecialLinearGroup',
++  'ProjectiveSpecialUnitaryGroup',
++  'ProjectiveSymplecticGroup',
++  'PseudoRandom',
++  'PthPowerImage',
++  'PthPowerImages',
++  'PushOptions',
++  'QUO',
++  'Quadratic',
++  'QuaternionAlgebra',
++  'QuoInt',
++  'QuotRemLaurpols',
++  'Quotient',
++  'QuotientMod',
++  'QuotientPolynomialsExtRep',
++  'QuotientRemainder',
++  'READ',
++  'RadicalGroup',
++  'RadicalOfAlgebra',
++  'Random',
++  'RandomBinaryRelationOnPoints',
++  'RandomHashKey',
++  'RandomInvertibleMat',
++  'RandomIsomorphismTest',
++  'RandomList',
++  'RandomMat',
++  'RandomPrimitivePolynomial',
++  'RandomSource',
++  'RandomTransformation',
++  'RandomUnimodularMat',
++  'Range',
++  'Rank',
++  'RankAction',
++  'RankFilter',
++  'RankMat',
++  'RankOfTransformation',
++  'RankPGroup',
++  'Rat',
++  'RationalClass',
++  'RationalClasses',
++  'RationalizedMat',
++  'Rationals',
++  'Read',
++  'ReadAll',
++  'ReadAllLine',
++  'ReadAsFunction',
++  'ReadByte',
++  'ReadLine',
++  'ReadPackage',
++  'ReadPkg',
++  'ReadTest',
++  'RealClasses',
++  'RealPart',
++  'RealizableBrauerCharacters',
++  'RecFields',
++  'RecNames',
++  'RedispatchOnCondition',
++  'ReduceCoeffs',
++  'ReduceCoeffsMod',
++  'ReduceRules',
++  'ReduceStabChain',
++  'Reduced',
++  'ReducedAdditiveInverse',
++  'ReducedCharacters',
++  'ReducedClassFunctions',
++  'ReducedComm',
++  'ReducedConfluentRewritingSystem',
++  'ReducedConjugate',
++  'ReducedDifference',
++  'ReducedForm',
++  'ReducedGroebnerBasis',
++  'ReducedInverse',
++  'ReducedLeftQuotient',
++  'ReducedOne',
++  'ReducedPcElement',
++  'ReducedPower',
++  'ReducedProduct',
++  'ReducedQuotient',
++  'ReducedScalarProduct',
++  'ReducedSum',
++  'ReducedZero',
++  'Ree',
++  'ReeGroup',
++  'ReesCongruenceOfSemigroupIdeal',
++  'ReesMatrixSemigroup',
++  'ReesMatrixSemigroupElement',
++  'ReesZeroMatrixSemigroup',
++  'ReesZeroMatrixSemigroupElement',
++  'ReesZeroMatrixSemigroupElementIsZero',
++  'RefinedPcGroup',
++  'RegularActionHomomorphism',
++  'RegularModule',
++  'RelationsOfFpSemigroup',
++  'RelativeBasis',
++  'RelativeOrders',
++  'RelatorsOfFpGroup',
++  'RemInt',
++  'Remove',
++  'RemoveCharacters',
++  'RemoveFile',
++  'RemoveOuterCoeffs',
++  'RemoveRelator',
++  'RemoveSet',
++  'RemoveStabChain',
++  'ReplacedString',
++  'Representative',
++  'RepresentativeAction',
++  'RepresentativeLinearOperation',
++  'RepresentativeSmallest',
++  'RepresentativesContainedRightCosets',
++  'RepresentativesFusions',
++  'RepresentativesMinimalBlocks',
++  'RepresentativesPerfectSubgroups',
++  'RepresentativesPowerMaps',
++  'RepresentativesSimpleSubgroups',
++  'Reread',
++  'RereadPackage',
++  'Reset',
++  'RestoreStateRandom',
++  'RestrictOutputsOfSLP',
++  'Restricted',
++  'RestrictedClassFunction',
++  'RestrictedClassFunctions',
++  'RestrictedMapping',
++  'RestrictedPartitions',
++  'RestrictedPerm',
++  'RestrictedTransformation',
++  'ResultOfStraightLineProgram',
++  'Resultant',
++  'Reversed',
++  'RewriteWord',
++  'RightCoset',
++  'RightCosets',
++  'RightDerivations',
++  'Ring',
++  'RingWithOne',
++  'Root',
++  'RootInt',
++  'RootMod',
++  'RootOfDefiningPolynomial',
++  'RootSystem',
++  'RootsMod',
++  'RoundCyc',
++  'Rules',
++  'SL',
++  'SO',
++  'SP',
++  'SQ',
++  'SSortedList',
++  'SU',
++  'SameBlock',
++  'SandwichMatrixOfReesMatrixSemigroup',
++  'SandwichMatrixOfReesZeroMatrixSemigroup',
++  'SaveWorkspace',
++  'ScalarProduct',
++  'SchurCover',
++  'SemiSimpleType',
++  'SemidirectProduct',
++  'Semigroup',
++  'Set',
++  'SetAssertionLevel',
++  'SetCommutator',
++  'SetConjugate',
++  'SetCrystGroupDefaultAction',
++  'SetEntrySCTable',
++  'SetFilterObj',
++  'SetHashEntry',
++  'SetHashEntryAtLastIndex',
++  'SetHelpViewer',
++  'SetIndeterminateName',
++  'SetInfoLevel',
++  'SetName',
++  'SetParent',
++  'SetPower',
++  'ShallowCopy',
++  'ShiftedCoeffs',
++  'ShiftedPadicNumber',
++  'ShortLexOrdering',
++  'ShortestVectors',
++  'Sigma',
++  'SignInt',
++  'SignPartition',
++  'SignPerm',
++  'SimpleLieAlgebra',
++  'SimpleSystem',
++  'SimplifiedFpGroup',
++  'SimplifyPresentation',
++  'SimultaneousEigenvalues',
++  'SingleCollector',
++  'Size',
++  'SizeConsiderFunction',
++  'SizeNumbersPerfectGroups',
++  'SizeOfFieldOfDefinition',
++  'SizeScreen',
++  'SizeStabChain',
++  'SizesCentralizers',
++  'SizesConjugacyClasses',
++  'SizesPerfectGroups',
++  'SmallGeneratingSet',
++  'SmallGroup',
++  'SmallerDegreePermutationRepresentation',
++  'SmallestGeneratorPerm',
++  'SmallestMovedPoint',
++  'SmallestRootInt',
++  'SmithNormalFormIntegerMat',
++  'Socle',
++  'SocleTypePrimitiveGroup',
++  'SolutionIntMat',
++  'SolutionMat',
++  'SolutionMatDestructive',
++  'SolutionNullspaceIntMat',
++  'Sort',
++  'SortParallel',
++  'SortedCharacterTable',
++  'SortedCharacters',
++  'SortedList',
++  'SortedSparseActionHomomorphism',
++  'SortingPerm',
++  'Sp',
++  'SparseActionHomomorphism',
++  'SparseCartanMatrix',
++  'SparseHashTable',
++  'SparseIntKey',
++  'SpecialLinearGroup',
++  'SpecialOrthogonalGroup',
++  'SpecialPcgs',
++  'SpecialUnitaryGroup',
++  'SplitCharacters',
++  'SplitExtension',
++  'SplitString',
++  'SplittingField',
++  'Sqrt',
++  'SquareRoots',
++  'StabChain',
++  'StabChainBaseStrongGenerators',
++  'StabChainImmutable',
++  'StabChainMutable',
++  'StabChainOp',
++  'StabChainOptions',
++  'Stabilizer',
++  'StabilizerOfExternalSet',
++  'StabilizerPcgs',
++  'StandardAssociate',
++  'StandardGeneratorsInfo',
++  'StandardizeTable',
++  'StarCyc',
++  'Stirling1',
++  'Stirling2',
++  'StratMeetPartition',
++  'StretchImportantSLPElement',
++  'String',
++  'StringDate',
++  'StringOfResultOfStraightLineProgram',
++  'StringPP',
++  'StringTime',
++  'StructuralCopy',
++  'StructureConstantsTable',
++  'StructureDescription',
++  'SubAlgebraModule',
++  'Subalgebra',
++  'SubdirectProduct',
++  'SubdirectProducts',
++  'Subfield',
++  'Subfields',
++  'Subgroup',
++  'SubgroupByPcgs',
++  'SubgroupByProperty',
++  'SubgroupOfWholeGroupByCosetTable',
++  'SubgroupOfWholeGroupByQuotientSubgroup',
++  'SubgroupProperty',
++  'SubgroupShell',
++  'SubgroupsSolvableGroup',
++  'Submodule',
++  'Submonoid',
++  'SubnearAdditiveGroup',
++  'SubnormalSeries',
++  'Subring',
++  'SubringWithOne',
++  'Subsemigroup',
++  'Subspace',
++  'Subspaces',
++  'SubstitutedWord',
++  'SubtractSet',
++  'Subword',
++  'Successors',
++  'Sum',
++  'SumFactorizationFunctionPcgs',
++  'SumIntersectionMat',
++  'SumX',
++  'SupersolvableResiduum',
++  'SupportedCharacterTableInfo',
++  'SurjectiveActionHomomorphismAttr',
++  'SuzukiGroup',
++  'SylowComplement',
++  'SylowSubgroup',
++  'SylowSystem',
++  'SymmetricClosureBinaryRelation',
++  'SymmetricGroup',
++  'SymmetricParentGroup',
++  'SymmetricParts',
++  'SymmetricPower',
++  'SymmetricPowerOfAlgebraModule',
++  'Symmetrizations',
++  'SymplecticComponents',
++  'SymplecticGroup',
++  'TableAutomorphisms',
++  'TableOfMarks',
++  'TableOfMarksByLattice',
++  'TableOfMarksComponents',
++  'TableOfMarksCyclic',
++  'TableOfMarksDihedral',
++  'TableOfMarksFrobenius',
++  'Tau',
++  'TensorProduct',
++  'TensorProductGModule',
++  'TensorProductOfAlgebraModules',
++  'Tensored',
++  'TietzeWordAbstractWord',
++  'Trace',
++  'TraceImmediateMethods',
++  'TraceMat',
++  'TraceMethods',
++  'TracePolynomial',
++  'TracedCosetFpGroup',
++  'TransferDiagram',
++  'Transformation',
++  'TransformationData',
++  'TransformationRelation',
++  'TransformationType',
++  'TransformingPermutations',
++  'TransformingPermutationsCharacterTables',
++  'TransitiveClosureBinaryRelation',
++  'TransitiveIdentification',
++  'Transitivity',
++  'TranslatorSubalgebra',
++  'TransposedMat',
++  'TransposedMatAttr',
++  'TransposedMatDestructive',
++  'TransposedMatImmutable',
++  'TransposedMatMutable',
++  'TransposedMatOp',
++  'TransposedMatrixGroup',
++  'TriangulizeIntegerMat',
++  'TriangulizeMat',
++  'TriangulizedIntegerMat',
++  'TriangulizedIntegerMatTransform',
++  'TriangulizedNullspaceMat',
++  'TriangulizedNullspaceMatDestructive',
++  'TrivialCharacter',
++  'TrivialGroup',
++  'TrivialIterator',
++  'TrivialSubalgebra',
++  'TrivialSubgroup',
++  'TrivialSubmagmaWithOne',
++  'TrivialSubmodule',
++  'TrivialSubmonoid',
++  'TrivialSubspace',
++  'Tuple',
++  'Tuples',
++  'Unbind',
++  'UnbindElmWPObj',
++  'UnbindGlobal',
++  'UnderlyingCharacterTable',
++  'UnderlyingCharacteristic',
++  'UnderlyingElement',
++  'UnderlyingElementOfReesMatrixSemigroupElement',
++  'UnderlyingElementOfReesZeroMatrixSemigroupElement',
++  'UnderlyingExternalSet',
++  'UnderlyingGeneralMapping',
++  'UnderlyingGroup',
++  'UnderlyingLeftModule',
++  'UnderlyingLieAlgebra',
++  'UnderlyingRelation',
++  'Union',
++  'Union2',
++  'Unique',
++  'UniteSet',
++  'Units',
++  'UnivariatePolynomial',
++  'UnivariatePolynomialByCoefficients',
++  'UnivariatePolynomialRing',
++  'UnivariateRationalFunctionByCoefficients',
++  'UnivariatenessTestRationalFunction',
++  'UniversalEnvelopingAlgebra',
++  'Unknown',
++  'UnorderedTuples',
++  'UnprofileFunctions',
++  'UnprofileMethods',
++  'UntraceMethods',
++  'UpdateMap',
++  'UpperCentralSeries',
++  'UpperCentralSeriesOfGroup',
++  'UpperSubdiagonal',
++  'UseBasis',
++  'UseFactorRelation',
++  'UseIsomorphismRelation',
++  'UseSubsetRelation',
++  'Valuation',
++  'Value',
++  'ValueCochain',
++  'ValueGlobal',
++  'ValueMolienSeries',
++  'ValueOption',
++  'ValuePol',
++  'ValuesOfClassFunction',
++  'VectorSpace',
++  'VectorSpaceByPcgsOfElementaryAbelianGroup',
++  'View',
++  'VirtualCharacter',
++  'WeakPointerObj',
++  'WedgeGModule',
++  'WeekDay',
++  'WeightLexOrdering',
++  'WeightOfGenerators',
++  'WeightVecFFE',
++  'WeylGroup',
++  'WeylOrbitIterator',
++  'Where',
++  'WreathProduct',
++  'WreathProductImprimitiveAction',
++  'WreathProductOrdering',
++  'WreathProductProductAction',
++  'WriteAll',
++  'WriteByte',
++  'WriteLine',
++  'ZClassRepsQClass',
++  'Zero',
++  'ZeroAttr',
++  'ZeroCoefficient',
++  'ZeroCoefficientRatFun',
++  'ZeroMapping',
++  'ZeroMutable',
++  'ZeroOp',
++  'ZeroSM',
++  'ZeroSameMutability',
++ ]
+diff --git a/sage/libs/gap/gap_includes.pxd b/sage/libs/gap/gap_includes.pxd
+new file mode 100644
+--- /dev/null
++++ b/sage/libs/gap/gap_includes.pxd
+@@ -0,0 +1,286 @@
++
++###############################################################################
++#
++#   SAGE: Open Source Mathematical Software
++#
++#       Copyright (C) 2009, William Stein <wstein@gmail.com>
++#
++#  Distributed under the terms of the GNU General Public License (GPL) v2+.
++#  The full text of the GPL is available at: http://www.gnu.org/licenses/
++###############################################################################
++
++
++include "../../ext/stdsage.pxi"
++include "../../ext/interrupt.pxi"  # ctrl-c interrupt block support
++
++cdef extern from "gap/libgap.h":
++    void libgap_initialize(int argc, char** argv)
++    void libgap_finalize()
++    void libgap_start_interaction(char* inputline)
++    char* libgap_get_output()
++    void libgap_finish_interaction()
++
++cdef extern from "gap/system.h": 
++    ctypedef char Char
++    ctypedef unsigned char UChar
++
++cdef extern from "gap/code.h": 
++    ctypedef unsigned int Stat
++    ctypedef Stat* PtrBody
++
++cdef extern from "gap/objects.h":
++    ctypedef void* Obj
++    Obj SHALLOW_COPY_OBJ(Obj obj)
++    bint IS_INTOBJ(Obj obj)
++    Obj INTOBJ_INT(int)
++    int INT_INTOBJ(Obj)
++    int TNUM_OBJ(Obj obj)
++    cdef int FIRST_REAL_TNUM
++    cdef int FIRST_CONSTANT_TNUM
++    cdef int T_INT
++    cdef int T_INTPOS
++    cdef int T_INTNEG
++    cdef int T_RAT
++    cdef int T_CYC
++    cdef int T_FFE
++    cdef int T_PERM2
++    cdef int T_PERM4
++    cdef int T_BOOL
++    cdef int T_CHAR
++    cdef int T_FUNCTION
++    cdef int T_FLAGS
++    cdef int T_FLOAT
++    cdef int T_RESERVED_BY_GAP
++    cdef int LAST_CONSTANT_TNUM
++    cdef int IMMUTABLE
++    cdef int FIRST_IMM_MUT_TNUM
++    cdef int FIRST_RECORD_TNUM
++    cdef int T_PREC
++    cdef int LAST_RECORD_TNUM
++    cdef int FIRST_LIST_TNUM
++    cdef int FIRST_PLIST_TNUM
++    cdef int T_PLIST
++    cdef int T_PLIST_NDENSE
++    cdef int T_PLIST_DENSE
++    cdef int T_PLIST_DENSE_NHOM
++    cdef int T_PLIST_DENSE_NHOM_SSORT
++    cdef int T_PLIST_DENSE_NHOM_NSORT
++    cdef int T_PLIST_EMPTY
++    cdef int T_PLIST_HOM
++    cdef int T_PLIST_HOM_NSORT
++    cdef int T_PLIST_HOM_SSORT
++    cdef int T_PLIST_TAB
++    cdef int T_PLIST_TAB_NSORT
++    cdef int T_PLIST_TAB_SSORT
++    cdef int T_PLIST_TAB_RECT
++    cdef int T_PLIST_TAB_RECT_NSORT
++    cdef int T_PLIST_TAB_RECT_SSORT
++    cdef int T_PLIST_CYC
++    cdef int T_PLIST_CYC_NSORT
++    cdef int T_PLIST_CYC_SSORT
++    cdef int T_PLIST_FFE      
++    cdef int LAST_PLIST_TNUM
++    cdef int T_RANGE_NSORT  
++    cdef int T_RANGE_SSORT  
++    cdef int T_BLIST        
++    cdef int T_BLIST_NSORT  
++    cdef int T_BLIST_SSORT
++    cdef int T_STRING     
++    cdef int T_STRING_NSORT
++    cdef int T_STRING_SSORT
++    cdef int LAST_LIST_TNUM
++    cdef int LAST_IMM_MUT_TNUM
++    cdef int FIRST_EXTERNAL_TNUM
++    cdef int T_COMOBJ
++    cdef int T_POSOBJ
++    cdef int T_DATOBJ
++    cdef int T_WPOBJ
++    cdef int LAST_EXTERNAL_TNUM
++    cdef int LAST_REAL_TNUM
++    cdef int LAST_VIRTUAL_TNUM
++    cdef int FIRST_COPYING_TNUM
++    cdef int COPYING           
++    cdef int LAST_COPYING_TNUM
++    cdef int FIRST_TESTING_TNUM
++    cdef int TESTING          
++    cdef int LAST_TESTING_TNUM
++
++cdef extern from "gap/gap.h":
++    ctypedef unsigned int UInt
++    ctypedef void* ExecStatus
++    void ViewObjHandler(void*)
++    void InitializeGap(int*, char** argv)
++    void set_system_variables(char**, char**)
++    cdef UInt Last
++    cdef ExecStatus STATUS_END
++    cdef ExecStatus STATUS_RETURN_VAL
++    cdef ExecStatus STATUS_RETURN_VOID
++    cdef ExecStatus STATUS_TNM
++    cdef ExecStatus STATUS_QUIT
++    cdef ExecStatus STATUS_EOF
++    cdef ExecStatus STATUS_ERROR
++    cdef ExecStatus STATUS_QQUIT
++    
++cdef extern from "gap/read.h":
++    void* ReadEvalCommand(Obj context)
++    void* ReadEvalFile()
++    void* ReadEvalResult
++
++cdef extern from "gap/scanner.h":
++    void ClearError()
++    UInt NrError
++    UInt Symbol
++    void GetSymbol()
++    void Match (UInt symbol, char* msg, UInt skipto)
++    int S_ILLEGAL
++    int S_IDENT
++    int S_UNBIND
++    int S_ISBOUND
++    int S_TRYNEXT
++    int S_INFO
++    int S_ASSERT
++    int S_SAVEWS
++    int S_LOADWS
++    int S_LBRACK
++    int S_LBRACE
++    int S_BLBRACK
++    int S_BLBRACE
++    int S_RBRACK
++    int S_RBRACE
++    int S_DOT
++    int S_BDOT
++    int S_LPAREN
++    int S_RPAREN
++    int S_COMMA
++    int S_DOTDOT
++    int S_COLON
++    int S_PARTIALINT
++    int S_INT
++    int S_TRUE
++    int S_FALSE
++    int S_CHAR
++    int S_STRING
++    int S_PARTIALSTRING
++    int S_REC
++    int S_FUNCTION
++    int S_LOCAL
++    int S_END
++    int S_MAPTO
++    int S_MULT
++    int S_DIV
++    int S_MOD
++    int S_POW
++    int S_PLUS
++    int S_MINUS
++    int S_EQ
++    int S_LT
++    int S_GT
++    int S_NE
++    int S_LE
++    int S_GE
++    int S_IN
++    int S_NOT
++    int S_AND
++    int S_OR
++    int S_ASSIGN
++    int S_IF
++    int S_FOR
++    int S_WHILE
++    int S_REPEAT
++    int S_THEN
++    int S_ELIF
++    int S_ELSE
++    int S_FI
++    int S_DO
++    int S_OD
++    int S_UNTIL
++    int S_BREAK
++    int S_RETURN
++    int S_QUIT
++    int S_QQUIT
++    int S_CONTINUE
++    int S_SEMICOLON
++    int S_EOF
++
++cdef extern from "gap/gvars.h":
++    UInt GVarName(char* name)
++    void AssGVar(UInt gvar, Obj val)
++    Obj VAL_GVAR(UInt gvar)
++
++cdef extern from "gap/string.h": 
++    char* CSTR_STRING(Obj list)
++    int GET_LEN_STRING(Obj list)
++    bint IS_STRING(Obj obj)
++
++cdef extern from "gap/gasman.h":
++    void CHANGED_BAG(Obj bag)
++    void MARK_BAG(Obj bag)
++    bint IS_MARKED_ALIVE(Obj bag)
++    bint IS_MARKED_DEAD(Obj bag)
++    bint IS_MARKED_HALFDEAD(Obj bag)
++    cdef UInt NrAllBags
++    cdef UInt SizeAllBags
++    cdef UInt NrLiveBags
++    cdef UInt SizeLiveBags
++    cdef UInt NrDeadBags
++    cdef UInt SizeDeadBags
++    cdef UInt NrHalfDeadBags
++
++cdef extern from "gap/ariths.h":
++    Obj SUM (Obj, Obj)
++    Obj DIFF(Obj, Obj)
++    Obj PROD(Obj, Obj)
++    Obj QUO(Obj, Obj)
++    Obj POW(Obj, Obj)
++    Obj MOD(Obj, Obj)
++    Obj CALL_0ARGS(Obj f)              # 0 arguments
++    Obj CALL_1ARGS(Obj f, Obj a1)      # 1 argument
++    Obj CALL_2ARGS(Obj f, Obj a1, Obj a2)    
++    Obj CALL_3ARGS(Obj f, Obj a1, Obj a2, Obj a3)    
++    Obj CALL_4ARGS(Obj f, Obj a1, Obj a2, Obj a3, Obj a4)   
++    Obj CALL_5ARGS(Obj f, Obj a1, Obj a2, Obj a3, Obj a4, Obj a5)   
++    Obj CALL_6ARGS(Obj f, Obj a1, Obj a2, Obj a3, Obj a4, Obj a5, Obj a6)
++    Obj CALL_XARGS(Obj f, Obj args)   # more than 6 arguments
++
++cdef extern from "gap/calls.h":
++    int IS_FUNC(Obj)
++
++cdef extern from "gap/plist.h":
++    Obj NEW_PLIST(int type, int len) 
++    bint IS_PLIST(Obj lst)
++    int LEN_PLIST(Obj lst)
++    Obj ELM_PLIST(Obj lst, int pos)
++
++cdef extern from "gap/lists.h":
++    void UNB_LIST(Obj list, int pos)
++
++cdef extern from "gap/listfunc.h":
++    void AddList(Obj list, Obj obj)
++    void AddPlist(Obj list, Obj obj)
++
++cdef extern from "gap/records.h":
++    char* NAME_RNAM(UInt rnam)
++    UInt RNamIntg(int i)
++    bint IS_REC(Obj obj)
++    Obj ELM_REC(Obj rec, UInt rnam)
++    UInt RNamName(Char* name)
++
++cdef extern from "gap/precord.h":
++    Obj NEW_PREC(int len) 
++    int LEN_PREC(Obj rec)
++    int GET_RNAM_PREC(Obj rec, int i)
++    Obj GET_ELM_PREC(Obj rec, int i)
++    void AssPRec(Obj rec, UInt rnam, Obj val)
++    void UnbPRec(Obj rec, UInt rnam)
++    bint IsbPRec(Obj rec, UInt rnam)
++    Obj ElmPRec(Obj rec, UInt rnam)
++    
++cdef extern from "gap/cyclotom.h":
++    pass
++
++cdef extern from "gap/bool.h":
++    cdef Obj GAP_True "True"
++    cdef Obj GAP_False "False"
++
++cdef extern from "gap/vars.h":
++     Obj BottomLVars
+diff --git a/sage/libs/gap/libgap.pyx b/sage/libs/gap/libgap.pyx
+new file mode 100644
+--- /dev/null
++++ b/sage/libs/gap/libgap.pyx
+@@ -0,0 +1,1979 @@
++"""
++GAP Library Interface.
++
++A fast C library interface to GAP. To use libGAP, you import
++``libgap`` (the parent of all :class:`GapElement` instances) and use
++it to convert Sage objects into GAP objects:
++
++EXAMPLES::
++
++    sage: from sage.libs.gap.libgap import libgap
++    sage: a = libgap(10)
++    sage: a
++    10
++    sage: type(a)
++    <type 'sage.libs.gap.libgap.GapElement'>
++    sage: a*a
++    100
++    sage: timeit('a*a')   # random output
++    625 loops, best of 3: 898 ns per loop
++
++Compared to the expect interface this is >1000 times faster::
++
++    sage: b = gap('10')
++    sage: timeit('b*b')   # random output
++    125 loops, best of 3: 2.05 ms per loop
++
++You can usually use the :meth:`GapElement.sage` method to convert the
++resulting GAP element back to its Sage equivalent::
++
++    sage: a.sage()
++    10
++    sage: type(_)
++    <type 'sage.rings.integer.Integer'>
++
++    sage: libgap('5/3 + 7*E(3)').sage()
++    7*zeta3 + 5/3
++
++    sage: generators = libgap.AlternatingGroup(4).GeneratorsOfGroup().sage()
++    sage: generators   # a Sage list of Sage permutations!
++    [(1,2,3), (2,3,4)]
++    sage: PermutationGroup(generators).cardinality()   # computed in Sage
++    12
++    sage: libgap.AlternatingGroup(4).Size()            # computed in GAP
++    12
++
++So far, the following GAP data types can be directly converted to the
++corresponding Sage datatype:
++
++#. GAP booleans ``true`` / ``false`` to Sage booleans ``True`` /
++   ``False``. The third GAP boolean value ``fail`` raises a
++   ``ValueError``.
++
++#. GAP integers to Sage integers.
++
++#. GAP rational numbers to Sage rational numbers.
++
++#. GAP cyclotomic numbers to Sage cyclotomic numbers.
++
++#. GAP permutations to Sage permutations.
++
++#. The GAP containers ``List`` and ``rec`` are converted to Sage
++   containers ``list`` and ``dict``.  Furthermore, the
++   :meth:`GapElement.sage` method is applied recursively to the
++   entries.
++
++Special support is available for the GAP container classes. GAP lists
++can be used as follows::
++
++    sage: lst = libgap('[]')
++    sage: lst.Add(1)
++    sage: lst.Add(5)
++    sage: lst.Add(7)
++    sage: lst
++    [ 1, 5, 7 ]
++    sage: len(lst)
++    3
++    sage: lst[0]
++    1
++    sage: [ x^2 for x in lst ]
++    [1, 25, 49]
++    sage: type(_[0])
++    <type 'sage.libs.gap.libgap.GapElement'>
++
++Note that you can access the elements of GAP ``List`` objects as you
++would expect from Python (with indexing starting at 0), but the
++elements are still of type :class:`GapElement`. The other GAP
++container type are records, which are similar to Python dictionaries::
++
++    sage: rec = libgap('rec(a:=123, b:=456, Sym3:=SymmetricGroup(3))')
++    sage: rec['Sym3']
++    Sym( [ 1 .. 3 ] )
++    sage: dict(rec)  
++    {'a': 123, 'Sym3': Sym( [ 1 .. 3 ] ), 'b': 456}
++
++The output is a Sage dictionary whose keys are Sage strings and whose
++Values are `GapElement`. So, for example, ``rec['a']`` is not a Sage
++integer. To recursively convert the entries into Sage objects, you
++should use the :meth:`GapElement.sage` method::
++
++    sage: rec.sage()
++    {'a': 123, 'Sym3': <type 'exceptions.NotImplementedError'>, 'b': 456}
++
++Now ``rec['a']`` is a Sage integer. We have not implemented the
++conversion of the GAP symmetric group to the Sage symmetric group yet,
++so you end up with a ``NotImplementedError`` exception object. The
++exception is returned and not raised so that you can work with the
++partial result.
++
++While we don't directly support matrices yet, you can convert them to
++Gap List of Lists. These lists are then easily converted into Sage
++using the recursive expansion of the :meth:`GapElement.sage` method::
++
++    sage: M = libgap('BlockMatrix([[1,1,[[1, 2],[ 3, 4]]], [1,2,[[9,10],[11,12]]], [2,2,[[5, 6],[ 7, 8]]]],2,2)')
++    sage: M
++    <block matrix of dimensions (2*2)x(2*2)>
++    sage: M.List()   # returns a GAP List of Lists
++    [ [ 1, 2, 9, 10 ], [ 3, 4, 11, 12 ], [ 0, 0, 5, 6 ], [ 0, 0, 7, 8 ] ]
++    sage: M.List().sage()   # returns a Sage list of lists
++    [[1, 2, 9, 10], [3, 4, 11, 12], [0, 0, 5, 6], [0, 0, 7, 8]]
++    sage: matrix(ZZ, _)
++    [ 1  2  9 10]
++    [ 3  4 11 12]
++    [ 0  0  5  6]
++    [ 0  0  7  8]
++
++AUTHORS:
++
++  - William Stein, Robert Miller (2009-06-23): first version
++  - Volker Braun, Dmitrii Pasechnik, Ivan Andrus (2011-03-25, Sage Days 29): 
++    almost complete rewrite; first usable version.
++  - Volker Braun (2012-08-28, GAP/Singular workshop): update to gap-4.5.5
++"""
++
++###############################################################################
++#
++#   SAGE: Open Source Mathematical Software
++#
++#       Copyright (C) 2009, William Stein <wstein@gmail.com>
++#
++#  Distributed under the terms of the GNU General Public License (GPL) v2+.
++#  The full text of the GPL is available at: http://www.gnu.org/licenses/
++###############################################################################
++
++
++##############################################################################
++#
++#  HACKING
++#
++#  If you want to add support for converting some GAP datatype to its
++#  Sage equivalent, you have two options. Either 
++#
++#  1. add an if-clause to GapElement.sage(). This is the easiest
++#     option and you should probably start with it first
++#
++#  2. Subclass GapElement to GapElement_Mydatatype. In that case you
++#     need to write the derived class, a factory function to
++#     instantiate it (GapElement cannot be instantiated by __init__),
++#     and add an if-clause in make_GapElement. See GapElement_List,
++#     for example. The advantage of this more complicated approach is
++#     that you can then add extra methods to your data type. For
++#     example, GapElement_List instances can access the individual
++#     elements with the usual gapelement[i] syntax.
++#
++##############################################################################
++
++
++
++from gap_includes cimport *
++
++from sage.structure.sage_object cimport SageObject
++from sage.structure.parent import Parent
++from sage.structure.element cimport ModuleElement, RingElement
++from sage.rings.all import ZZ
++
++
++
++############################################################################
++### Auxilliary functions ###################################################
++############################################################################
++
++def gap_root():
++    """
++    Find the location of the GAP root install which is stored in the gap
++    startup script.
++
++    EXAMPLES::
++    
++        sage: import sage.libs.gap.libgap
++        sage: sage.libs.gap.libgap.gap_root()   # random output
++        '/home/vbraun/opt/sage-5.3.rc0/local/gap/latest'
++    """
++    from sage.misc.misc import SAGE_LOCAL, SAGE_ROOT
++    import os.path
++    gapdir = os.path.join(SAGE_LOCAL, 'gap', 'latest')
++    if os.path.exists(gapdir):
++        return gapdir
++    print 'The gap-4.5.5.spkg (or later) seems to be missing!'
++    gap_sh = open(os.path.join(SAGE_LOCAL, 'bin', 'gap')).read().splitlines()
++    gapdir = filter(lambda dir:dir.strip().startswith('GAP_DIR'), gap_sh)[0]
++    gapdir = gapdir.split('"')[1]
++    gapdir = gapdir.replace('$SAGE_ROOT', SAGE_ROOT)
++    return gapdir
++
++
++# To ensure that we call initialize_libgap only once.
++cdef _gap_is_initialized = False
++
++# Global GAP variable to hold references to all GapElement.value
++# objects. If you don't want GASMAN to garbage collect your objects
++# you must add them to this GAP record.
++cdef UInt libgap_owned_objects
++
++cdef initialize_libgap(memory_pool_size="32M"):
++    """
++    Initialize the GAP library, if it hasn't already been initialized.
++    It is safe to call this multiple times.
++
++    INPUT:
++
++    - ``memory_pool_size`` -- string. The size for GAP's memory
++      pool. Same syntax as GAP's ``-K`` command line option.
++
++    TESTS::
++
++        sage: from sage.libs.gap.libgap import command
++        sage: command('libgap_owned_objects')
++        Status = 0
++        Output follows...
++        rec( ... )
++    """
++    global _gap_is_initialized
++    global libgap_owned_objects
++
++    #print 'initialize_libgap: ', _gap_is_initialized
++    if _gap_is_initialized: return
++
++    # Define argv and environ variables, which we will pass in to
++    # initialize GAP. Note that we must pass define the memory pool
++    # size!
++    cdef char* argv[7]
++    argv[0] = "sage"
++    argv[1] = "-l"
++    s = gap_root()
++    argv[2] = s
++    argv[3] = "-m"
++    argv[4] = memory_pool_size
++#    argv[5] = "-q"    # no prompt!
++    argv[5] = NULL
++    cdef int argc=5
++    libgap_initialize(argc, argv)
++
++    # Prepare global GAP variable to hold GAP objects
++    libgap_owned_objects = GVarName("libgap_owned_objects")
++    AssGVar(libgap_owned_objects, NEW_PLIST(T_PLIST,0))
++
++    # Finished!
++    _gap_is_initialized = True
++
++
++
++def command(command_string):
++    """
++    Playground for accessing Gap via libGap.
++
++    You should not use this function in your own programs. This is
++    just here for convenience if you want to play with the libgap
++    libray code.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import command
++        sage: command('1')
++        Status = 0
++        Output follows...
++        1
++        
++        sage: command('1/0')
++        Traceback (most recent call last):
++        ...
++        ValueError: Rational operations: <divisor> must not be zero
++
++        sage: command('NormalSubgroups')
++        Status = 0
++        Output follows...
++        <Operation "NormalSubgroups">
++
++        sage: command('rec(a:=1, b:=2)')
++        Status = 0
++        Output follows...
++        rec( a := 1, b := 2 )
++    """
++    cdef ExecStatus status
++    initialize_libgap()
++
++    cmd = command_string + ';\n'
++    libgap_start_interaction(cmd)
++    
++    try:
++        try:
++            sig_on()
++            status = ReadEvalCommand(BottomLVars)
++            sig_off()
++        except RuntimeError, msg:
++            raise ValueError, msg
++        
++        print 'Status = ' + str(<int>status)
++        if status != STATUS_END:
++            print 'NrError = ' + str(NrError)
++            ClearError()
++            raise ValueError, 'Not a normal statement.'
++        
++        assert Symbol == S_SEMICOLON, 'Did not end with semicolon?'
++        GetSymbol()
++        if Symbol != S_EOF:
++            raise ValueError, 'command() expects a single statement.'
++
++        if ReadEvalResult:
++            ViewObjHandler(ReadEvalResult)
++            s = libgap_get_output()
++            print 'Output follows...'
++            print s
++        else:
++            print 'No output.'
++    
++    finally:
++        libgap_finish_interaction()
++
++    
++
++from sage.interfaces.gap import Gap as ExpectGap
++expect_gap = ExpectGap()
++
++
++cdef Obj gap_list(a):
++    """
++    Convert Sage lists into Gap lists
++
++    INPUT:
++    
++    - ``a`` -- list of :class:`GapElement`.
++
++    OUTPUT:
++
++    The list of the elements in ``a`` as a Gap ``Obj``.
++    """
++    # dumb slow algorithm -- to make fast directly use ADD_LIST in Gap's C code.
++    cdef GapElement v = libgap('[]')
++    for x in a:
++        v.Add(x)
++    return v.value
++    
++
++
++############################################################################
++### Evaluate string in GAP #################################################
++############################################################################
++
++
++cdef Obj libgap_eval(str gap_string) except? NULL:
++    r"""
++    Evaluate a string in GAP.
++
++    INPUT:
++    
++    - ``gap_string`` -- string. A valid statement in GAP.
++
++    OUTPUT:
++    
++    The resulting GAP object or NULL+Python Exception in case of error.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: libgap('if 4>3 then\nPrint("hi");\nfi')
++        NULL
++        sage: libgap('1+1')   # testing that we have sucessfully recovered
++        2
++
++        sage: libgap('if 4>3 thenPrint("hi");\nfi')
++        Traceback (most recent call last):
++        ...
++        ValueError: Not a normal statement.
++        sage: libgap('1+1')   # testing that we have sucessfully recovered
++        2
++    """
++    cdef ExecStatus status
++    initialize_libgap()
++
++    cmd = gap_string + ';\n'
++    
++    try:
++        libgap_start_interaction(cmd)
++        try:
++            sig_on()
++            status = ReadEvalCommand(BottomLVars)
++            sig_off()
++        except RuntimeError, msg:
++            ClearError()
++            raise ValueError, 'Gap: '+str(msg)
++            return NULL
++
++        if status != STATUS_END:
++            ClearError()
++            raise ValueError, 'Not a normal statement.'
++            return NULL
++        
++        if Symbol != S_SEMICOLON:
++            raise ValueError, 'Did not end with semicolon?'
++            return NULL
++        GetSymbol()
++        if Symbol != S_EOF:
++            raise ValueError, 'command() expects a single statement.'
++            return NULL
++    finally:
++        libgap_finish_interaction()
++
++    return ReadEvalResult   # may be NULL, thats ok
++
++
++
++############################################################################
++### GapElement #############################################################
++############################################################################
++
++
++cdef make_GapElement(parent, Obj obj):
++    r"""
++    Turn a Gap C object (of type ``Obj``) into a Cython ``GapElement``.
++
++    INPUT:
++
++    - ``parent`` -- the parent of the new :class:`GapElement`
++
++    - ``obj`` -- a GAP object.
++
++    OUTPUT:
++
++    A :class:`GapElement_Function` instance, or one of its derived
++    classes if it is a better fit for the GAP object.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: libgap('0')
++        0
++        sage: type(_)
++        <type 'sage.libs.gap.libgap.GapElement'>
++
++        sage: libgap('')
++        NULL
++
++        sage: libgap(None)
++        Traceback (most recent call last):
++        ...
++        AttributeError: 'NoneType' object has no attribute '_gap_init_'
++    """
++    # print 'make_GapElement: NrLiveBags =', NrLiveBags, ', NrAllBags =', NrAllBags, '\n'
++    if obj is not NULL:
++        if IS_FUNC(obj):
++            return make_GapElement_Function(parent, obj)
++        if IS_REC(obj):
++            return make_GapElement_Record(parent, obj)
++        if IS_PLIST(obj):
++            return make_GapElement_List(parent, obj)
++        if (TNUM_OBJ(obj) == T_PERM2 or TNUM_OBJ(obj) == T_PERM4    ):
++            return make_GapElement_Permutation(parent, obj)
++    cdef GapElement r = GapElement.__new__(GapElement)
++    r.initialize(parent, obj)
++    return r
++
++
++
++cdef class GapElement(RingElement):
++    r"""
++    Wrapper for all Gap objects.
++
++    .. NOTE::
++     
++        In order to create ``GapElements``, you should the ``libgap``
++        instance (the parent of all Gap elements) to convert things
++        into ``GapElement``s. You must not create ``GapElement``s
++        manually.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: libgap('0')
++        0
++
++    If Gap finds an error while evaluating, a corresponding assertion is raised::
++
++        sage: libgap('1/0')
++        Traceback (most recent call last):
++        ...
++        ValueError: Gap: Rational operations: <divisor> must not be zero
++
++    Also, a ``ValueError`` is raised if the input is not a simple expression 
++
++        sage: libgap('1; 2; 3')
++        Traceback (most recent call last):
++        ...
++        ValueError: command() expects a single statement.
++    """
++    
++    # the pointer to the GAP object (memory managed by GASMAN)
++    cdef Obj value
++    
++    # the position in the libgap_owned_objects list
++    cdef int index
++
++
++    def __cinit__(self):
++        """
++        The Cython constructor.
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('1')
++            1
++        """
++        self.value = NULL
++        self.index = -1
++
++
++    def __init__(self):
++        """
++        The ``GapElement`` constructor
++        
++        Users must use the ``libgap`` instance to construct instances
++        of :class:`GapElement`. Cython programmers must use
++        :funct:`make_GapElement` factory function.
++
++        TESTS::
++
++            sage: from sage.libs.gap.libgap import GapElement
++            sage: GapElement()
++            Traceback (most recent call last):
++            ...
++            TypeError: This class cannot be instantiated from Python
++        """
++        raise TypeError('This class cannot be instantiated from Python')        
++
++
++    cdef initialize(self, parent, Obj obj):
++        r"""
++        Initialize the GapElement.
++
++        This Cython method is called from :func:`make_GapElement` to
++        initialize the newly-constructed object. You must never call
++        it manually.
++
++        TESTS::
++
++            sage: from sage.libs.gap.libgap import libgap, command
++            sage: a = libgap('123');
++            sage: b = libgap('456');
++            sage: c = libgap('CyclicGroup(3)');
++            sage: d = libgap('"a string"');
++            sage: command('GASMAN("collect")');
++            Status = 0
++            No output.
++            sage: command('libgap_owned_objects')   # random output
++            rec( 2680 := 123, 
++                 2681 := 456, 
++                 2682 := <pc group of size 3 with 1 generators>, 
++                 2683 := "a string" )
++        """
++        global _gap_is_initialized    
++        global libgap_owned_objects
++        assert _gap_is_initialized
++        assert self.value is NULL
++        self._parent = parent
++        self.value = obj
++
++        if obj is NULL: 
++            return
++        # temporarily prevent obj from being garbage collected
++        AssGVar(Last, obj)   
++        AddPlist(VAL_GVAR(libgap_owned_objects), obj)
++        self.index = LEN_PLIST(VAL_GVAR(libgap_owned_objects))
++
++
++    def trait_names(self):
++        """
++        Return all Gap function names.
++
++        OUTPUT:
++        
++        A list of strings.
++        
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: x = libgap('1')
++            sage: len(x.trait_names()) > 1000
++            True
++        """
++        import gap_functions
++        return gap_functions.common_gap_functions
++
++
++    def __getattr__(self, name):
++        r"""
++        Return functionoid implementing the function ``name``.
++        
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: lst = libgap('[]')
++            sage: lst.Add(1)    # this is the syntactic sugar
++            sage: lst
++            [ 1 ]
++
++        This is equivalent to the following proceduce call::
++
++            sage: lst = libgap('[]')
++            sage: libgap('Add') (lst, 1)
++            sage: lst
++            [ 1 ]
++        """
++        try:
++            sig_on()
++            proxy = make_GapElement_MethodProxy(self.parent(), 
++                                                libgap_eval(name),
++                                                self)
++            sig_off()
++            assert proxy.is_function()
++        except RuntimeError, AssertionError:
++            raise AttributeError, 'Name "'+str(name)+'" does not define a GAP function.'
++
++        return proxy
++        
++
++    def __dealloc__(self):
++        r"""
++        Stop referencing the GAP object
++
++        TESTS::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: pre_refcount = len( libgap('libgap_owned_objects') )
++            sage: def f():
++            ...       local_variable = libgap('"This is a new string"')
++            sage: f()
++            sage: f()
++            sage: f()
++            sage: post_refcount = len( libgap('libgap_owned_objects') )
++            sage: post_refcount - pre_refcount
++            0
++        """
++        if self.value is NULL: 
++            return
++        # Dereference the GAP obj, so GASMAN can garbage collect it
++        UNB_LIST(VAL_GVAR(libgap_owned_objects), self.index)
++
++
++    def __repr__(self):
++        r"""
++        Return a string representation of ``self``.
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('0')
++            0
++            sage: libgap('')
++            NULL
++            sage: libgap(0)
++            0
++        """
++        if  self.value == NULL:
++            return 'NULL'
++        try:
++            libgap_start_interaction('')
++            ViewObjHandler(self.value)
++            s = libgap_get_output()
++            return s.strip()
++        finally: 
++            libgap_finish_interaction()
++
++
++    cpdef ModuleElement _add_(self, ModuleElement right):
++        r"""
++        Add two GapElement objects.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: g1 = libgap('1') 
++            sage: g2 = libgap('2')
++            sage: g1._add_(g2)
++            3
++            sage: g1 + g2    # indirect doctest
++            3
++            
++            sage: libgap(1) + libgap('CyclicGroup(2)')
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Aborted
++        """
++        try:
++            sig_on()
++            result = make_GapElement(self.parent(), 
++                                     SUM(self.value, (<GapElement>right).value))
++            sig_off()
++            return result
++        except RuntimeError, msg:
++            ClearError()
++            raise ValueError, 'Gap: '+str(msg)
++
++
++    cpdef ModuleElement _sub_(self, ModuleElement right):
++        r"""
++        Subtract two GapElement objects.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: g1 = libgap('1') 
++            sage: g2 = libgap('2')
++            sage: g1._sub_(g2)
++            -1
++            sage: g1 - g2    # indirect doctest
++            -1
++
++            sage: libgap(1) - libgap('CyclicGroup(2)')
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Aborted
++        """
++        try:
++            sig_on()
++            result = make_GapElement(self.parent(), 
++                                     DIFF(self.value, (<GapElement>right).value))
++            sig_off()
++            return result
++        except RuntimeError, msg:
++            ClearError()
++            raise ValueError, 'Gap: '+str(msg)
++        
++
++    cpdef RingElement _mul_(self, RingElement right):
++        r"""
++        Multiply two GapElement objects.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: g1 = libgap('3') 
++            sage: g2 = libgap('5')
++            sage: g1._mul_(g2)
++            15
++            sage: g1 * g2    # indirect doctest
++            15
++
++            sage: libgap(1) * libgap('CyclicGroup(2)')
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Aborted
++        """
++        try:
++            sig_on()
++            result = make_GapElement(self.parent(), 
++                                     PROD(self.value, (<GapElement>right).value))
++            sig_off()
++            return result
++        except RuntimeError, msg:
++            ClearError()
++            raise ValueError, 'Gap: '+str(msg)
++
++
++    cpdef RingElement _div_(self, RingElement right):
++        r"""
++        Divide two GapElement objects.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: g1 = libgap('3') 
++            sage: g2 = libgap('5')
++            sage: g1._div_(g2)
++            3/5
++            sage: g1 / g2    # indirect doctest
++            3/5
++            
++            sage: libgap(1) / libgap('CyclicGroup(2)')
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Aborted
++            
++            sage: libgap(1) / libgap('0')
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Rational operations: <divisor> must not be zero
++        """
++        try:
++            sig_on()
++            result = make_GapElement(self.parent(), 
++                                     QUO(self.value, (<GapElement>right).value))
++            sig_off()
++            return result
++        except RuntimeError, msg:
++            ClearError()
++            raise ValueError, 'Gap: '+str(msg)
++
++
++    def __mod__(GapElement self, GapElement right):
++        r"""
++        Modulus of two GapElement objects.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: g1 = libgap('5') 
++            sage: g2 = libgap('2')
++            sage: g1 % g2
++            1
++
++            sage: libgap(1) % libgap('CyclicGroup(2)')
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Aborted
++        """
++        try:
++            sig_on()
++            result = make_GapElement(self.parent(), 
++                                     MOD(self.value, right.value))
++            sig_off()
++            return result
++        except RuntimeError, msg:
++            ClearError()
++            raise ValueError, 'Gap: '+str(msg)
++
++
++    def __pow__(GapElement self, right, dummy):
++        r"""
++        Exponentiation of two GapElement objects.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: g1 = libgap('5') 
++            sage: g2 = libgap('2')
++            sage: g1 ^ g2
++            25
++
++            sage: libgap('CyclicGroup(2)') ^ 2
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Aborted
++
++            sage: libgap('3') ^ Infinity
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Variable: '%s' must have a value
++        """
++        if not PY_TYPE_CHECK(right, GapElement):
++            right = libgap(right)
++        try:
++            sig_on()
++            result = make_GapElement(self.parent(), 
++                                     POW(self.value, (<GapElement>right).value))
++            sig_off()
++            return result
++        except RuntimeError, msg:
++            ClearError()
++            raise ValueError, 'Gap: '+str(msg)
++        
++
++    def is_function(self):
++        """
++        Return whether the wrapped GAP object is a function.
++
++        OUTPUT:
++
++        Boolean.
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: a = libgap("NormalSubgroups")
++            sage: a.is_function()
++            True
++            sage: a = libgap("2/3")
++            sage: a.is_function()
++            False
++        """
++        return bool(IS_FUNC(self.value))
++
++
++    def is_list(self):
++        r"""
++        Return whether the wrapped GAP object is a GAP List.
++
++        OUTPUT:
++
++        Boolean.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('[1, 2,,,, 5]').is_list()
++            True
++            sage: libgap('3/2').is_list()
++            False
++        """
++        return bool(IS_PLIST(self.value))
++
++
++    def is_record(self):
++        r"""
++        Return whether the wrapped GAP object is a GAP record.
++
++        OUTPUT:
++
++        Boolean.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('[1, 2,,,, 5]').is_record()
++            False
++            sage: libgap('rec(a:=1, b:=3)').is_record()
++            True
++        """
++        return bool(IS_REC(self.value))
++
++
++    cpdef is_bool(self):
++        r"""
++        Return whether the wrapped GAP object is a GAP boolean.
++
++        OUTPUT:
++
++        Boolean.
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('true').is_bool()
++            True
++        """
++        cdef GapElement r_sage = libgap.IsBool(self)
++        cdef Obj r_gap = r_sage.value
++        return r_gap == GAP_True
++
++
++    def is_int(self):
++        r"""
++        Return whether the wrapped GAP object is a GAP integer.
++
++        OUTPUT:
++
++        Boolean.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('1').is_int()
++            True
++        """
++        return IS_INTOBJ(self.value)
++
++    
++    def is_string(self):
++        r"""
++        Return whether the wrapped GAP object is a GAP string.
++
++        OUTPUT:
++
++        Boolean.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap(' "this is a string" ').is_string()
++            True
++        """
++        return IS_STRING(self.value)
++
++
++    def is_permutation(self):
++        r"""
++        Return whether the wrapped GAP object is a GAP permutation.
++
++        OUTPUT:
++
++        Boolean.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: perm = libgap.PermList( libgap('[1,5,2,3,4]') );  perm
++            (2,5,4,3)
++            sage: perm.is_permutation()
++            True
++            sage: libgap(' "this is a string" ').is_permutation()
++            False
++        """
++        return (TNUM_OBJ(self.value) == T_PERM2 or TNUM_OBJ(self.value) == T_PERM4)
++
++
++    def sage(self):
++        r"""
++        Return the Sage equivalent of the :class:`GapElement`
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('1').sage()
++            1
++            sage: type(_)
++            <type 'sage.rings.integer.Integer'>
++
++            sage: libgap('3/7').sage()
++            3/7
++            sage: type(_)
++            <type 'sage.rings.rational.Rational'>
++
++            sage: libgap('5 + 7*E(3)').sage()
++            7*zeta3 + 5
++
++            sage: libgap('true').sage()
++            True
++            sage: libgap('false').sage()
++            False
++            sage: type(_)
++            <type 'bool'>
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap(' "this is a string" ').sage()
++            'this is a string'
++            sage: type(_)
++            <type 'str'>
++        """
++        if self.value is NULL:           
++            return None
++        if self.is_int():
++            return ZZ(INT_INTOBJ(self.value))
++        if self.is_string():
++            return CSTR_STRING(self.value)
++        if self.is_bool():
++            if self.value == GAP_True:   return True
++            if self.value == GAP_False:  return False
++            raise ValueError, 'The GAP boolean value "Fail" cannot be represented in Sage.'
++        if libgap.IsRat(self).sage():
++            return libgap('NumeratorRat')(self).sage() / libgap('DenominatorRat')(self).sage()
++        if libgap.IsCyc(self).sage():
++            conductor = self.Conductor()
++            coeff = self.CoeffsCyc(conductor)
++            conductor = conductor.sage()
++            coeff = coeff.sage()
++            from sage.rings.number_field.number_field import CyclotomicField
++            F = CyclotomicField(conductor)
++            return F(coeff)
++        return NotImplementedError
++
++
++############################################################################
++### GapElement_Function ####################################################
++############################################################################
++
++
++cdef make_GapElement_Function(parent, Obj obj):
++    r"""
++    Turn a Gap C function object (of type ``Obj``) into a Cython ``GapElement_Function``.
++
++    INPUT:
++
++    - ``parent`` -- the parent of the new :class:`GapElement`
++
++    - ``obj`` -- a GAP function object.
++
++    OUTPUT:
++
++    A :class:`GapElement_Function` instance.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: libgap('CycleLength')
++        <Gap function "CycleLength">
++        sage: type(_)
++        <type 'sage.libs.gap.libgap.GapElement_Function'>
++    """
++    cdef GapElement_Function r = GapElement_Function.__new__(GapElement_Function)
++    r.initialize(parent, obj)
++    return r
++
++
++cdef class GapElement_Function(GapElement):
++    r"""
++    Derived class of GapElement for GAP functions.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: f = libgap('Cycles')
++        sage: type(f)
++        <type 'sage.libs.gap.libgap.GapElement_Function'>
++    """
++
++
++    def __repr__(self):
++        r"""
++        Return a string representation
++        
++        OUTPUT:
++
++        String.
++
++        EXAMPLES::
++       
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('Orbits')
++            <Gap function "Orbits">
++        """
++        return '<Gap function "'+libgap.NameFunction(self).sage()+'">'
++    
++
++    def __call__(self, *args):
++        """
++        Call syntax for functions.
++
++        INPUT:
++
++        - ``*args`` -- arguments. Will be converted to `GapElement` if
++          they are not already of this type.
++
++        OUTPUT:
++
++        A :class:`GapElement` encapsulating the functions return
++        value, or ``None`` if it does not return anything.
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++
++            sage: a = libgap("NormalSubgroups")
++            sage: b = libgap("SymmetricGroup(4)")
++            sage: libgap('GASMAN("collect")')
++            NULL
++            sage: a
++            <Gap function "NormalSubgroups">
++            sage: b
++            Sym( [ 1 .. 4 ] )
++            sage: a(b)
++            [ Group(()), 
++              Group([ (1,4)(2,3), (1,3)(2,4) ]), 
++              Group([ (2,4,3), (1,4)(2,3), (1,3)(2,4) ]), 
++              Sym( [ 1 .. 4 ] ) ]
++
++            sage: libgap("a := NormalSubgroups");
++            <Gap function "NormalSubgroups">
++            sage: libgap("b := SymmetricGroup(4)");
++            Sym( [ 1 .. 4 ] )
++            sage: libgap('GASMAN("collect")')
++            NULL
++            sage: libgap('a') (libgap('b'))
++            [ Group(()), 
++              Group([ (1,4)(2,3), (1,3)(2,4) ]), 
++              Group([ (2,4,3), (1,4)(2,3), (1,3)(2,4) ]), 
++              Sym( [ 1 .. 4 ] ) ]
++            sage: a = libgap('a')
++            sage: b = libgap('b')
++            sage: libgap('GASMAN("collect")')
++            NULL
++            sage: a(b)
++            [ Group(()), 
++              Group([ (1,4)(2,3), (1,3)(2,4) ]), 
++              Group([ (2,4,3), (1,4)(2,3), (1,3)(2,4) ]), 
++              Sym( [ 1 .. 4 ] ) ]
++
++        Not every ``GapElement`` is callable::
++        
++            sage: f = libgap(3)
++            sage: f()
++            Traceback (most recent call last):
++            ...
++            TypeError: 'sage.libs.gap.libgap.GapElement' object is not callable
++
++        We illustrate appending to a list which returns None::
++
++            sage: a = libgap('[]'); a
++            [  ]
++            sage: a.Add(5); a
++            [ 5 ]
++            sage: a.Add(10); a
++            [ 5, 10 ]        
++
++        TESTS::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: s = libgap('Sum')
++            sage: s(libgap('[1,2]'))
++            3
++            sage: s(libgap('1'), libgap('2'))
++            Traceback (most recent call last):
++            ...
++            ValueError: Gap: Aborted
++
++            sage: for i in range(0,100):
++            ...       rnd = [ libgap(str(randint(-10,10))) for i in range(0,randint(0,7)) ]
++            ...       try: 
++            ...           # this always raises an exception since Sum expects a List
++            ...           libgap('Sum')(*rnd)   
++            ...       except ValueError:
++            ...           pass
++        """
++        cdef Obj result = NULL
++        cdef int i, n = len(args)
++        
++        try:
++            sig_on()
++            if n > 0:
++                a = [x if isinstance(x,GapElement) else libgap(x) for x in args]
++
++            if n == 0:
++                result = CALL_0ARGS(self.value)
++            elif n == 1:
++                result = CALL_1ARGS(self.value, 
++                                    (<GapElement>a[0]).value)
++            elif n == 2:
++                result = CALL_2ARGS(self.value, 
++                                    (<GapElement>a[0]).value, 
++                                    (<GapElement>a[1]).value)
++            elif n == 3:
++                result = CALL_3ARGS(self.value, 
++                                    (<GapElement>a[0]).value, 
++                                    (<GapElement>a[1]).value,
++                                    (<GapElement>a[2]).value)
++            elif n == 4:
++                result = CALL_4ARGS(self.value, 
++                                    (<GapElement>a[0]).value, 
++                                    (<GapElement>a[1]).value,
++                                    (<GapElement>a[2]).value, 
++                                    (<GapElement>a[3]).value)
++            elif n == 5:
++                result = CALL_5ARGS(self.value, 
++                                    (<GapElement>a[0]).value, 
++                                    (<GapElement>a[1]).value,
++                                    (<GapElement>a[2]).value, 
++                                    (<GapElement>a[3]).value,
++                                    (<GapElement>a[4]).value)
++            elif n == 6:
++                result = CALL_6ARGS(self.value, 
++                                    (<GapElement>a[0]).value, 
++                                    (<GapElement>a[1]).value,
++                                    (<GapElement>a[2]).value, 
++                                    (<GapElement>a[3]).value,
++                                    (<GapElement>a[4]).value, 
++                                    (<GapElement>a[5]).value)
++            elif n >= 7:
++                result = CALL_XARGS(self.value, gap_list(args))
++            sig_off()
++        except RuntimeError, msg:
++            raise ValueError, 'Gap: '+str(msg)
++
++        if result == NULL:
++            # We called a procedure that does not return anything
++            return None
++            
++        return make_GapElement(self.parent(), result)
++
++
++    def _sage_doc_(self):
++        r"""
++        Return the help string
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: f = libgap.Apply
++            sage: 'Operations for Lists' in f._sage_doc_()
++            True
++
++        You would get the full help by typing ``f?`` in the command line.
++        """
++        from sage.interfaces.gap import gap
++        return gap.help(libgap.NameFunction(self).sage(), pager=False)
++
++
++
++    
++############################################################################
++### GapElement_MethodProxy #################################################
++############################################################################
++
++
++cdef make_GapElement_MethodProxy(parent, Obj function, GapElement base_object):
++    r"""
++    Turn a Gap C rec object (of type ``Obj``) into a Cython ``GapElement_Record``.
++
++    This class implement syntactic sugar so that you can write
++    ``gapelement.f()`` instead of ``libgap.f(gapelement)`` for any GAP
++    function ``f``.
++
++    INPUT:
++
++    - ``parent`` -- the parent of the new :class:`GapElement`
++
++    - ``obj`` -- a GAP function object.
++
++    - ``base_object`` -- The first argument to be inserted into the function.
++
++    OUTPUT:
++
++    A :class:`GapElement_MethodProxy` instance.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: lst = libgap('[]')
++        sage: type( lst.Add )
++        <type 'sage.libs.gap.libgap.GapElement_MethodProxy'>
++    """
++    cdef GapElement_MethodProxy r = GapElement_MethodProxy.__new__(GapElement_MethodProxy)
++    r.initialize(parent, function)
++    r.first_argument = base_object
++    return r
++
++
++cdef class GapElement_MethodProxy(GapElement_Function):
++    r"""
++    Helper class returned by ``GapElement.__getattr__``.
++
++    Derived class of GapElement for GAP functions. Like its parent,
++    you can call instances to implement function call syntax. The only
++    difference is that a fixed first argument is prepended to the
++    argument list.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: lst = libgap('[]')
++        sage: lst.Add
++        <Gap function "ADD_LIST">
++        sage: type(_)
++        <type 'sage.libs.gap.libgap.GapElement_MethodProxy'>
++        sage: lst.Add(1)
++        sage: lst
++        [ 1 ]
++    """
++    
++    cdef GapElement first_argument
++
++
++    def __call__(self, *args):
++        """
++        Call syntax for methods.
++
++        This method is analogous to
++        :meth:`GapElement_Function.__call__`, except that it inserts a
++        fixed :class:`GapElement` in the first slot of the function.
++
++        INPUT:
++
++        - ``*args`` -- arguments. Will be converted to `GapElement` if
++          they are not already of this type.
++
++        OUTPUT:
++
++        A :class:`GapElement` encapsulating the functions return
++        value, or ``None`` if it does not return anything.
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: lst = libgap('[1,,3]')
++            sage: lst.Add.__call__(4)
++            sage: lst.Add(5)
++            sage: lst
++            [ 1,, 3, 4, 5 ]
++        """
++        if len(args) > 0:
++            return GapElement_Function.__call__(self, * ([self.first_argument] + list(args)))
++        else:
++            return GapElement_Function.__call__(self, self.first_argument)
++
++
++
++############################################################################
++### GapElement_List ########################################################
++############################################################################
++
++
++cdef make_GapElement_List(parent, Obj obj):
++    r"""
++    Turn a Gap C List object (of type ``Obj``) into a Cython ``GapElement_List``.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: libgap('[0, 2, 3]')
++        [ 0, 2, 3 ]
++        sage: type(_)
++        <type 'sage.libs.gap.libgap.GapElement_List'>
++    """
++    cdef GapElement_List r = GapElement_List.__new__(GapElement_List)
++    r.initialize(parent, obj)
++    return r
++
++
++cdef class GapElement_List(GapElement):
++    r"""
++    Derived class of GapElement for GAP Lists.
++
++    .. NOTE::
++
++        Lists are indexed by `0..len(l)-1`, as expected from
++        Python. This differs from the GAP convention where lists start
++        at `1`.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: lst = libgap('SymmetricGroup(3)').List(); lst
++        [ (), (1,3), (1,2,3), (2,3), (1,3,2), (1,2) ]
++        sage: type(lst)
++        <type 'sage.libs.gap.libgap.GapElement_List'>
++        sage: len(lst)
++        6
++        sage: lst[3]
++        (2,3)
++
++    We can easily convert a Gap ``List`` object into a Python ``list``::
++
++        sage: list(lst)
++        [(), (1,3), (1,2,3), (2,3), (1,3,2), (1,2)]
++        sage: type(_)
++        <type 'list'>
++
++    Range checking is performed::
++
++        sage: lst[10]
++        Traceback (most recent call last):
++        ...
++        IndexError: Index out of range.
++    """
++    
++    def __len__(self):
++        r"""
++        Return the length of the list.
++
++        OUTPUT:
++        
++        Integer.
++        
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: lst = libgap('[1,,,4]')   # a sparse list
++            sage: len(lst)
++            4
++        """
++        return LEN_PLIST(self.value)
++        
++
++    def __getitem__(self, i):
++        r"""
++        Return the ``i``-th element of the list.
++
++        As usual in Python, indexing starts at `0` and not at `1` (as
++        in GAP).
++
++        INPUT:
++        
++        - ``i`` -- integer.
++
++        OUTPUT:
++
++        The ``i``-th element as a :class:`GapElement`.
++        
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: lst = libgap('["first",,,"last"]')   # a sparse list
++            sage: lst[0]
++            "first"
++        """
++        if i<0 or i>=len(self):
++            raise IndexError, 'Index out of range.'
++        return make_GapElement(self.parent(), 
++                               ELM_PLIST(self.value, i+1))
++            
++
++    def sage(self):
++        r"""
++        Return the Sage equivalent of the :class:`GapElement`
++
++        OUTPUT:
++
++        A Python list.
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('[ 1, 3, 4 ]').sage()
++            [1, 3, 4]
++            sage: all( x in ZZ for x in _ )
++            True
++        """
++        return [ x.sage() for x in self ]
++
++
++
++
++############################################################################
++### GapElement_Permutation #################################################
++############################################################################
++
++
++cdef make_GapElement_Permutation(parent, Obj obj):
++    r"""
++    Turn a Gap C permutation object (of type ``Obj``) into a Cython ``GapElement_Permutation``.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: libgap('(1,3,2)(4,5,8)')
++        (1,3,2)(4,5,8)
++        sage: type(_)
++        <type 'sage.libs.gap.libgap.GapElement_Permutation'>
++    """
++    cdef GapElement_Permutation r = GapElement_Permutation.__new__(GapElement_Permutation)
++    r.initialize(parent, obj)
++    return r
++
++
++cdef class GapElement_Permutation(GapElement):
++    r"""
++    Derived class of GapElement for GAP permutations.
++
++    .. NOTE::
++
++        Permutations in GAP act on the numbers starting with 1.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: perm = libgap('(1,5,2)(4,3,8)')
++        sage: type(perm)
++        <type 'sage.libs.gap.libgap.GapElement_Permutation'>
++    """
++    
++    def sage(self):
++        r"""
++        Return the Sage equivalent of the :class:`GapElement`
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: perm_gap = libgap('(1,5,2)(4,3,8)');  perm_gap
++            (1,5,2)(3,8,4)
++            sage: perm_gap.sage()
++            (1,5,2)(3,8,4)
++            sage: type(_)
++            <type 'sage.groups.perm_gps.permgroup_element.PermutationGroupElement'>
++        """
++        from sage.groups.perm_gps.permgroup_element import PermutationGroupElement
++        return PermutationGroupElement(libgap.ListPerm(self).sage())
++
++
++
++############################################################################
++### GapElement_Record ######################################################
++############################################################################
++
++
++cdef make_GapElement_Record(parent, Obj obj):
++    r"""
++    Turn a Gap C rec object (of type ``Obj``) into a Cython ``GapElement_Record``.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: libgap('rec(a:=0, b:=2, c:=3)')
++        rec( a := 0, b := 2, c := 3 )
++        sage: type(_)
++        <type 'sage.libs.gap.libgap.GapElement_Record'>
++    """
++    cdef GapElement_Record r = GapElement_Record.__new__(GapElement_Record)
++    r.initialize(parent, obj)
++    return r
++
++
++cdef class GapElement_Record(GapElement):
++    r"""
++    Derived class of GapElement for GAP records.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: rec = libgap('rec(a:=123, b:=456)')
++        sage: type(rec)
++        <type 'sage.libs.gap.libgap.GapElement_Record'>
++        sage: len(rec)
++        2
++        sage: rec['a']
++        123
++
++    We can easily convert a Gap ``rec`` object into a Python ``dict``::
++
++        sage: dict(rec)
++        {'a': 123, 'b': 456}
++        sage: type(_)
++        <type 'dict'>
++
++    Range checking is performed::
++
++        sage: rec['no_such_element']
++        Traceback (most recent call last):
++        ...
++        IndexError: Gap: Record: '<rec>.%s' must have an assigned value
++    """
++    
++    def __len__(self):
++        r"""
++        Return the length of the record.
++
++        OUTPUT:
++        
++        Integer. The number of entries in the record.
++        
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: rec = libgap('rec(a:=123, b:=456, S3:=SymmetricGroup(3))')
++            sage: len(rec)
++            3
++        """
++        return LEN_PREC(self.value)
++        
++
++    def __iter__(self):
++        r"""
++        Iterate over the elements of the record.
++
++        OUTPUT:
++
++        A :class:`GapElement_RecordIterator`.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: rec = libgap('rec(a:=123, b:=456)')
++            sage: iter = rec.__iter__()
++            sage: type(iter)
++            <type 'sage.libs.gap.libgap.GapElement_RecordIterator'>
++            sage: list(rec)
++            [('a', 123), ('b', 456)]
++        """
++        return GapElement_RecordIterator(self)
++
++
++    cdef UInt record_name_to_index(self, bytes py_name):
++        r"""
++        Convert string to GAP record index.
++
++        INPUT:
++
++        - ``py_name`` -- a python string.
++
++        OUTPUT:
++
++        A ``UInt``, which is a GAP hash of the string.
++        """
++        cdef char* c_name = py_name
++        return RNamName(c_name)
++
++
++    def __getitem__(self, name):
++        r"""
++        Return the ``name``-th element of the GAP record.
++
++        INPUT:
++        
++        - ``name`` -- string.
++
++        OUTPUT:
++
++        The record element labelled by ``name`` as a :class:`GapElement`.
++        
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: rec = libgap('rec(first:=123, second:=456)')
++            sage: rec['first']
++            123
++        """
++        i = self.record_name_to_index(name)
++        try:
++            sig_on()
++            result = make_GapElement(self.parent(), 
++                                     ELM_REC(self.value, i))
++            sig_off()
++            return result
++        except RuntimeError, msg:
++            raise IndexError, 'Gap: '+str(msg)
++
++
++    def sage(self):
++        r"""
++        Return the Sage equivalent of the :class:`GapElement`
++
++        EXAMPLES::
++        
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('rec(a:=1, b:=2)').sage()
++            {'a': 1, 'b': 2}
++            sage: all( isinstance(key,str) and val in ZZ for key,val in _.items() )
++            True
++        """
++        return dict( (key,val.sage()) for key,val in self )
++
++
++cdef class GapElement_RecordIterator(object):
++    r"""
++    Iterator for :class:`GapElement_Record`
++
++    Since Cython does not support generators yet, we implement the
++    older iterator specification with this auxiliary class.
++
++    INPUT:
++
++    - ``rec`` -- the :class:`GapElement_Record` to iterate over.
++
++    EXAMPLES::
++
++        sage: from sage.libs.gap.libgap import libgap
++        sage: rec = libgap('rec(a:=123, b:=456)')
++        sage: list(rec)
++        [('a', 123), ('b', 456)]
++        sage: dict(rec)
++        {'a': 123, 'b': 456}
++    """
++
++    cdef GapElement_Record rec
++    cdef UInt i
++    
++    def __cinit__(self, rec):
++        r"""
++        The Cython constructor.
++
++        INPUT:
++
++        - ``rec`` -- the :class:`GapElement_Record` to iterate over.
++        
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('rec(a:=123, b:=456)')
++            rec( a := 123, b := 456 )
++        """
++        self.rec = rec
++        self.i = 1
++
++
++    def __next__(self):
++        r"""
++        The next elemnt in the record.
++
++        OUTPUT:
++
++        A tuple ``(key, value)`` where ``key`` is a string and
++        ``value`` is the corresponding :class:`GapElement`.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: rec = libgap('rec(a:=123, b:=456)')
++            sage: iter = rec.__iter__()
++            sage: iter.__next__()
++            ('a', 123)
++            sage: iter.next()
++            ('b', 456)
++        """
++        cdef UInt i = self.i
++        if i>len(self.rec):
++            raise StopIteration
++        key_index = -GET_RNAM_PREC(self.rec.value, i)
++        key = NAME_RNAM(key_index)
++        val = make_GapElement(self.rec.parent(), GET_ELM_PREC(self.rec.value,i))
++        self.i += 1
++        return (key, val)
++
++
++
++
++############################################################################
++### Gap  ###################################################################
++############################################################################
++# The libGap interpreter object Gap is the parent of the GapElements
++
++
++class Gap(Parent):
++    r"""
++    The libgap interpreter object.
++
++    .. NOTE::
++
++        This object must be instantiated exactly once by the
++        libgap. Always use the provided ``libgap`` instance, and never
++        instantiate :class:`Gap` manually.
++
++    EXAMPLES::
++    
++        sage: from sage.libs.gap.libgap import libgap
++        sage: libgap('SymmetricGroup(4)')
++        Sym( [ 1 .. 4 ] )
++
++    TESTS::
++
++        sage: TestSuite(libgap).run(skip=['_test_category', '_test_elements', '_test_pickling'])
++    """
++
++    Element = GapElement
++
++
++    def _element_constructor_(self, x):
++        r"""
++        Construct elements of this parent class
++
++        INPUT:
++
++        - ``x`` -- anything that defines a GAP object.
++
++        OUTPUT:
++
++        A :class:`GapElement`.
++
++        EXAMPLES::
++         
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap('0')   # indirect doctest
++            0
++            sage: libgap(ZZ(0))
++            0
++            sage: libgap(int(0))
++            0
++        """
++        # Run the read-eval-print loop exactly once.
++        if isinstance(x, int):
++            return make_GapElement(self, INTOBJ_INT(x))
++        if not isinstance(x, str):
++            x = x._gap_init_()
++        return make_GapElement(self, libgap_eval(x))
++
++
++    def _an_element_(self):
++        r"""
++        Return a :class:`GapElement`
++        
++        OUTPUT:
++
++        A :class:`GapElement`.
++
++        EXAMPLES::
++         
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap.an_element()   # indirect doctest
++            0
++        """
++        return self('0')
++
++
++    def __init__(self):
++        r"""
++        The Python constructor.
++        
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: type(libgap)
++            <class 'sage.libs.gap.libgap.Gap'>
++        """
++        initialize_libgap()
++        from sage.rings.integer_ring import ZZ
++        Parent.__init__(self, base=ZZ)
++
++
++    def __repr__(self):
++        r"""
++        Return a string representation of ``self``.
++        
++        OUTPUT:
++
++        String.
++
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap
++            C library interface to GAP
++        """
++        return 'C library interface to GAP'
++    
++
++    def trait_names(self):
++        """
++        Return all Gap function names.
++
++        OUTPUT:
++        
++        A list of strings.
++        
++        EXAMPLES::
++
++            sage: from sage.libs.gap.libgap import libgap
++            sage: len(libgap.trait_names()) > 1000
++            True
++        """
++        import gap_functions
++        return gap_functions.common_gap_functions
++
++
++    def __getattr__(self, name):
++        r"""
++        The attributes of the Gap object are the Gap functions.
++
++        INPUT: 
++
++        - ``name`` -- string. The name of the GAP function you want to
++          call.
++
++        OUTPUT:
++
++        A :class:`GapElement_Function`. A ``AttributeError`` is raised
++        if there is no such function.
++
++        EXAMPLES::
++         
++            sage: from sage.libs.gap.libgap import libgap
++            sage: libgap.List
++            <Gap function "List">
++        """
++        if name in self.trait_names():
++            f = make_GapElement_Function(self, libgap_eval(str(name)))
++            assert f.is_function()
++            self.__dict__[name] = f
++            return f
++        else:
++            raise AttributeError, 'No such attribute: '+name+'.'
++
++    def show(self):
++        """
++        Print statistics about the GAP owned object list
++        
++        Slight complication is that we want to do it without accessing
++        libgap objects, so we don't create new GapElements as a side
++        effect.
++
++            sage: a = libgap(123)
++            sage: b = libgap(456)
++            sage: c = libgap(789)
++            sage: del b
++            sage: libgap.show()
++            [... 123,, 789 ]
++            rec(...)
++        """
++        global libgap_owned_objects
++        libgap_start_interaction('')
++        ViewObjHandler(VAL_GVAR(libgap_owned_objects))
++        owned = libgap_get_output().strip()
++        libgap_finish_interaction()
++        print owned
++        print self('GasmanStatistics()')
++        
++
++    def collect(self):
++        self('GASMAN("collect")')
++        
++
++libgap = Gap()
++
++
++
++
+diff --git a/sage/libs/gap/test/Makefile b/sage/libs/gap/test/Makefile
+new file mode 100644
+--- /dev/null
++++ b/sage/libs/gap/test/Makefile
+@@ -0,0 +1,22 @@
++
++
++SAGE_LOCAL=$(HOME)/Sage/sage/local
++
++# VALGRIND=valgrind --leak-check=full
++# VALGRIND=valgrind --db-attach=yes
++#VALGRIND=valgrind --suppressions=libgap.supp --gen-suppressions=yes
++VALGRIND=valgrind --suppressions=libgap.supp --db-attach=yes
++#VALGRIND=
++
++all: main
++	LD_LIBRARY_PATH=$(SAGE_LOCAL)/lib $(VALGRIND) ./main
++
++main: main.o Makefile
++	gcc -L$(SAGE_LOCAL)/lib -o main main.o -lgap -lcsage -lntl -lstdc++ -lpari -lpython2.6 -lm -lgmp
++
++main.o: main.c
++	gcc -std=gnu99 -I$(SAGE_LOCAL)/include -I$(SAGE_LOCAL)/include/python2.6 -c -g $^
++
++
++
++.PHONY: all
+\ No newline at end of file
+diff --git a/sage/libs/gap/test/README.txt b/sage/libs/gap/test/README.txt
+new file mode 100644
+--- /dev/null
++++ b/sage/libs/gap/test/README.txt
+@@ -0,0 +1,5 @@
++In this folder is a small stub program that uses libGAP library for
++some simple computations for debugging purposes. It uses libGAP
++essentially in the same as the Sage libgap interface, but without the
++overhead.
++
+diff --git a/sage/libs/gap/test/main.c b/sage/libs/gap/test/main.c
+new file mode 100644
+--- /dev/null
++++ b/sage/libs/gap/test/main.c
+@@ -0,0 +1,157 @@
++#include <signal.h>
++#include <setjmp.h>
++#include <assert.h>
++
++#include "gap/system.h"
++#include "gap/objects.h"
++#include "gap/gap.h"
++#include "gap/scanner.h"
++#include "gap/sysfiles.h"
++#include "gap/plist.h"
++#include "gap/gasman.h"
++#include "gap/gapstring.h"
++#include "gap/read.h"
++
++// using namespace std;
++
++
++/////////////////////////////////////////////////////////////////
++
++void initialize_libgap()
++{
++  char* argv[6], *environ[1];
++  argv[0] = "sage";
++  argv[1] = "-l";
++  argv[2] = "/home/vbraun/Sage/sage/local/lib/gap-4.4.12";
++  argv[3] = "-K";
++  argv[4] = "32M";
++  argv[5] = "-q";
++  argv[6] = NULL;
++  environ[0] = NULL;
++  int argc=6;
++  libgap_initialize(argc, argv, environ);
++}   
++
++
++void finalize_libgap()
++{
++}
++
++
++/////////////////////////////////////////////////////////////////
++
++sigjmp_buf env;
++
++#define signal_occurred   sigsetjmp(env,1)
++
++
++void signal_handler(int sig) 
++{
++  printf("Caught signal %i\n", sig);
++  siglongjmp(env, sig);
++}
++
++
++void install_signal_handler()
++{
++  struct sigaction sa;
++  memset(&sa, 0, sizeof(sa));
++  sa.sa_handler = signal_handler;
++  sa.sa_flags |= SA_NODEFER;
++  assert(0 == sigaction(SIGINT, &sa, NULL));
++  assert(0 == sigaction(SIGILL, &sa, NULL));
++  assert(0 == sigaction(SIGABRT, &sa, NULL));
++  assert(0 == sigaction(SIGFPE, &sa, NULL));
++  assert(0 == sigaction(SIGBUS, &sa, NULL));
++  assert(0 == sigaction(SIGSEGV, &sa, NULL));
++}
++
++
++/////////////////////////////////////////////////////////////////
++
++
++void eval(char* input)
++{
++  printf("--------------------\n");
++  printf("Input: %s", input);
++
++  libgap_start_interaction(input);
++      
++  ExecStatus status;
++  if (signal_occurred) {
++    printf("signal caught\n");
++    libgap_finish_interaction();
++    return;
++  }
++  status = ReadEvalCommand();
++
++  if (status != STATUS_END) {
++    printf("status = %i\n", status);
++    printf("NrError = %i\n", NrError);
++    ClearError();
++    libgap_finish_interaction();
++    return;
++  }
++
++  assert(Symbol == S_SEMICOLON);
++  GetSymbol();
++  if (Symbol!=S_EOF) {
++    printf("Multiple statements; aborting!\n");
++    libgap_finish_interaction();
++    return;
++  }
++
++  ViewObjHandler(ReadEvalResult);
++  char * out = libgap_get_output();
++  //for (int i=0; i<strlen(out); i++) 
++  //  if (out[i]<33)
++  //    out[i] = '.';
++      
++  printf("Output follows...\n%s", out);
++  libgap_finish_interaction();
++}
++
++
++
++
++int main(void)
++{
++  initialize_libgap();
++  install_signal_handler();
++  Obj obj = INTOBJ_INT(123);
++
++  char* c_str = "this is a test";
++  Obj str;
++  for (int i=0; i<100; i++)
++    C_NEW_STRING(str, strlen(c_str), c_str);
++
++
++  eval("1/0;\n");
++  eval("0;\n");
++
++  eval("a:=NormalSubgroups;\n");
++  eval("b:=SymmetricGroup(4);\n");
++  eval("a(b);\n");
++
++  eval("SmallGroup(12,3);\n");
++  eval("0;\n");
++
++  eval("0;\n");
++  eval("1+3;\n");
++  eval("[1, 3, 5];\n");
++
++  eval("if 4>3 then\nPrint(\"hi\n\");\n fi;\n");
++  eval("0;\n");
++
++  eval("rec( a=0, b:1, c;3 );\n");
++  eval("0;\n");
++
++  eval("rec( a=0, b:1, c;3 );\n");
++  eval("0;\n");
++
++  eval("rec( a=0, b:1, c;3 );\n");
++  eval("\"back to normal\";\n");
++
++  printf("Quitting\n");
++  return 0;
++}
+diff --git a/sage/matrix/matrix_rational_dense.pyx b/sage/matrix/matrix_rational_dense.pyx
+--- a/sage/matrix/matrix_rational_dense.pyx
++++ b/sage/matrix/matrix_rational_dense.pyx
+@@ -1667,7 +1667,7 @@
+         return misc.matrix_rational_echelon_form_multimodular(self,
+                                  height_guess=height_guess, proof=proof)
+ 
+-    def _echelon_in_place_classical(self):
++    def _echelon_in_place_classical(self, steps=None):
+         """
+         Compute the echelon form of self using classical algorithm and
+         set the pivots of self.  This is useful when the input matrix
+@@ -1701,8 +1701,10 @@
+                     # rescale row r by multiplying by tmp
+                     for i in range(c, nc):
+                         mpq_mul(self._matrix[r][i], self._matrix[r][i], tmp)
++                    if steps is not None: steps.append(self.copy())
+                     # swap rows r and start_row
+                     self.swap_rows_c(r, start_row)
++                    if steps is not None: steps.append(self.copy())
+                     # clear column
+                     for i in range(nr):
+                         if i != start_row:
+@@ -1712,6 +1714,7 @@
+                                 for j in range(c, nc):
+                                     mpq_mul(tmp2, self._matrix[start_row][j], tmp)
+                                     mpq_add(self._matrix[i][j], self._matrix[i][j], tmp2)
++                    if steps is not None: steps.append(self.copy())
+                     start_row += 1
+                     break
+         mpq_clear(tmp); mpq_clear(tmp2)
+diff --git a/setup.py b/setup.py
+--- a/setup.py
++++ b/setup.py
+@@ -930,6 +930,7 @@
+                      'sage.libs.flint',
+                      'sage.libs.lrcalc',
+                      'sage.libs.pari',
++                     'sage.libs.gap',
+                      'sage.libs.singular',
+                      'sage.libs.symmetrica',
+                      'sage.libs.cremona',
