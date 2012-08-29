@@ -121,7 +121,9 @@ void eval(char* input)
 int main(void)
 {
   init();
-  // install_signal_handler();
+  install_signal_handler();
+
+  eval("1 + CyclicGroup(2);\n");
 
   eval("0;\n");
   eval("1/0;\n");

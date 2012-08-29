@@ -21,6 +21,8 @@ cd $CWD
 cp spkg-install "$SPKG_ROOT"
 cp SPKG.txt "$SPKG_ROOT"
 sage -pkg_nc "$LIBGAP_DIR"
+
+export CFLAGS="-O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS"
 sage -f -s "$LIBGAP_DIR.spkg"
 
 
