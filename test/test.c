@@ -18,6 +18,13 @@
 
 // using namespace std;
 
+/////////////////////////////////////////////////////////////////
+
+void error_handler(char* msg)
+{
+  printf("Error: %s\n", msg);
+}
+
 
 /////////////////////////////////////////////////////////////////
 
@@ -34,6 +41,7 @@ void init()
   argv[7] = NULL;
   int argc=7;
   libgap_initialize(argc, argv);
+  //  libgap_set_error_handler(&error_handler);
 }   
 
 
@@ -87,12 +95,12 @@ void eval(char* input)
     libgap_finish_interaction();
     return;
   }
+
   status = ReadEvalCommand(BottomLVars);
 
   if (status != STATUS_END) {
-    printf("status = %i\n", status);
-    printf("NrError = %i\n", NrError);
-    ClearError();
+    char* err = libgap_get_error();
+    printf("Error follows...\n%s", err);
     libgap_finish_interaction();
     return;
   }
@@ -106,12 +114,10 @@ void eval(char* input)
   }
 
   ViewObjHandler(ReadEvalResult);
-  char * out = libgap_get_output();
-  //for (int i=0; i<strlen(out); i++) 
-  //  if (out[i]<33)
-  //    out[i] = '.';
-      
+
+  char* out = libgap_get_output();
   printf("Output follows...\n%s", out);
+
   libgap_finish_interaction();
 }
 
@@ -121,7 +127,7 @@ void eval(char* input)
 int main(void)
 {
   init();
-  install_signal_handler();
+  // install_signal_handler();
 
   eval("1 + CyclicGroup(2);\n");
 

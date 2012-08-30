@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 
+if [ "$SAGE_DEBUG" == "yes" ] ; then
+    export CFLAGS="-O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS"
+fi
+
 set +e
 cd src
-./configure --with-sage="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
+./configure CFLAGS="$CFLAGS" --with-sage="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
 make
 make install
 set -e

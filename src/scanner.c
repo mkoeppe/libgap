@@ -2660,7 +2660,10 @@ void PutChrTo (
 {
   if (ch <= 3)  // GAP control characters
     return;
-  libgap_append_output(ch);
+  if (stream->file == 1)
+    libgap_append_stdout(ch);
+  else
+    libgap_append_stderr(ch);
 }
 
 /****************************************************************************

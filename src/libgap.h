@@ -1,3 +1,6 @@
+#ifndef LIBGAP__H
+#define LIBGAP__H
+
 /*****************************************************************************
 *   SAGE: Open Source Mathematical Software
 *
@@ -29,6 +32,18 @@ void libgap_initialize(int argc, char** argv);
 void libgap_finalize();
 
 
+/* Set a function that will be called if an error occurs If set, this
+ * will be called instead of a longjmp() back to the GAP main loop.
+ */
+
+typedef void(*libgap_error_func_ptr)(char* msg);
+void libgap_set_error_handler(libgap_error_func_ptr callback);
+
+
+/* GAP uses this function to call our error handler */
+void libgap_call_error_handler();
+
+
 /* libGAP is supposed to be used as follows from your code:
  *
  * 1. call libgap_start_interaction(char* inputline). The inputline
@@ -49,11 +64,16 @@ void libgap_finalize();
 void libgap_start_interaction(char* inputline);
 void libgap_set_input(char* line);
 char* libgap_get_output();
-void libgap_reset_output_buffer();
 void libgap_finish_interaction();
 
 
 /* For GAP to access the buffers */
 char* libgap_get_input(char* line, int length);
-void libgap_append_output(char ch);
+char* libgap_get_error();
+void libgap_clear_error();
+void libgap_append_stdout(char ch);
+void libgap_append_stderr(char ch);
 
+
+
+#endif

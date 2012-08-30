@@ -12,6 +12,7 @@ autom4te\.cache
 compile
 test/test
 test/shell
+test/error_handler
 .*Makefile
 .*~
 .*\.rej

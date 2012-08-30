@@ -1380,6 +1380,7 @@ Obj FuncCALL_WITH_CATCH( Obj self, Obj func, Obj args )
 
 Obj FuncJUMP_TO_CATCH( Obj self, Obj payload)
 {
+  libgap_call_error_handler();
   ThrownObject = payload;
   syLongjmp(ReadJmpError, 1);
   return 0;
