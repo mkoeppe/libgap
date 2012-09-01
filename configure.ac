@@ -32,7 +32,7 @@ else
   GMP_LIBS=""
   GMP_CFLAGS=""
 fi
-GMP_LIBS="${GMP_LIBS} -lgmp -lgmpxx"
+GMP_LIBS="${GMP_LIBS} -lgmp"
 AC_SUBST(GMP_LIBS)
 AC_SUBST(GMP_CFLAGS)
 

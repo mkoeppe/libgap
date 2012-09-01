@@ -6,7 +6,7 @@ fi
 
 set +e
 cd src
-./configure CFLAGS="$CFLAGS" --with-sage="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
+./configure --disable-static CFLAGS="$CFLAGS" --with-sage="$SAGE_LOCAL" --with-gmp="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
 make
 make install
 set -e
