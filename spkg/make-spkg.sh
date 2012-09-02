@@ -24,6 +24,10 @@ cd "$SPKG_ROOT/src"
 
 cd "$SPKG_ROOT"
 find -name '*~' -exec rm '{}' ';'
+
+cd "$SPKG_ROOT/src/src"
+"$CWD/libGAPify.py" "$SPKG_ROOT/src/src"
+
 echo 'src' > .hgignore
 hg init .
 hg add
