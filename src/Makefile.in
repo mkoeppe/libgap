@@ -107,7 +107,7 @@ am_libgap_la_OBJECTS = libgap_la-ariths.lo libgap_la-c_random.lo \
 libgap_la_OBJECTS = $(am_libgap_la_OBJECTS)
 libgap_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libgap_la_CFLAGS) \
-	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+	$(CFLAGS) $(libgap_la_LDFLAGS) $(LDFLAGS) -o $@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
@@ -279,6 +279,7 @@ libgap_la_CFLAGS = \
   -DCONFIG_H @GMP_CFLAGS@ \
   -I@SAGE_LOCAL@/include/csage -I@SAGE_LOCAL@/include/python2.7
 
+libgap_la_LDFLAGS = @GMP_LIBS@
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 

@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -e
 if [ ! -f make-spkg.sh ] ; then
     echo "You must run this script in the spkg directory of the libGAP repository."
     exit 1
@@ -17,6 +18,16 @@ SPKG_ROOT="$CWD/$LIBGAP_DIR"
 rm -rf "$SPKG_ROOT"
 mkdir -p "$SPKG_ROOT/src"
 cp -rp `ls | grep -v spkg` "$SPKG_ROOT/src"
+
+cd "$SPKG_ROOT/src"
+[ -x Makefile ] && make distclean
+
+cd "$SPKG_ROOT"
+find -name '*~' -exec rm '{}' ';'
+echo 'src' > .hgignore
+hg init .
+hg add
+hg commit -m 'This is not the true repository, read SPKG.txt'
 
 cd $CWD
 cp spkg-install "$SPKG_ROOT"

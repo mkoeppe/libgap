@@ -1,12 +1,48 @@
 #!/usr/bin/env bash
 
-if [ "$SAGE_DEBUG" == "yes" ] ; then
-    export CFLAGS="-O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS"
+if [[ -z "$SAGE_LOCAL" ]]; then
+    echo >&2 "SAGE_LOCAL undefined - exiting..."
+    echo >&2 "Maybe run 'sage -sh'?"
+    exit 1
 fi
 
-set +e
+if [[ "$SAGE64" = yes ]]; then
+    if [[ -z $CFLAG64 ]]; then
+        CFLAG64=-m64
+    fi
+    CFLAGS="$CFLAGS $CFLAG64"
+    CXXFLAGS="$CXXFLAGS $CFLAG64"
+    echo "Building a 64-bit version of GAP (with '$CFLAG64')."
+fi 
+
+# Note that -g3 allows you to use preprocessor macros in gdb which are widely used
+if [ "$SAGE_DEBUG" == "yes" ] ; then
+    export CFLAGS="$CFLAGS -O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS"
+fi
+
+# workaround for MPIR missing macro issue
+CFLAGS="$CFLAGS -D__GMP_MP_RELEASE=50002"
+
+echo "Configuring libGAP..."
 cd src
-./configure --disable-static CFLAGS="$CFLAGS" --with-sage="$SAGE_LOCAL" --with-gmp="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
+./configure --disable-static CFLAGS="$CFLAGS" \
+    --with-sage="$SAGE_LOCAL" --with-gmp="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
+if [[ $? -ne 0 ]]; then
+    echo >&2 "Error configuring libGAP."
+    exit 1
+fi
+
+echo "Building libGAP..."
 make
+if [[ $? -ne 0 ]]; then
+    echo >&2 "Error building libGAP."
+    exit 1
+fi
+
+echo "Installing libGAP..."
 make install
-set -e
+if [[ $? -ne 0 ]]; then
+    echo >&2 "Error installing libGAP."
+    exit 1
+fi
+
