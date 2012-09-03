@@ -30,7 +30,8 @@ class Lexer_C(object):
         # morally reserved keywords
         'inline', 'asm', 'size_t', 'ssize_t', 'NULL', 'FILE',
         'uint32_t', 'uint64_t', 'NDEBUG', 'errno', 'environ',
-        'termios', 'termio', 'sgttyb'
+        'termios', 'termio', 'sgttyb',
+        'RTLD_LAZY', 'WEXITSTATUS', 'WIFEXITED'
         )
     
     tokens = (

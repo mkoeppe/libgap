@@ -28,17 +28,19 @@ find -name '*~' -exec rm '{}' ';'
 cd "$SPKG_ROOT/src/src"
 "$CWD/libGAPify.py" "$SPKG_ROOT/src/src"
 
+cd "$CWD"
+cp spkg-install "$SPKG_ROOT"
+cp SPKG.txt "$SPKG_ROOT"
+
+cd "$SPKG_ROOT"
 echo 'src' > .hgignore
 hg init .
 hg add
 hg commit -m 'This is not the true repository, read SPKG.txt'
 
-cd $CWD
-cp spkg-install "$SPKG_ROOT"
-cp SPKG.txt "$SPKG_ROOT"
-sage -pkg_nc "$LIBGAP_DIR"
-
+cd "$CWD"
 # export CFLAGS="-O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS -DDEBUG_DEADSONS_BAGS"
+sage -pkg_nc "$LIBGAP_DIR"
 export SAGE_DEBUG=yes
 sage -f -s "$LIBGAP_DIR.spkg"
 
