@@ -1,0 +1,188 @@
+/*****************************************************************************
+*   SAGE: Open Source Mathematical Software
+*
+*       Copyright (C) 2009, William Stein <wstein@gmail.com>
+*       Copyright (C) 2012, Volker Braun <vbraun.name@gmail.com>
+*
+*  Distributed under the terms of the GNU General Public License (GPL) v3+.
+*  The full text of the GPL is available at: http://www.gnu.org/licenses/
+*****************************************************************************/
+
+extern char** environ;
+
+#include <assert.h>
+#include <string.h>
+#include "system.h"
+#include "scanner.h"
+#include "gap.h"
+#include "libgap.h"
+
+/* Pointers to input/output buffers. libGAP users must not access these buffers directly!
+ */
+
+#define BUFFER_STEP 16*1024
+
+static char* stdin_buffer = NULL;
+
+static char* stdout_buffer = NULL;
+static size_t stdout_bufsize = 0;
+static size_t stdout_pos = 0;
+
+
+/* stderr is captured in a static buffer to make it easier to pass it around in the error handler */
+
+#define STDERR_BUFSIZE 4096
+
+static char stderr_buffer[STDERR_BUFSIZE];
+static size_t stderr_pos = 0;
+
+
+/*************************************************************************/
+/*** Initialize / Finalize ***********************************************/
+/*************************************************************************/
+
+/* from gap.c */
+extern char **sysenviron;
+extern Int NrImportedGVars;
+extern Int NrImportedFuncs;
+extern Obj ErrorHandler;
+
+
+
+/*************************************************************************/
+/*** Global Initialization ***********************************************/
+/*************************************************************************/
+
+void libgap_initialize(int argc, char** argv)
+{
+  sysenviron = environ;
+  NrImportedGVars = 0;
+  NrImportedFuncs = 0;
+  ErrorHandler = (Obj) 0;
+  UserHasQUIT = 0;
+  UserHasQuit = 0;
+  InitializeGap( &argc, argv );
+}
+
+
+void libgap_finalize()
+{
+  FinishBags();
+}
+
+
+
+
+/*************************************************************************/
+/*** Input/Output interaction ********************************************/
+/*************************************************************************/
+
+void libgap_start_interaction(char* inputline)
+{
+  assert(stdin_buffer == NULL);
+  stdin_buffer = inputline;
+  
+  stdout_bufsize = BUFFER_STEP;
+  stdout_buffer = (char*)malloc(stdout_bufsize);
+  stdout_pos = 0;
+  
+  stderr_pos = 0;
+}
+
+char* libgap_get_output() 
+{
+  libgap_append_stdout('\0');
+  return stdout_buffer;
+}
+
+char* libgap_get_error() 
+{
+  libgap_append_stderr('\0');
+  return stderr_buffer;
+}
+
+void libgap_finish_interaction()
+{
+  while (Symbol != S_EOF)
+    GetSymbol();
+  stdin_buffer = NULL;
+
+  stdout_bufsize = 0;
+  stdout_pos = 0;
+  free(stdout_buffer);
+  stdout_buffer = NULL;
+  
+  stderr_pos = 0;
+  ClearError();
+}
+
+
+
+
+/*************************************************************************/
+/*** Let GAP access the buffers ******************************************/
+/*************************************************************************/
+
+static libgap_error_func_ptr error_func = NULL;
+
+void libgap_set_error_handler(libgap_error_func_ptr callback)
+{
+  error_func = callback;
+}
+
+
+void libgap_call_error_handler()
+{
+  if (error_func == NULL) {
+    printf("An error occurred, but libGAP has no handler set.\n");
+    return;
+  }
+  libgap_append_stderr('\0');
+  stderr_pos = 0;
+  ClearError();
+  (*error_func) (stderr_buffer);
+}
+
+
+
+/*************************************************************************/
+/*** Let GAP access the buffers ******************************************/
+/*************************************************************************/
+
+char* libgap_get_input(char* line, int length)
+{
+  // TODO: copy in length chunks
+  if (stdin_buffer == NULL) {
+    return NULL;
+  }
+  assert(strlen(stdin_buffer) < length);
+  strcpy(line, stdin_buffer);
+  stdin_buffer = NULL;
+  return line;
+}
+
+void libgap_append_stdout(char ch)
+{
+  if (stdout_buffer == NULL)
+    return;
+  if (stdout_pos == stdout_bufsize) {
+    char* old_stdout_buffer = stdout_buffer;
+    size_t old_stdout_bufsize = stdout_bufsize;
+    stdout_bufsize += BUFFER_STEP;
+    stdout_buffer = (char*)malloc(stdout_bufsize);
+    memcpy(stdout_buffer, old_stdout_buffer, old_stdout_bufsize);
+    free(old_stdout_buffer);
+  }    
+  stdout_buffer[stdout_pos++] = ch;
+}
+
+
+void libgap_append_stderr(char ch)
+{
+  stderr_buffer[stderr_pos++] = ch;
+  if (stderr_pos == STDERR_BUFSIZE) 
+    stderr_pos--;
+}
+
+
+

@@ -272,6 +272,52 @@ class SourceFile(object):
         f.write(output)
         f.close()
 
+    def preview(self):
+        lexer = self.lexer()
+        brace_level = 0
+        while True:
+            while True:
+                tok = lexer.token()
+                if not tok: break
+                if tok.type == 'WHITESPACE':
+                    if brace_level > 0:
+                        continue
+                    if tok.newline_count > 0:
+                        sys.stdout.write('\n')
+                    else:
+                        sys.stdout.write(' ')
+                else:
+                    break
+            if not tok: break
+            if tok.type == 'LBRACE':
+                brace_level += 1
+            elif tok.type == 'RBRACE':
+                brace_level -= 1
+            if brace_level > 0:
+                continue
+            if tok.type == 'LPAREN':
+                tok = lexer.token_ns()
+                paren_level = 1
+                if tok.type == 'RPAREN':
+                    paren_level -= 1
+                if tok.type == 'STAR':   
+                    tok = lexer.token_ns()
+                    sys.stdout.write('(*'+tok.value+')')
+                while paren_level > 0:
+                    tok = lexer.token()
+                    if tok.type == 'LPAREN':
+                        paren_level += 1
+                    if tok.type == 'RPAREN':
+                        paren_level -= 1
+            elif tok.type == 'POUND':
+                tok = lexer.token_ns()
+                if tok.value == 'define':
+                    tok = lexer.token_ns()
+                    sys.stdout.write("#define "+tok.value)
+                lexer.skip_line()
+            elif tok.type == 'ID':
+                sys.stdout.write(tok.value)
+
 
 ####################################################################################
 
@@ -316,6 +362,12 @@ class SourceCollection_GAP(SourceCollection):
         for f in self.headers + self.sources:
             f.mangle('libGAP_', identifiers)
 
+    def preview(self):
+        for f in self.headers + self.sources:
+            print "="*79
+            print "===", f.filename
+            f.preview()
+
         
 
 ####################################################################################
@@ -323,8 +375,14 @@ class SourceCollection_GAP(SourceCollection):
 if __name__ == "__main__":
     #home = os.path.dirname(os.path.realpath(sys.argv[0]))
     #sys.path.append(os.path.join(home, 'pycparser'))
-    if len(sys.argv) > 1:
+    print sys.argv
+    if len(sys.argv) == 2:
         dirname = sys.argv[1]
+        print "Mangling identifiers in "+dirname
+        src = SourceCollection_GAP(dirname)
+        src.preview()
+    if len(sys.argv) > 2 and sys.argv[1] == '--modify':
+        dirname = sys.argv[2]
         print "Mangling identifiers in "+dirname
         src = SourceCollection_GAP(dirname)
         src.mangle()

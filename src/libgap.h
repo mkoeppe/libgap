@@ -12,6 +12,11 @@
 *****************************************************************************/
 
 
+
+/*************************************************************************/
+/*** Initialize / Finalize ***********************************************/
+/*************************************************************************/
+
 /* To setup libGAP, you must call libgap_set_command_line_options() to
  * set argv and env
  *
@@ -31,6 +36,30 @@ void libgap_initialize(int argc, char** argv);
  */
 void libgap_finalize();
 
+
+/*************************************************************************/
+/*** Local (per-function) Initialization  ********************************/
+/*************************************************************************/
+
+/* You must call libgap_local_initialize() in every function that
+ * calls into the libGAP C functions. The reason is that the GAP
+ * memory manager will automatically keep objects alive that are
+ * referenced in local (stack-allocated) variables. While convenient,
+ * this requires to look through the stack to find anything that looks
+ * like an address to a memory bag. 
+ */
+
+extern void* StackBottomBags;
+
+ /* This is implemented as a macro to access EBP of the calling function */
+#define libgap_local_initialize()   \
+  register void* ebp asm("ebp");     \ 
+  StackBottomBags = ebp;
+
+
+/*************************************************************************/
+/*** Input/Output interaction ********************************************/
+/*************************************************************************/
 
 /* Set a function that will be called if an error occurs If set, this
  * will be called instead of a longjmp() back to the GAP main loop.

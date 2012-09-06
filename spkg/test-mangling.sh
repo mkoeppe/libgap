@@ -21,7 +21,9 @@ cp -rp `ls | grep -v spkg` "$SPKG_ROOT/src"
 
 cd "$SPKG_ROOT/src/src"
 "$CWD/libGAPify.py" "$SPKG_ROOT/src/src"
-cd "$SPKG_ROOT/src"
-make
+
+
+#cd "$SPKG_ROOT/src"
+#make
 
 
