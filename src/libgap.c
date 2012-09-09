@@ -36,6 +36,7 @@ static size_t stdout_pos = 0;
 static char stderr_buffer[STDERR_BUFSIZE];
 static size_t stderr_pos = 0;
 
+int libgap_in_enter_exit_block = 0; /* false */
 
 /*************************************************************************/
 /*** Initialize / Finalize ***********************************************/
@@ -61,6 +62,7 @@ void libgap_initialize(int argc, char** argv)
   ErrorHandler = (Obj) 0;
   UserHasQUIT = 0;
   UserHasQuit = 0;
+  libgap_mark_stack_bottom();
   InitializeGap( &argc, argv );
 }
 
@@ -135,6 +137,7 @@ void libgap_call_error_handler()
 {
   if (error_func == NULL) {
     printf("An error occurred, but libGAP has no handler set.\n");
+    printf("Error message: %s\n", libgap_get_error());
     return;
   }
   libgap_append_stderr('\0');
@@ -185,4 +188,10 @@ void libgap_append_stderr(char ch)
 }
 
 
-
+void libgap_set_error(char* msg)
+{
+  stderr_pos = 0;
+  int i;
+  for (i=0; i<strlen(msg); i++)
+    libgap_append_stderr(msg[i]);
+}

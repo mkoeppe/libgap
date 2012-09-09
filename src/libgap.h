@@ -17,7 +17,7 @@
 /*** Initialize / Finalize ***********************************************/
 /*************************************************************************/
 
-/* To setup libGAP, you must call libgap_set_command_line_options() to
+/* To setup libGAP, you must call libgap_initialize() to
  * set argv and env
  *
  * Two mandatory component of argv is "-K", "memory_pool_size" to set the
@@ -41,20 +41,64 @@ void libgap_finalize();
 /*** Local (per-function) Initialization  ********************************/
 /*************************************************************************/
 
-/* You must call libgap_local_initialize() in every function that
+/* You must call libgap_mark_stack_bottom() in every function that
  * calls into the libGAP C functions. The reason is that the GAP
  * memory manager will automatically keep objects alive that are
  * referenced in local (stack-allocated) variables. While convenient,
  * this requires to look through the stack to find anything that looks
- * like an address to a memory bag. 
+ * like an address to a memory bag.
  */
 
 extern void* StackBottomBags;
 
- /* This is implemented as a macro to access EBP of the calling function */
-#define libgap_local_initialize()   \
-  register void* ebp asm("ebp");     \ 
+/* This is implemented as a macro to run in the same stack frame as
+ * the calling function */
+#ifdef __GNUC__
+#define libgap_mark_stack_bottom()              \
+  StackBottomBags = __builtin_frame_address(0);
+#else  /* try x86 asm */ 
+#define libgap_mark_stack_bottom()                 \
+  register void* ebp asm("ebp");                   \
   StackBottomBags = ebp;
+#endif
+
+
+/* Its important to mark the stack bottom before every call into
+ * libGAP. But this requires vigilance against the following pattern:
+ * 
+ * void f() {
+ *   libgap_mark_stack_bottom();
+ *   call_libGAP_function();
+ * }
+ *
+ * void g() {
+ *   libgap_mark_stack_bottom();
+ *   f();                     // f() changed the stack bottom marker 
+ *   call_libGAP_function();  //  boom 
+ * }
+ * 
+ * The solution is to re-order g() to first call f(). In order to
+ * catch this error, it is recommended that you wrap calls into libGAP
+ * in libgap_enter/libgap_exit blocks and not call libgap_mark_stack_bottom
+ * manually.
+ */
+
+extern int libgap_in_enter_exit_block;
+
+#define libgap_enter()						 \
+  if (libgap_in_enter_exit_block) {				 \
+    libgap_set_error("Entered a critical block twice");		 \
+    libgap_call_error_handler();				 \
+  }								 \
+  libgap_in_enter_exit_block = 1;				 \
+  libgap_mark_stack_bottom();
+
+#define libgap_exit()							\
+  if (!libgap_in_enter_exit_block) {					\
+    libgap_set_error("Called libgap_exit without previous libgap_enter"); \
+    libgap_call_error_handler();					\
+  }									\
+  libgap_in_enter_exit_block = 0;
 
 
 /*************************************************************************/
@@ -69,7 +113,7 @@ typedef void(*libgap_error_func_ptr)(char* msg);
 void libgap_set_error_handler(libgap_error_func_ptr callback);
 
 
-/* GAP uses this function to call our error handler */
+/* GAP uses this function to call the error handler, and you can too */
 void libgap_call_error_handler();
 
 
@@ -96,12 +140,12 @@ char* libgap_get_output();
 void libgap_finish_interaction();
 
 
-/* For GAP to access the buffers */
+/* For GAP to access the buffers, not part of the libGAP api */
 char* libgap_get_input(char* line, int length);
 char* libgap_get_error();
-void libgap_clear_error();
 void libgap_append_stdout(char ch);
 void libgap_append_stderr(char ch);
+void libgap_set_error(char* msg);
 
 
 

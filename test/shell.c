@@ -12,13 +12,28 @@
 
 extern char **environ;
 
+void print_stack_start()
+{
+  register void* ebp asm("ebp");     
+  int i;
+  printf("ebp = %p\n", ebp);
+  printf("&i = %p\n", &i);
+  printf("frame addres = %p\n", __builtin_frame_address(0));
+}
+
+void stacker() 
+{
+  print_stack_start();
+}
+
+
 void error_handler(char* msg)
 {
   printf("Error: %s\n", msg);
 }
 
 void eval(char* cmd) {
-  libgap_local_initialize();
+  libgap_enter();
   printf("Input:\n%s", cmd);
   libgap_start_interaction(cmd);
   ReadEvalCommand(BottomLVars);
@@ -26,10 +41,13 @@ void eval(char* cmd) {
   char* out = libgap_get_output();
   printf("Output:\n%s", out);
   libgap_finish_interaction();
+  libgap_exit()
 }
 
 int main()
 {
+  print_stack_start();
+  stacker();
   char* argv[8];
   argv[0] = "gap";
   argv[1] = "-l";

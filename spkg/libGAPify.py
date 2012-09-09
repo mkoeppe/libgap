@@ -30,7 +30,8 @@ class Lexer_C(object):
         # morally reserved keywords
         'inline', 'asm', 'size_t', 'ssize_t', 'NULL', 'FILE',
         'uint32_t', 'uint64_t', 'NDEBUG', 'errno', 'environ',
-        'termios', 'termio', 'sgttyb',
+        'termios', 'termio', 'sgttyb', 'rusage', 'pid_t',
+        'vm_address_t', 'printf', '__builtin_frame_address',
         'RTLD_LAZY', 'WEXITSTATUS', 'WIFEXITED'
         )
     
@@ -206,46 +207,55 @@ class SourceFile(object):
                 lexer.skip_line()
         return defines
                 
-    def all_global_identifiers(self):
-        lexer = self.lexer()
-        identifiers = set()
-        brace_level = 0
-        while True:
-            tok = lexer.token_ns()
-            if not tok: break
-            if tok.type == 'LBRACE':
-                brace_level += 1
-            elif tok.type == 'RBRACE':
-                brace_level -= 1
-            if brace_level > 0:
-                continue
-            if tok.type == 'LPAREN':
-                tok = lexer.token_ns()
-                paren_level = 1
-                if tok.type == 'RPAREN':
-                    paren_level -= 1
-                if tok.type == 'STAR':   
-                    tok = lexer.token_ns()
-                    identifiers.add(tok.value)   # function pointer typedef
-                while paren_level > 0:
-                    tok = lexer.token()
-                    if tok.type == 'LPAREN':
-                        paren_level += 1
-                    if tok.type == 'RPAREN':
-                        paren_level -= 1
-            elif tok.type == 'POUND':
-                tok = lexer.token_ns()
-                if tok.value == 'define':
-                    tok = lexer.token_ns()
-                    identifiers.add(tok.value)   #define foo bar
-                lexer.skip_line()
-            elif tok.type == 'ID':
-                identifiers.add(tok.value)
-        identifiers.difference_update(Lexer_C.reserved_keywords)
-        autoconf_defines = [ i for i in identifiers if i.startswith('HAVE_') ]
-        identifiers.difference_update(autoconf_defines)
-        identifiers.difference_update([ i for i in identifiers if i.startswith('_') ])
-        return identifiers
+    # def all_global_identifiers(self):
+    #     lexer = self.lexer()
+    #     identifiers = set()
+    #     brace_level = 0
+    #     cpp_if_branch = [True];
+    #     while True:
+    #         tok = lexer.token_ns()
+    #         if not tok: break
+    #         if tok.type == 'POUND':
+    #             tok = lexer.token_ns()
+    #             if tok.value == 'define':
+    #                 tok = lexer.token_ns()
+    #                 identifiers.add(tok.value)   #define foo bar
+    #                 lexer.skip_line()
+    #             elif tok.value == 'if':
+    #                 cpp_if_branch.append(True)
+    #             elif tok.value == 'else':
+    #                 cpp_if_branch[-1] = False
+    #             elif tok.value == 'endif':
+    #                 cpp_if_branch.pop()
+    #         if tok.type == 'LBRACE':
+    #             if cpp_if_branch[-1]:
+    #                 brace_level += 1
+    #         elif tok.type == 'RBRACE':
+    #             if cpp_if_branch[-1]:
+    #                 brace_level -= 1
+    #         if brace_level > 0:
+    #             continue
+    #         if tok.type == 'LPAREN':
+    #             tok = lexer.token_ns()
+    #             paren_level = 1
+    #             if tok.type == 'RPAREN':
+    #                 paren_level -= 1
+    #             if tok.type == 'STAR':   
+    #                 tok = lexer.token_ns()
+    #                 identifiers.add(tok.value)   # function pointer typedef
+    #             while paren_level > 0:
+    #                 tok = lexer.token()
+    #                 if tok.type == 'LPAREN':
+    #                     paren_level += 1
+    #                 if tok.type == 'RPAREN':
+    #                     paren_level -= 1
+    #         elif tok.type == 'ID':
+    #             identifiers.add(tok.value)
+    #     identifiers.difference_update(Lexer_C.reserved_keywords)
+    #     autoconf_defines = [ i for i in identifiers if i.startswith('HAVE_') ]
+    #     identifiers.difference_update(autoconf_defines)
+    #     identifiers.difference_update([ i for i in identifiers if i.startswith('_') ])
+    #     return identifiers
 
     def add_prefix(self, prefix, identifiers, string_replacements=()):
         """
@@ -261,6 +271,17 @@ class SourceFile(object):
             if not tok: break
             if tok.type == 'ID' and tok.value in identifiers:
                 output += (prefix + tok.value)
+            elif tok.type == 'POUND':
+                output += tok.value
+                tok = lexer.token()
+                if tok.type == 'WHITESPACE':
+                    output += tok.value
+                    tok = lexer.token()
+                if tok.value == 'include':
+                    while tok.type != 'WHITESPACE' or tok.newline_count == 0:
+                        output += tok.value
+                        tok = lexer.token()
+                output += tok.value
             else:
                 output += tok.value
         return output
@@ -272,27 +293,42 @@ class SourceFile(object):
         f.write(output)
         f.close()
 
-    def preview(self):
+    def parse_globals(self, token_action):
         lexer = self.lexer()
         brace_level = 0
+        cpp_if_branch_brace_level_before = [0];
+        cpp_if_branch_brace_level_after = [0];
         while True:
-            while True:
-                tok = lexer.token()
-                if not tok: break
-                if tok.type == 'WHITESPACE':
-                    if brace_level > 0:
-                        continue
-                    if tok.newline_count > 0:
-                        sys.stdout.write('\n')
-                    else:
-                        sys.stdout.write(' ')
-                else:
-                    break
-            if not tok: break
-            if tok.type == 'LBRACE':
+            tok = lexer.token()
+            if not tok: 
+                break
+            if tok.type == 'POUND':
+                tok = lexer.token_ns()
+                if tok.value == 'define':
+                    tok = lexer.token_ns()
+                    token_action(tok)   #define <identifier>
+                elif tok.value == 'if' or tok.value == 'ifdef' or tok.value == 'ifndef':
+                    #print '----- #if ', cpp_if_branch_brace_level_before
+                    cpp_if_branch_brace_level_before.append(brace_level);
+                    cpp_if_branch_brace_level_after.append(None);
+                elif tok.value == 'else':
+                    #print '----- #else ', cpp_if_branch_brace_level_before
+                    cpp_if_branch_brace_level_after[-1] = brace_level;
+                    brace_level = cpp_if_branch_brace_level_before[-1]
+                elif tok.value == 'endif':
+                    #print '----- #endif ', cpp_if_branch_brace_level_before
+                    cpp_if_branch_brace_level_before.pop()
+                    if_brace_level = cpp_if_branch_brace_level_after.pop()
+                    have_else = (if_brace_level is not None)
+                    matching  = (if_brace_level == brace_level)
+                    assert not have_else or matching, (tok, self.filename)
+                lexer.skip_line()
+                continue
+            elif tok.type == 'LBRACE':
                 brace_level += 1
             elif tok.type == 'RBRACE':
                 brace_level -= 1
+                continue
             if brace_level > 0:
                 continue
             if tok.type == 'LPAREN':
@@ -302,22 +338,46 @@ class SourceFile(object):
                     paren_level -= 1
                 if tok.type == 'STAR':   
                     tok = lexer.token_ns()
-                    sys.stdout.write('(*'+tok.value+')')
+                    token_action(tok)  # typedef function pointer
                 while paren_level > 0:
                     tok = lexer.token()
                     if tok.type == 'LPAREN':
                         paren_level += 1
                     if tok.type == 'RPAREN':
                         paren_level -= 1
-            elif tok.type == 'POUND':
-                tok = lexer.token_ns()
-                if tok.value == 'define':
-                    tok = lexer.token_ns()
-                    sys.stdout.write("#define "+tok.value)
-                lexer.skip_line()
-            elif tok.type == 'ID':
-                sys.stdout.write(tok.value)
+            else:
+                token_action(tok)    
 
+    def all_global_identifiers(self):
+        identifiers = set()
+        def action(tok):
+            if tok.type == 'ID':
+                identifiers.update([tok.value])
+                if len(tok.value) == 1:
+                    print '='*79
+                    print tok, self.filename
+                    print '='*79
+        self.parse_globals(action)
+        identifiers.difference_update(Lexer_C.reserved_keywords)
+        autoconf_defines = [ i for i in identifiers if i.startswith('HAVE_') ]
+        identifiers.difference_update(autoconf_defines)
+        identifiers.difference_update([ i for i in identifiers if i.startswith('_') ])
+        return identifiers
+
+    def preview(self):
+        def action(tok):
+            if tok.type == 'WHITESPACE':
+                if tok.newline_count > 0:
+                    sys.stdout.write('\n')
+                else:
+                    sys.stdout.write(' ')
+            elif tok.type == 'ID':
+                sys.stdout.write('<'+tok.value+'> ')
+            elif tok.type == 'COMMENT':
+                pass
+            else:
+                sys.stdout.write(tok.value)
+        self.parse_globals(action)
 
 ####################################################################################
 
@@ -359,13 +419,15 @@ class SourceCollection_GAP(SourceCollection):
 
     def mangle(self):
         identifiers = self.identifiers()
+        identifiers = [ val for val in identifiers if not val.startswith('libgap') ]
         for f in self.headers + self.sources:
             f.mangle('libGAP_', identifiers)
 
     def preview(self):
         for f in self.headers + self.sources:
             print "="*79
-            print "===", f.filename
+            print "=== filename =", f.filename
+            print "="*79
             f.preview()
 
         
@@ -381,7 +443,15 @@ if __name__ == "__main__":
         print "Mangling identifiers in "+dirname
         src = SourceCollection_GAP(dirname)
         src.preview()
-    if len(sys.argv) > 2 and sys.argv[1] == '--modify':
+    elif len(sys.argv) > 2 and sys.argv[1] == '--print':
+        dirname = sys.argv[2]
+        print "Mangling identifiers in "+dirname
+        src = SourceCollection_GAP(dirname)
+        f = src.headers + src.sources
+        f = f[0]
+        print src.identifiers()
+        print f.add_prefix('libGAP_', src.identifiers())
+    elif len(sys.argv) > 2 and sys.argv[1] == '--modify':
         dirname = sys.argv[2]
         print "Mangling identifiers in "+dirname
         src = SourceCollection_GAP(dirname)
