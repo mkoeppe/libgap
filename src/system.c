@@ -71,7 +71,7 @@
 ** do not edit the following line. Occurences of `4.dev' and `today'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyKernelVersion = "4.5.5";
+const Char * SyKernelVersion = "4.5.6";
 
 /****************************************************************************
 *V  SyWindowsPath  . . . . . . . . . . . . . . . . . default path for Windows
@@ -1157,7 +1157,7 @@ void SyInitialAllocPool( void )
            break;
        }
        SyAllocPool = SyAllocPool / 2;
-       fputs("gap: halfing pool size.\n", stderr);
+       fputs("gap: halving pool size.\n", stderr);
        if (SyAllocPool < 16*1024*1024) {
          fputs("gap: cannot allocate initial memory, bye.\n", stderr);
          SyExit( 2 );

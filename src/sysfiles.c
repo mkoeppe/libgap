@@ -85,6 +85,7 @@ extern int errno;
 # include       <process.h>
 #endif
 
+
 /* utility to check return value of 'write'  */
 ssize_t writeandcheck(int fd, const char *buf, size_t count) {
   int ret;
