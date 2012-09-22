@@ -268,12 +268,13 @@ libgapinclude_HEADERS = \
   blister.h   dteval.h    intfuncs.h  objects.h   read.h      system.h   \
   bool.h      dt.h        intrprtr.h  objfgelm.h  records.h   tietze.h   \
   calls.h     exprs.h     iostream.h  objpcgel.h  saveload.h  vars.h     \
-  code.h      finfield.h  libgap.h    objscoll.h  scanner.h   vec8bit.h  \
+  code.h      finfield.h  objscoll.h  scanner.h   vec8bit.h              \
   compiled.h  funcs.h     listfunc.h  opers.h     sctable.h   vecffe.h   \
   compiler.h  gap.h       listoper.h  permutat.h  set.h       vecgf2.h   \
   compstat.h  gasman.h    lists.h     plist.h     stats.h     vector.h   \
   config.h    gmpints.h   macfloat.h  precord.h   streams.h   weakptr.h  \
-  costab.h    gvars.h     objccoll.h  range.h     string.h
+  costab.h    gvars.h     objccoll.h  range.h     string.h               \
+  libgap.h    libgap_internal.h    
 
 libgap_la_CFLAGS = \
   -DCONFIG_H @GMP_CFLAGS@ \

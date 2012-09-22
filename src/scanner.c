@@ -59,7 +59,7 @@
 #include        "opers.h"               /* DoFilter...                     */
 #include        "read.h"                /* Call0ArgsInNewReader            */
 
-#include        "libgap.h"              /* GAP shared library              */
+#include        "libgap_internal.h"     /* GAP shared library              */
 
 #include <assert.h>
 #include <limits.h>

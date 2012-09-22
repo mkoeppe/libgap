@@ -38,7 +38,7 @@
 #include        "records.h"             /* generic records                 */
 #include        "bool.h"                /* Global True and False           */
 
-#include        "libgap.h"              /* GAP shared library              */
+#include        "libgap_internal.h"     /* GAP shared library              */
 
 #include        <assert.h>
 #include        <fcntl.h>

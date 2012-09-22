@@ -47,6 +47,9 @@ void libgap_finalize();
  * referenced in local (stack-allocated) variables. While convenient,
  * this requires to look through the stack to find anything that looks
  * like an address to a memory bag.
+ *
+ * I suggest you use libgap_enter / libgap_exit (see below) instead of
+ * calling libgap_mark_stack_bottom manually.
  */
 
 extern void* StackBottomBags;
@@ -101,6 +104,20 @@ extern int libgap_in_enter_exit_block;
   libgap_in_enter_exit_block = 0;
 
 
+
+/*************************************************************************/
+/*** Garbage collector callback ******************************************/
+/*************************************************************************/
+
+/* This will be called before garbage collection by GAP's memory
+ * manager GASMAN. You can use the MARK_BAG(bag) GAP function to mark
+ * GAP memory bags that you want to survive the following garbage
+ * collection.
+ */
+
+typedef void(*libgap_gasman_callback_ptr)();
+void libgap_set_gasman_callback(libgap_gasman_callback_ptr callback);
+
 /*************************************************************************/
 /*** Input/Output interaction ********************************************/
 /*************************************************************************/
@@ -140,13 +157,6 @@ char* libgap_get_output();
 void libgap_finish_interaction();
 
 
-/* For GAP to access the buffers, not part of the libGAP api */
-char* libgap_get_input(char* line, int length);
-char* libgap_get_error();
-void libgap_append_stdout(char ch);
-void libgap_append_stderr(char ch);
-void libgap_set_error(char* msg);
 
 
-
-#endif
+#endif /* LIBGAP__H */

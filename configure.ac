@@ -1,5 +1,5 @@
 AC_PREREQ([2.66])
-AC_INIT([libGAP], [4.5.5], [sage-devel@googlegroups.com])
+AC_INIT([libGAP], [4.5.6], [sage-devel@googlegroups.com])
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE
 

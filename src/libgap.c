@@ -16,6 +16,7 @@ extern char** environ;
 #include "scanner.h"
 #include "gap.h"
 #include "libgap.h"
+#include "libgap_internal.h"
 
 /* Pointers to input/output buffers. libGAP users must not access these buffers directly!
  */
@@ -73,6 +74,22 @@ void libgap_finalize()
 }
 
 
+/*************************************************************************/
+/*** Garbage collector callback ******************************************/
+/*************************************************************************/
+
+static libgap_gasman_callback_ptr gasman_callback = NULL;
+
+void libgap_set_gasman_callback(libgap_gasman_callback_ptr callback)
+{
+  gasman_callback = callback;
+}
+
+void libgap_call_gasman_callback()
+{
+  if (gasman_callback != NULL)
+    (*gasman_callback)();
+}
 
 
 /*************************************************************************/
