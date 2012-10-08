@@ -17,7 +17,7 @@ SPKG_ROOT="$CWD/$LIBGAP_DIR"
 
 rm -rf "$SPKG_ROOT"
 mkdir -p "$SPKG_ROOT/src"
-cp -rp `ls | grep -v spkg | grep -v local` "$SPKG_ROOT/src"
+cp -rp `ls | grep -v spkg | grep -v local | grep -v upstream-gap` "$SPKG_ROOT/src"
 
 cd "$SPKG_ROOT/src"
 [ -x Makefile ] && make distclean
