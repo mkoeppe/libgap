@@ -17,7 +17,8 @@ fi
 
 # Note that -g3 allows you to use preprocessor macros in gdb which are widely used
 if [ "$SAGE_DEBUG" == "yes" ] ; then
-    export CFLAGS="$CFLAGS -O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS -DDEBUG_HANDLER_REGISTRATION"
+    export CFLAGS="$CFLAGS -O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS"
+    #  -DDEBUG_HANDLER_REGISTRATION is broken
 fi
 
 # workaround for MPIR missing macro issue

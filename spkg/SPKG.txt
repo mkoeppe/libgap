@@ -42,6 +42,11 @@ namespace collisions in Sage.
 
 == Changelog ==
 
-=== libgap-4.5.5 (Volker Braun, 2 Sept 2012) ===
+=== libgap-4.5.6.p1 (Volker Braun, 22 Oct 2012) ===
+ * Remove GAP signal handlers
 
+=== libgap-4.5.6 (Volker Braun, 10 Sept 2012) ===
+ * Update to newest upsteram
+
+=== libgap-4.5.5 (Volker Braun, 2 Sept 2012) ===
  * Initial release

@@ -1115,16 +1115,20 @@ Int syFid;
 
 void syAnswerCont ( int signr )
 {
+#ifdef LIBGAP_SIGNALS
     syStartraw( syFid );
     signal( SIGCONT, SIG_DFL );
     kill( getpid(), SIGCONT );
+#endif
 }
 
 void syAnswerTstp ( int signr )
 {
+#ifdef LIBGAP_SIGNALS
     syStopraw( syFid );
     signal( SIGCONT, syAnswerCont );
     kill( getpid(), SIGTSTP );
+#endif
 }
 
 #endif
@@ -1197,11 +1201,12 @@ UInt syStartraw ( Int fid )
 
 #endif
 
-
+#ifdef LIBGAP_SIGNALS
 #ifdef SIGTSTP
     /* install signal handler for stop                                     */
     syFid = fid;
     signal( SIGTSTP, syAnswerTstp );
+#endif
 #endif
 
     /* indicate success                                                    */
@@ -1225,9 +1230,11 @@ void syStopraw (
     if ( SyWindow )
         return;
 
+#ifdef LIBGAP_SIGNALS
 #ifdef SIGTSTP
     /* remove signal handler for stop                                      */
     signal( SIGTSTP, SIG_DFL );
+#endif
 #endif
 
 #if HAVE_TERMIOS_H
@@ -1320,8 +1327,10 @@ void syAnswerIntr ( int signr )
 
 void SyInstallAnswerIntr ( void )
 {
+#ifdef LIBGAP_SIGNALS
     if ( signal( SIGINT, SIG_IGN ) != SIG_IGN )
         signal( SIGINT, syAnswerIntr );
+#endif
 }
 
 
@@ -1386,7 +1395,9 @@ void getwindowsize( void )
             if (CO <= 0)
                 CO = win.ws_col;
         }
+#ifdef LIBGAP_SIGNALS
         (void) signal(SIGWINCH, syWindowChangeIntr);
+#endif
     }
 #endif /* TIOCGWINSZ */
 
@@ -3244,7 +3255,9 @@ UInt SyExecuteProcess (
        `After that, we call the old signal handler, in case any other children have died in the
        meantime. This resets the handler */
 
+#ifdef LIBGAP_SIGNALS
     func2 = signal( SIGCHLD, SIG_DFL );
+#endif
 
     /* This may return SIG_DFL (0x0) or SIG_IGN (0x1) if the previous handler
      * was set to the default or 'ignore'. In these cases (or if SIG_ERR is
@@ -3263,8 +3276,9 @@ UInt SyExecuteProcess (
     if ( pid != 0 ) {
 
         /* ignore a CTRL-C                                                 */
+#ifdef LIBGAP_SIGNALS
         func = signal( SIGINT, SIG_IGN );
-
+#endif
         /* wait for some action                                            */
 #if HAVE_WAITPID
         wait_pid = waitpid( pid, &status, 0 );
@@ -3272,17 +3286,23 @@ UInt SyExecuteProcess (
         wait_pid = wait4( pid, &status, 0, &usage );
 #endif
         if ( wait_pid == -1 ) {
+#ifdef LIBGAP_SIGNALS
             signal( SIGINT, func );
+#endif
             (*func2)(SIGCHLD);
             return -1;
         }
 
         if ( WIFSIGNALED(status) ) {
+#ifdef LIBGAP_SIGNALS
             signal( SIGINT, func );
+#endif
             (*func2)(SIGCHLD);
             return -1;
         }
+#ifdef LIBGAP_SIGNALS
         signal( SIGINT, func );
+#endif
         (*func2)(SIGCHLD);
         return WEXITSTATUS(status);
     }
