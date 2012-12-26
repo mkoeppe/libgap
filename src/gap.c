@@ -225,7 +225,7 @@ Int NrImportedFuncs;
 
 char *original_argv0;
 static char **sysargv;
-static char **sysenviron;
+char **sysenviron;
 
 /* 
 syJmp_buf SyRestartBuf;
