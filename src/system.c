@@ -71,7 +71,7 @@
 ** do not edit the following line. Occurences of `4.dev' and `today'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyKernelVersion = "4.5.6";
+const Char * SyKernelVersion = "4.5.7";
 
 /****************************************************************************
 *V  SyWindowsPath  . . . . . . . . . . . . . . . . . default path for Windows
@@ -1616,7 +1616,7 @@ sizeMultiplier memoryUnits[]= {
 
 static UInt ParseMemory( Char * s)
 {
-  UInt size  = atoi(s);
+  UInt size  = atol(s);
   Char symbol =  s[strlen(s)-1];
   UInt i;
   UInt maxmem;

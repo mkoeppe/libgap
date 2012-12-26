@@ -47,9 +47,11 @@
 #include        <readline/readline.h>   /* readline for interactive input  */
 #endif
 
+#include        "read.h"                /* reader                          */
+
+
 #if HAVE_SELECT
 /* Only for the Hook handler calls: */
-#include        "read.h"                /* reader                          */
 
 #include        <sys/time.h>
 #include        <sys/types.h>
@@ -3079,7 +3081,7 @@ void SyClearErrorNo ( void )
 *F  SySetErrorNo()  . . . . . . . . . . . . . . . . . . . . set error message
 */
 
-#if  ! HAVE_STRERROR
+#if  ! HAVE_SYS_ERRLIST
 extern char * sys_errlist[];
 #endif
 
