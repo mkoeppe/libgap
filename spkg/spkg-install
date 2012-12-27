@@ -24,9 +24,13 @@ fi
 # workaround for MPIR missing macro issue
 CFLAGS="$CFLAGS -D__GMP_MP_RELEASE=50002"
 
+source "$SAGE_LOCAL/gap/latest/sysinfo.gap"
+echo "GAP was configured with $GAParch_system"
+
 echo "Configuring libGAP..."
 cd src
 ./configure --disable-static CFLAGS="$CFLAGS" \
+    --with-gap_system_arch="$GAParch_system" \
     --with-sage="$SAGE_LOCAL" --with-gmp="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
 if [[ $? -ne 0 ]]; then
     echo >&2 "Error configuring libGAP."

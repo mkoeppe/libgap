@@ -415,7 +415,7 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* arbitrary architecture name */
+/* GAP system architecture string */
 #undef SYS_ARCH
 
 /* whether we are running on Windows */

@@ -758,6 +758,7 @@ enable_option_checking
 with_gmp
 enable_dependency_tracking
 with_sage
+with_gap_system_arch
 enable_shared
 enable_static
 with_pic
@@ -1409,6 +1410,9 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-gmp=<path>       prefix of GMP installation. e.g. /usr/local or /usr
   --with-sage=<path>      the SAGE_LOCAL path
+  --with-gap_system_arch=<string>
+                          the GAP arch (default:
+                          x86_64-unknown-linux-gnu-gcc-default64)
   --with-pic[=PKGS]       try to use only PIC/non-PIC objects [default=use
                           both]
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
@@ -4211,12 +4215,22 @@ fi
 
 
 
-# weird macros that GAP uses
+
+# Check whether --with-gap-system-arch was given.
+if test "${with_gap_system_arch+set}" = set; then :
+  withval=$with_gap_system_arch; GAP_SYSTEM_ARCH="$with_gap_system_arch"
+else
+  GAP_SYSTEM_ARCH="x86_64-unknown-linux-gnu-gcc-default64"
+fi
+
 
 cat >>confdefs.h <<_ACEOF
-#define SYS_ARCH "sage-libGAP"
+#define SYS_ARCH "$GAP_SYSTEM_ARCH"
 _ACEOF
 
+
+
+# weird macros that GAP uses
 
 cat >>confdefs.h <<_ACEOF
 #define CONFIGNAME "sage-libGAP"

@@ -54,8 +54,18 @@ fi
 AC_SUBST(SAGE_LOCAL)
 
 
+dnl SYS_ARCH must match the GAP install for packages 
+dnl to find binaries in the right path (see GAParch_system 
+dnl in sysinfo.gap)
+AC_ARG_WITH(gap-system-arch,
+  [AS_HELP_STRING([--with-gap_system_arch=<string>],  
+                  [the GAP arch (default: x86_64-unknown-linux-gnu-gcc-default64)])],
+  [GAP_SYSTEM_ARCH="$with_gap_system_arch"],
+  [GAP_SYSTEM_ARCH="x86_64-unknown-linux-gnu-gcc-default64"])
+AC_DEFINE_UNQUOTED([SYS_ARCH], ["$GAP_SYSTEM_ARCH"], [GAP system architecture string])
+
+
 # weird macros that GAP uses
-AC_DEFINE_UNQUOTED([SYS_ARCH], ["sage-libGAP"], [arbitrary architecture name])
 AC_DEFINE_UNQUOTED([CONFIGNAME], ["sage-libGAP"], [arbitrary name])
 AC_DEFINE([HAVE_DOTGAPRC],[1],[define as 1 if the user resource file is .gaprc])
 AC_DEFINE([HAVE_SLASH_SEPARATOR],[1],[if your directory separator is forward slash])
