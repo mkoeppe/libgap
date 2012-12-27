@@ -3290,22 +3290,22 @@ UInt SyExecuteProcess (
         if ( wait_pid == -1 ) {
 #ifdef LIBGAP_SIGNALS
             signal( SIGINT, func );
-#endif
             (*func2)(SIGCHLD);
+#endif
             return -1;
         }
 
         if ( WIFSIGNALED(status) ) {
 #ifdef LIBGAP_SIGNALS
             signal( SIGINT, func );
-#endif
             (*func2)(SIGCHLD);
+#endif
             return -1;
         }
 #ifdef LIBGAP_SIGNALS
         signal( SIGINT, func );
-#endif
         (*func2)(SIGCHLD);
+#endif
         return WEXITSTATUS(status);
     }
 
