@@ -22,7 +22,7 @@ mkdir -p "$SPKG_ROOT/src"
 cp -rp `ls | grep -v spkg | grep -v local$ | grep -v upstream-gap` "$SPKG_ROOT/src"
 
 cd "$SPKG_ROOT/src"
-[ -x Makefile ] && make distclean
+[ -f Makefile ] && make distclean
 
 cd "$SPKG_ROOT"
 find -name '*~' -exec rm '{}' ';'

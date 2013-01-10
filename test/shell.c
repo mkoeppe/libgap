@@ -46,6 +46,7 @@ void eval(char* cmd) {
 
 int main()
 {
+  libgap_mark_stack_bottom();
   print_stack_start();
   stacker();
   char* argv[8];

@@ -41,7 +41,7 @@ void init()
   argv[7] = NULL;
   int argc=7;
   libgap_initialize(argc, argv);
-  //  libgap_set_error_handler(&error_handler);
+  libgap_set_error_handler(&error_handler);
 }   
 
 
@@ -127,7 +127,8 @@ void eval(char* input)
 int main(void)
 {
   init();
-  // install_signal_handler();
+  install_signal_handler();
+  libgap_mark_stack_bottom();
 
   eval("1 + CyclicGroup(2);\n");
 

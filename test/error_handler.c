@@ -20,10 +20,8 @@ int main()
   argv[6] = NULL;
   int argc=6;
   libgap_initialize(argc, argv);
-
+  libgap_mark_stack_bottom();
   libgap_set_error_handler(handler);
-
-  
 
   return 0;
 }

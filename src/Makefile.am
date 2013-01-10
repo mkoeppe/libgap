@@ -29,7 +29,7 @@ libgapinclude_HEADERS = \
   costab.h    gvars.h     objccoll.h  range.h     string.h               \
   libgap.h    libgap_internal.h    
 
-libgap_la_CFLAGS = \
+libgap_la_CFLAGS = $(AM_CFLAGS) \
   -DCONFIG_H @GMP_CFLAGS@ \
   -I@SAGE_LOCAL@/include/csage -I@SAGE_LOCAL@/include/python2.7
 

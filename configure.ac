@@ -96,7 +96,7 @@ AC_CHECK_FUNCS([rld_load])
 AC_CHECK_FUNCS([times getrusage])
 AC_CHECK_FUNCS([vm_allocate])
 AC_CHECK_FUNCS([fork popen waitpid wait4])
-AC_CHECK_FUNCS([dup2 floor memmove mkdir pow rint select strerror])
+AC_CHECK_FUNCS([dup2 floor memmove mkdir pow rint select])
 AC_CHECK_FUNCS([ttyname strerror select])
 AC_CHECK_FUNCS([access stat fstat lstat unlink mkdir mkdtemp mkstemp rmdir link rename])
 AC_CHECK_FUNCS([symlink readlink chmod fchmod chown fchown lchown dup dup2 mknod mkfifo])
@@ -123,6 +123,9 @@ AC_TYPE_SIGNAL
 if test "$ac_cv_type_signal" = "void"; then
   AC_DEFINE([HAVE_SIGNAL_VOID], [1] ,[void as signal type??])
 fi
+
+AC_DEFINE(HAVE_STRERROR, 1, [Everybody has that])
+AC_DEFINE(HAVE_SYS_ERRLIST, 1, [Or GAP will define its own])
 
 dnl #########################################################################
 dnl ##

@@ -1,5 +1,7 @@
 DEFAULT_INCLUDES = -I@top_builddir@
 
+TESTS = test shell error_handler
+
 check_PROGRAMS = test shell error_handler
 
 test_SOURCES = test.c
