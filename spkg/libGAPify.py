@@ -456,6 +456,7 @@ if __name__ == "__main__":
         print "Mangling identifiers in "+dirname
         src = SourceCollection_GAP(dirname)
         src.mangle()
+        os.system('cd '+dirname+' && patch -p2 < ../../../libGAPify-sparc.patch')
     else:
         print("Please provide a directory name as argument")
 

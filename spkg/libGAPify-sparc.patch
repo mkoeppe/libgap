@@ -1,0 +1,25 @@
+diff -ru a/src/gasman.c b/src/gasman.c
+--- a/src/gasman.c	2013-01-10 19:57:24.000000000 +0100
++++ b/src/gasman.c	2013-01-17 20:05:13.267528069 +0100
+@@ -1647,8 +1647,8 @@
+ #ifdef __GNUC__
+ #ifdef SPARC
+ #if SPARC
+-        asm("           .globl  SparcStackFuncBags              ");
+-        asm("   SparcStackFuncBags:                             ");
++        asm("           .globl  libGAP_SparcStackFuncBags       ");
++        asm("   libGAP_SparcStackFuncBags:                      ");
+         asm("           ta      0x3     ! ST_FLUSH_WINDOWS      ");
+         asm("           mov     %sp,%o0                         ");
+         asm("           retl                                    ");
+@@ -1659,8 +1659,8 @@
+ /* sunos */
+ #ifdef SPARC
+ #if SPARC
+-        asm("           .globl  _SparcStackFuncBags             ");
+-        asm("   _SparcStackFuncBags:                            ");
++        asm("           .globl  _libGAP_SparcStackFuncBags      ");
++        asm("   _libGAP_SparcStackFuncBags:                     ");
+         asm("           ta      0x3     ! ST_FLUSH_WINDOWS      ");
+         asm("           mov     %sp,%o0                         ");
+         asm("           retl                                    ");
