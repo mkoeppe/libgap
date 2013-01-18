@@ -72,6 +72,8 @@ AC_DEFINE([HAVE_SLASH_SEPARATOR],[1],[if your directory separator is forward sla
 
 # Checks for programs.
 AM_PROG_CC_C_O
+AM_PROG_AS
+
 AC_C_CONST
 AC_C_INLINE
 AC_C_BIGENDIAN
@@ -141,13 +143,14 @@ case "$host" in
     ;;
 esac
 
+need_itanium_obj=false
 case "$host" in 
   sparc-* )
     AC_DEFINE([SPARC], [1], [whether we are running on SPARC architecture])
     ;;
   ia64-* ) 
     AC_DEFINE([ITANIUM], [1], [whether we are runnig on Itanium architecture])
-    ITANIUMOBJ=itanium.o
+    need_itanium_obj=true
     ;;
   *-darwin* )
     AC_DEFINE([SYS_IS_DARWIN], [1], [whether we are running on OSX])
@@ -156,8 +159,8 @@ case "$host" in
     AC_DEFINE([SYS_IS_DARWIN], [0], [whether we are running on OSX])
     ;;
 esac
-
-AC_SUBST(ITANIUMOBJ)
+# important: AM_CONDITIONAL must not be in case/esac block
+AM_CONDITIONAL([NEED_ITANIUMOBJ], [test x$need_itanium_obj = xtrue])
 
 AC_CYGWIN
 if test "$CYGWIN" = "yes"; then

@@ -456,7 +456,8 @@ if __name__ == "__main__":
         print "Mangling identifiers in "+dirname
         src = SourceCollection_GAP(dirname)
         src.mangle()
-        os.system('cd '+dirname+' && patch -p2 < ../../../libGAPify-sparc.patch')
+        os.system('sed -i s/SparcStackFuncBags/libGAP_SparcStackFuncBags/ '+dirname+'/gasman.c')
+        os.system('sed -i s/ItaniumRegisterStackTop/libGAP_ItaniumRegisterStackTop/ '+dirname+'/itanium.s')
     else:
         print("Please provide a directory name as argument")
 

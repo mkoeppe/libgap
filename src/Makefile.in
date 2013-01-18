@@ -52,6 +52,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@NEED_ITANIUMOBJ_TRUE@am__append_1 = itanium.s
 subdir = src
 DIST_COMMON = $(libgapinclude_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -98,6 +99,18 @@ am__installdirs = "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(libgapincludedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libgap_la_LIBADD =
+am__libgap_la_SOURCES_DIST = ariths.c c_random.c gmpints.c objccoll.c \
+	rational.c system.c blister.c c_type1.c gvars.c objcftl.c \
+	read.c tietze.c bool.c cyclotom.c integer.c objects.c \
+	records.c vars.c calls.c dt.c intfuncs.c objfgelm.c saveload.c \
+	vec8bit.c c_filt1.c dteval.c intrprtr.c objpcgel.c scanner.c \
+	vecffe.c c_meths1.c exprs.c iostream.c objscoll.c sctable.c \
+	vecgf2.c code.c finfield.c libgap.c opers.c set.c vector.c \
+	compiler.c funcs.c listfunc.c permutat.c stats.c weakptr.c \
+	compstat.c gap.c listoper.c plist.c streams.c c_oper1.c \
+	lists.c precord.c string.c costab.c gasman.c macfloat.c \
+	range.c sysfiles.c itanium.s
+@NEED_ITANIUMOBJ_TRUE@am__objects_1 = itanium.lo
 am_libgap_la_OBJECTS = libgap_la-ariths.lo libgap_la-c_random.lo \
 	libgap_la-gmpints.lo libgap_la-objccoll.lo \
 	libgap_la-rational.lo libgap_la-system.lo libgap_la-blister.lo \
@@ -120,7 +133,7 @@ am_libgap_la_OBJECTS = libgap_la-ariths.lo libgap_la-c_random.lo \
 	libgap_la-streams.lo libgap_la-c_oper1.lo libgap_la-lists.lo \
 	libgap_la-precord.lo libgap_la-string.lo libgap_la-costab.lo \
 	libgap_la-gasman.lo libgap_la-macfloat.lo libgap_la-range.lo \
-	libgap_la-sysfiles.lo
+	libgap_la-sysfiles.lo $(am__objects_1)
 libgap_la_OBJECTS = $(am_libgap_la_OBJECTS)
 libgap_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libgap_la_CFLAGS) \
@@ -137,8 +150,11 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+CCASCOMPILE = $(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS)
+LTCCASCOMPILE = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CCAS) $(AM_CCASFLAGS) $(CCASFLAGS)
 SOURCES = $(libgap_la_SOURCES)
-DIST_SOURCES = $(libgap_la_SOURCES)
+DIST_SOURCES = $(am__libgap_la_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -156,6 +172,9 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
+CCAS = @CCAS@
+CCASDEPMODE = @CCASDEPMODE@
+CCASFLAGS = @CCASFLAGS@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
@@ -180,7 +199,6 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-ITANIUMOBJ = @ITANIUMOBJ@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
@@ -271,19 +289,17 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 DEFAULT_INCLUDES = -I@top_builddir@
 lib_LTLIBRARIES = libgap.la
-libgap_la_SOURCES = \
-  ariths.c    c_random.c  gmpints.c   objccoll.c  rational.c  system.c  \
-  blister.c   c_type1.c   gvars.c     objcftl.c   read.c      tietze.c  \
-  bool.c      cyclotom.c  integer.c   objects.c   records.c   vars.c    \
-  calls.c     dt.c        intfuncs.c  objfgelm.c  saveload.c  vec8bit.c \
-  c_filt1.c   dteval.c    intrprtr.c  objpcgel.c  scanner.c   vecffe.c  \
-  c_meths1.c  exprs.c     iostream.c  objscoll.c  sctable.c   vecgf2.c  \
-  code.c      finfield.c  libgap.c    opers.c     set.c       vector.c  \
-  compiler.c  funcs.c     listfunc.c  permutat.c  stats.c     weakptr.c \
-  compstat.c  gap.c       listoper.c  plist.c     streams.c   \
-  c_oper1.c   lists.c     precord.c   string.c    \
-  costab.c    gasman.c    macfloat.c  range.c     sysfiles.c
-
+libgap_la_SOURCES = ariths.c c_random.c gmpints.c objccoll.c \
+	rational.c system.c blister.c c_type1.c gvars.c objcftl.c \
+	read.c tietze.c bool.c cyclotom.c integer.c objects.c \
+	records.c vars.c calls.c dt.c intfuncs.c objfgelm.c saveload.c \
+	vec8bit.c c_filt1.c dteval.c intrprtr.c objpcgel.c scanner.c \
+	vecffe.c c_meths1.c exprs.c iostream.c objscoll.c sctable.c \
+	vecgf2.c code.c finfield.c libgap.c opers.c set.c vector.c \
+	compiler.c funcs.c listfunc.c permutat.c stats.c weakptr.c \
+	compstat.c gap.c listoper.c plist.c streams.c c_oper1.c \
+	lists.c precord.c string.c costab.c gasman.c macfloat.c \
+	range.c sysfiles.c $(am__append_1)
 libgapincludedir = @includedir@/gap
 libgapinclude_HEADERS = \
   ariths.h    cyclotom.h  integer.h   objcftl.h   rational.h  sysfiles.h \
@@ -307,7 +323,7 @@ all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .o .obj
+.SUFFIXES: .c .lo .o .obj .s
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -913,6 +929,15 @@ libgap_la-sysfiles.lo: sysfiles.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='sysfiles.c' object='libgap_la-sysfiles.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL)  --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgap_la_CFLAGS) $(CFLAGS) -c -o libgap_la-sysfiles.lo `test -f 'sysfiles.c' || echo '$(srcdir)/'`sysfiles.c
+
+.s.o:
+	$(CCASCOMPILE) -c -o $@ $<
+
+.s.obj:
+	$(CCASCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.s.lo:
+	$(LTCCASCOMPILE) -c -o $@ $<
 
 mostlyclean-libtool:
 	-rm -f *.lo

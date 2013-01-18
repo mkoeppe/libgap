@@ -15,6 +15,10 @@ libgap_la_SOURCES = \
   c_oper1.c   lists.c     precord.c   string.c    \
   costab.c    gasman.c    macfloat.c  range.c     sysfiles.c
 
+if NEED_ITANIUMOBJ
+  libgap_la_SOURCES += itanium.s
+endif
+
 libgapincludedir = @includedir@/gap
 libgapinclude_HEADERS = \
   ariths.h    cyclotom.h  integer.h   objcftl.h   rational.h  sysfiles.h \
