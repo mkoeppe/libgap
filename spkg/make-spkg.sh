@@ -18,14 +18,14 @@ LIBGAP_DIR="libgap-$VERSION$PATCHLEVEL"
 SPKG_ROOT="$CWD/$LIBGAP_DIR"
 
 rm -rf "$SPKG_ROOT"
-mkdir -p "$SPKG_ROOT/src"
-cp -rp `ls | grep -v spkg | grep -v local$ | grep -v upstream-gap` "$SPKG_ROOT/src"
+mkdir -p "$SPKG_ROOT"
 
-cd "$SPKG_ROOT/src"
-[ -f Makefile ] && make distclean
+rm libgap-$VERSION.tar.gz
+make dist
 
 cd "$SPKG_ROOT"
-find -name '*~' -exec rm '{}' ';'
+tar xf ../../libgap-$VERSION.tar.gz
+mv libgap-$VERSION src
 
 cd "$SPKG_ROOT/src/src"
 "$CWD/libGAPify.py" --modify "$SPKG_ROOT/src/src"
