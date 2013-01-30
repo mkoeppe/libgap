@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-if [[ -z "$SAGE_LOCAL" ]]; then
+if [ -z "$SAGE_LOCAL" ]; then
     echo >&2 "SAGE_LOCAL undefined - exiting..."
     echo >&2 "Maybe run 'sage -sh'?"
     exit 1
 fi
 
-if [[ "$SAGE64" = yes ]]; then
-    if [[ -z $CFLAG64 ]]; then
+if [ "$SAGE64" = yes ]; then
+    if [ -z $CFLAG64 ]; then
         CFLAG64=-m64
     fi
     CFLAGS="$CFLAGS $CFLAG64"
@@ -15,21 +15,18 @@ if [[ "$SAGE64" = yes ]]; then
     echo "Building a 64-bit version of GAP (with '$CFLAG64')."
 fi 
 
-# Note that -g3 allows you to use preprocessor macros in gdb which are widely used
 if [ "$SAGE_DEBUG" == "yes" ] ; then
-    export CFLAGS="$CFLAGS -O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS"
+    # Note that -g3 allows you to use preprocessor macros in gdb which are widely used
+    CFLAGS="$CFLAGS -O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS"
     #  -DDEBUG_HANDLER_REGISTRATION is broken
 fi
-
-# workaround for MPIR missing macro issue
-CFLAGS="$CFLAGS -D__GMP_MP_RELEASE=50002"
 
 source "$SAGE_LOCAL/gap/latest/sysinfo.gap"
 echo "GAP was configured with $GAParch_system"
 
 echo "Configuring libGAP..."
 cd src
-./configure --disable-static CFLAGS="$CFLAGS" \
+./configure --disable-static CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" \
     --with-gap_system_arch="$GAParch_system" \
     --with-sage="$SAGE_LOCAL" --with-gmp="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
 if [[ $? -ne 0 ]]; then
@@ -38,14 +35,14 @@ if [[ $? -ne 0 ]]; then
 fi
 
 echo "Building libGAP..."
-make
+$MAKE
 if [[ $? -ne 0 ]]; then
     echo >&2 "Error building libGAP."
     exit 1
 fi
 
 echo "Installing libGAP..."
-make install
+$MAKE install
 if [[ $? -ne 0 ]]; then
     echo >&2 "Error installing libGAP."
     exit 1
