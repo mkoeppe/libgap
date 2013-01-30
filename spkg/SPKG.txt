@@ -42,6 +42,9 @@ namespace collisions in Sage.
 
 == Changelog ==
 
+=== libgap-4.5.7.p1 (Volker Braun, 30 Jan 2013) ===
+ * Cygwin fix
+
 === libgap-4.5.7 (Volker Braun, 27 Dec 2012) ===
  * Update to latest upstream
  * Fix Exec command

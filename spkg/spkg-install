@@ -29,21 +29,21 @@ cd src
 ./configure --disable-static CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" \
     --with-gap_system_arch="$GAParch_system" \
     --with-sage="$SAGE_LOCAL" --with-gmp="$SAGE_LOCAL" --prefix="$SAGE_LOCAL"
-if [[ $? -ne 0 ]]; then
+if [ $? -ne 0 ]; then
     echo >&2 "Error configuring libGAP."
     exit 1
 fi
 
 echo "Building libGAP..."
 $MAKE
-if [[ $? -ne 0 ]]; then
+if [ $? -ne 0 ]; then
     echo >&2 "Error building libGAP."
     exit 1
 fi
 
 echo "Installing libGAP..."
 $MAKE install
-if [[ $? -ne 0 ]]; then
+if [ $? -ne 0 ]; then
     echo >&2 "Error installing libGAP."
     exit 1
 fi
