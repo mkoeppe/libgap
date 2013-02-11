@@ -3142,7 +3142,7 @@ void SySetErrorNo ( void )
 # endif
 #endif
 
-extern char ** environ;
+#include "libgap_internal.h"
 
 void NullSignalHandler(int scratch) {}
 

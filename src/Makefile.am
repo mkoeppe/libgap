@@ -39,5 +39,5 @@ libgap_la_CFLAGS = $(AM_CFLAGS) \
 
 
 # the no-undefined is necessary for Cygwin
-libgap_la_LDFLAGS = @GMP_LIBS@ --no-undefined
+libgap_la_LDFLAGS = @GMP_LIBS@ -no-undefined
 
