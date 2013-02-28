@@ -45,6 +45,8 @@
 #include        "records.h"             /* generic records                 */
 #include        "bool.h"                /* True and False                  */
 
+#include        "libgap_internal.h"     /* GAP shared library              */
+
 #include <stdio.h>                      /* standard input/output functions */
 #include <stdlib.h>
 #include <string.h>
@@ -882,8 +884,9 @@ static Int InitKernel(
   InitHdlrFuncsFromTable( GVarFuncs );
   
   /* Set up the trap to detect future dying children */
+#ifdef LIBGAP_SIGNALS
   signal( SIGCHLD, ChildStatusChanged );
-
+#endif
   return 0;
 }
 
