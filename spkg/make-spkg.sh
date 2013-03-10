@@ -1,6 +1,6 @@
 #!/bin/sh
 
-PATCHLEVEL=".p2"
+PATCHLEVEL=".p0"
 
 set -e
 if [ ! -f make-spkg.sh ] ; then

@@ -71,7 +71,7 @@
 ** do not edit the following line. Occurences of `4.dev' and `today'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyKernelVersion = "4.5.7";
+const Char * SyKernelVersion = "4.6.2";
 
 /****************************************************************************
 *V  SyWindowsPath  . . . . . . . . . . . . . . . . . default path for Windows

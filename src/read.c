@@ -567,6 +567,9 @@ void ReadCallVarAss (
 
     /*  if we need an unbind                                               */
     else if ( mode == 'u' ) {
+      if (Symbol != S_RPAREN) {
+	SyntaxError("'Unbind': argument should be followed by ')'");
+      }
         if ( READ_ERROR() ) {}
         else if ( type == 'l' ) { IntrUnbLVar( var );             }
         else if ( type == 'h' ) { IntrUnbHVar( var );             }

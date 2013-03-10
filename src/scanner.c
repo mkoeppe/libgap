@@ -1963,6 +1963,17 @@ void GetNumber ( UInt StartingStatus )
     /* Or maybe we saw a . which could indicate one of two things:
        a float literal or .. */
     if (c == '.'){
+      /* If the symbol before this integer was S_DOT then 
+	 we must be in a nested record element expression, so don't 
+	 look for a float.
+
+      This is a bit fragile  */
+      if (Symbol == S_DOT || Symbol == S_BDOT) {
+	Value[i]  = '\0';
+	Symbol = S_INT;
+	return;
+      }
+      
       /* peek ahead to decide which */
       GET_CHAR();
       if (*In == '.') {
