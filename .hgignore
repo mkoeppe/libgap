@@ -20,4 +20,5 @@
 stamp-h1$
 ^src/\.libs$
 ^src/lib.*\.la$
+^src-upstream.*
 ^upstream-gap-.*
