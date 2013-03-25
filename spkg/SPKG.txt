@@ -42,6 +42,12 @@ namespace collisions in Sage.
 
 == Changelog ==
 
+=== libgap-4.6.2.p0 (Volker Braun, 22 March 2013) ===
+ * Bump to latest upstream
+
+=== libgap-4.5.7.p1 (Volker Braun, 25 March 2013) ===
+ * Removed last remaining SIGCHLD handler
+
 === libgap-4.5.7.p1 (Volker Braun, 30 Jan 2013) ===
  * Cygwin fix
 
