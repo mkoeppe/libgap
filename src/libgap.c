@@ -10,6 +10,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 #include "system.h"
 #include "scanner.h"
 #include "gap.h"
