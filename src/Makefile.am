@@ -37,9 +37,8 @@ libgap_la_CFLAGS = $(AM_CFLAGS) \
   -DCONFIG_H @GMP_CFLAGS@ \
   -I@SAGE_LOCAL@/include/csage -I@SAGE_LOCAL@/include/python2.7
 
-
 # the no-undefined is necessary for Cygwin
 libgap_la_LDFLAGS = @GMP_LIBS@ -no-undefined
 
-BUILT_SOURCES = config.h
-
+dist-hook:
+	rm -f $(distdir)/config.h
