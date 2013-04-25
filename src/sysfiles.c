@@ -1316,6 +1316,7 @@ void syAnswerIntr ( int signr )
 
     /* reinstall 'syAnswerIntr' as signal handler                          */
     signal( SIGINT, syAnswerIntr );
+    siginterrupt( SIGINT, 0 );
 
     /* remember time of this interrupt                                     */
     syLastIntr = nowIntr;
@@ -1331,7 +1332,10 @@ void SyInstallAnswerIntr ( void )
 {
 #ifdef LIBGAP_SIGNALS
     if ( signal( SIGINT, SIG_IGN ) != SIG_IGN )
+    {
         signal( SIGINT, syAnswerIntr );
+        siginterrupt( SIGINT, 0 );
+    }
 #endif
 }
 
