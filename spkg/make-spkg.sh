@@ -20,7 +20,7 @@ SPKG_ROOT="$CWD/$LIBGAP_DIR"
 rm -rf "$SPKG_ROOT"
 mkdir -p "$SPKG_ROOT"
 
-rm libgap-$VERSION.tar.gz
+rm -f libgap-$VERSION.tar.gz
 make dist
 
 cd "$SPKG_ROOT"
