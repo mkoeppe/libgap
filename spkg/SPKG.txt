@@ -42,6 +42,11 @@ namespace collisions in Sage.
 
 == Changelog ==
 
+=== libgap-4.6.4.p0 (Volker Braun, 3 June 2013) ===
+ * Update to latest upstream
+ * Code cleanups following a code review by Fedora GAP packager Jerry
+   James, see https://bugzilla.redhat.com/show_bug.cgi?id=919703
+
 === libgap-4.6.2.p0 (Volker Braun, 22 March 2013) ===
  * Bump to latest upstream
 
