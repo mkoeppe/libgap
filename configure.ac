@@ -40,7 +40,8 @@ AC_SUBST(GMP_LIBS)
 AC_SUBST(GMP_CFLAGS)
 
 dnl Always use GMP integers in LibGAP
-AC_DEFINE(USE_GMP, 1, [use GMP for integers])
+dnl This is currently disabled (TODO for LibGAP)
+#AC_DEFINE(USE_GMP, 1, [use GMP for integers])
 
 dnl Find SAGE_LOCAL
 AC_ARG_WITH(sage,

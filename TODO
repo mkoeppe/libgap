@@ -1,2 +1,6 @@
 Check if we still need the saveload.c patch on Itanium
 
+Currently we use the internal software integer implementation, we
+should probably use GMP. Need to disable GAP's own GMP allocation
+stuff.
+

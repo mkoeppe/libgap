@@ -427,9 +427,6 @@
 /* whether we are running on OSX */
 #undef SYS_IS_DARWIN
 
-/* use GMP for integers */
-#undef USE_GMP
-
 /* Version number of package */
 #undef VERSION
 
