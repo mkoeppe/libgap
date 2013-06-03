@@ -39,6 +39,8 @@ GMP_LIBS="${GMP_LIBS} -lgmp"
 AC_SUBST(GMP_LIBS)
 AC_SUBST(GMP_CFLAGS)
 
+dnl Always use GMP integers in LibGAP
+AC_DEFINE(USE_GMP, 1, [use GMP for integers])
 
 dnl Find SAGE_LOCAL
 AC_ARG_WITH(sage,
@@ -47,11 +49,11 @@ AC_ARG_WITH(sage,
   [SAGE_LOCAL_PREFIX="$with_sage"]
 )
 if test "x$SAGE_LOCAL_PREFIX" != x ; then
-  SAGE_LOCAL="${SAGE_LOCAL_PREFIX}"
+  SAGE_CFLAGS="-I${SAGE_LOCAL_PREFIX}/include/csage -I${SAGE_LOCAL_PREFIX}/include/python2.7"
 else
-  SAGE_LOCAL=""
+  SAGE_CFLAGS=""
 fi
-AC_SUBST(SAGE_LOCAL)
+AC_SUBST(SAGE_CFLAGS)
 
 
 dnl SYS_ARCH must match the GAP install for packages 
@@ -67,8 +69,8 @@ AC_DEFINE_UNQUOTED([SYS_ARCH], ["$GAP_SYSTEM_ARCH"], [GAP system architecture st
 
 # weird macros that GAP uses
 AC_DEFINE_UNQUOTED([CONFIGNAME], ["sage-libGAP"], [arbitrary name])
-AC_DEFINE([HAVE_DOTGAPRC],[1],[define as 1 if the user resource file is .gaprc])
-AC_DEFINE([HAVE_SLASH_SEPARATOR],[1],[if your directory separator is forward slash])
+AC_DEFINE([HAVE_DOTGAPRC], 1, [define as 1 if the user resource file is .gaprc])
+AC_DEFINE([HAVE_SLASH_SEPARATOR], 1, [if your directory separator is forward slash])
 
 # Checks for programs.
 AM_PROG_CC_C_O
@@ -93,7 +95,7 @@ AC_FUNC_VFORK
 AC_FUNC_FORK
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([getpseudotty _getpty getpt ptsname_r])
-AC_CHECK_FUNCS([setpgid setjmp sigsetjmp sbrk])
+AC_CHECK_FUNCS([setpgid setjmp sbrk])
 AC_CHECK_FUNCS([rld_load])
 AC_CHECK_FUNCS([times getrusage])
 AC_CHECK_FUNCS([vm_allocate])
@@ -105,6 +107,14 @@ AC_CHECK_FUNCS([symlink readlink chmod fchmod chown fchown lchown dup dup2 mknod
 AC_CHECK_FUNCS([socket listen accept connect bind getsockname recv recvfrom recvmsg send])
 AC_CHECK_FUNCS([sendto sendmsg getsockopt setsockopt getprotobyname gethostbyname])
 AC_CHECK_FUNCS([opendir closedir dirfd readdir rewinddir seekdir telldir])
+
+# sigsetjmp is a macro on some platforms, cannot use AC_CHECK_FUNCS
+AC_MSG_CHECKING(for sigsetjmp())
+AC_TRY_LINK([#include <setjmp.h>], [sigjmp_buf t; sigsetjmp(t, 0)],
+  [AC_MSG_RESULT(yes)
+   AC_DEFINE([HAVE_SIGSETJMP], 1, [Define to 1 if you have the sigsetjmp function.])],
+  [AC_MSG_RESULT(no)]
+)
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

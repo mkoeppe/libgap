@@ -665,7 +665,7 @@ am__fastdepCCAS_TRUE
 CCASDEPMODE
 CCASFLAGS
 CCAS
-SAGE_LOCAL
+SAGE_CFLAGS
 GMP_CFLAGS
 GMP_LIBS
 am__fastdepCC_FALSE
@@ -4210,6 +4210,9 @@ GMP_LIBS="${GMP_LIBS} -lgmp"
 
 
 
+$as_echo "#define USE_GMP 1" >>confdefs.h
+
+
 
 # Check whether --with-sage was given.
 if test "${with_sage+set}" = set; then :
@@ -4218,9 +4221,9 @@ if test "${with_sage+set}" = set; then :
 fi
 
 if test "x$SAGE_LOCAL_PREFIX" != x ; then
-  SAGE_LOCAL="${SAGE_LOCAL_PREFIX}"
+  SAGE_CFLAGS="-I${SAGE_LOCAL_PREFIX}/include/csage -I${SAGE_LOCAL_PREFIX}/include/python2.7"
 else
-  SAGE_LOCAL=""
+  SAGE_CFLAGS=""
 fi
 
 
@@ -13015,7 +13018,7 @@ _ACEOF
 fi
 done
 
-for ac_func in setpgid setjmp sigsetjmp sbrk
+for ac_func in setpgid setjmp sbrk
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -13157,6 +13160,34 @@ _ACEOF
 fi
 done
 
+
+# sigsetjmp is a macro on some platforms, cannot use AC_CHECK_FUNCS
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for sigsetjmp()" >&5
+$as_echo_n "checking for sigsetjmp()... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <setjmp.h>
+int
+main ()
+{
+sigjmp_buf t; sigsetjmp(t, 0)
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+
+$as_echo "#define HAVE_SIGSETJMP 1" >>confdefs.h
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
 
 # Checks for typedefs, structures, and compiler characteristics.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for stdbool.h that conforms to C99" >&5

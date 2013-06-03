@@ -32,7 +32,8 @@ class Lexer_C(object):
         'uint32_t', 'uint64_t', 'NDEBUG', 'errno', 'environ',
         'termios', 'termio', 'sgttyb', 'rusage', 'pid_t',
         'vm_address_t', 'printf', '__builtin_frame_address',
-        'RTLD_LAZY', 'WEXITSTATUS', 'WIFEXITED'
+        'RTLD_LAZY', 'WEXITSTATUS', 'WIFEXITED',
+        'mp_limb_t', 'mp_size_t',
         )
     
     tokens = (

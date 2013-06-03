@@ -22,7 +22,7 @@
 
 void error_handler(char* msg)
 {
-  printf("Error: %s\n", msg);
+  printf("Error handler: %s", msg);
 }
 
 
@@ -40,14 +40,11 @@ void init()
   argv[6] = "-T";
   argv[7] = NULL;
   int argc=7;
-  libgap_initialize(argc, argv);
   libgap_set_error_handler(&error_handler);
+  libgap_initialize(argc, argv);
 }   
 
 
-void cleanup()
-{
-}
 
 
 /////////////////////////////////////////////////////////////////
@@ -95,25 +92,30 @@ void eval(char* input)
     libgap_finish_interaction();
     return;
   }
-
+  
+  libgap_enter();
   status = ReadEvalCommand(BottomLVars);
+  libgap_exit();
 
   if (status != STATUS_END) {
-    char* err = libgap_get_error();
-    printf("Error follows...\n%s", err);
+    printf("There was an error, no output.\n");
     libgap_finish_interaction();
     return;
   }
 
   assert(Symbol == S_SEMICOLON);
+  libgap_enter();
   GetSymbol();
+  libgap_exit();
   if (Symbol!=S_EOF) {
     printf("Multiple statements; aborting!\n");
     libgap_finish_interaction();
     return;
   }
 
+  libgap_enter();
   ViewObjHandler(ReadEvalResult);
+  libgap_exit();
 
   char* out = libgap_get_output();
   printf("Output follows...\n%s", out);
@@ -127,12 +129,12 @@ void eval(char* input)
 int main(void)
 {
   init();
-  install_signal_handler();
-  libgap_mark_stack_bottom();
+  // install_signal_handler();
+
+  eval("0;\n");
 
   eval("1 + CyclicGroup(2);\n");
 
-  eval("0;\n");
   eval("1/0;\n");
 
   eval("a:=NormalSubgroups;\n");
@@ -159,17 +161,5 @@ int main(void)
   eval("\"back to normal\";\n");
 
   eval("1/0;\n");
-
-  printf("Quitting\n");
-  cleanup();
-
-  Obj obj = INTOBJ_INT(123);
-
-  char* c_str = "this is a test";
-  Obj str;
-  int i;
-  for (i=0; i<100; i++)
-    C_NEW_STRING(str, strlen(c_str), c_str);
-
   return 0;
 }

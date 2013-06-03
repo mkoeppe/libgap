@@ -34,11 +34,10 @@ libgapinclude_HEADERS = \
   libgap.h    libgap_internal.h    
 
 libgap_la_CFLAGS = $(AM_CFLAGS) \
-  -DCONFIG_H @GMP_CFLAGS@ \
-  -I@SAGE_LOCAL@/include/csage -I@SAGE_LOCAL@/include/python2.7
+  -DCONFIG_H @GMP_CFLAGS@ @SAGE_CFLAGS@
 
 # the no-undefined is necessary for Cygwin
-libgap_la_LDFLAGS = @GMP_LIBS@ -no-undefined
+libgap_la_LDFLAGS = -lm @GMP_LIBS@ -no-undefined
 
 dist-hook:
 	rm -f $(distdir)/config.h

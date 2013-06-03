@@ -3263,7 +3263,6 @@ UInt SyExecuteProcess (
 
 #ifdef LIBGAP_SIGNALS
     func2 = signal( SIGCHLD, SIG_DFL );
-#endif
 
     /* This may return SIG_DFL (0x0) or SIG_IGN (0x1) if the previous handler
      * was set to the default or 'ignore'. In these cases (or if SIG_ERR is
@@ -3271,6 +3270,7 @@ UInt SyExecuteProcess (
      * is to do nothing */
     if(func2 == SIG_ERR || func2 == SIG_DFL || func2 == SIG_IGN)
       func2 = &NullSignalHandler;
+#endif
 
     /* clone the process                                                   */
     pid = vfork();

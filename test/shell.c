@@ -29,24 +29,23 @@ void stacker()
 
 void error_handler(char* msg)
 {
-  printf("Error: %s\n", msg);
+  printf("Error handler: %s", msg);
 }
 
 void eval(char* cmd) {
-  libgap_enter();
   printf("Input:\n%s", cmd);
   libgap_start_interaction(cmd);
+  libgap_enter();
   ReadEvalCommand(BottomLVars);
   ViewObjHandler(ReadEvalResult);
+  libgap_exit()
   char* out = libgap_get_output();
   printf("Output:\n%s", out);
   libgap_finish_interaction();
-  libgap_exit()
 }
 
 int main()
 {
-  libgap_mark_stack_bottom();
   print_stack_start();
   stacker();
   char* argv[8];
@@ -60,15 +59,12 @@ int main()
   argv[7] = NULL;
   int argc=7;
   // gap_main_loop(argc, argv, environ);
+  libgap_set_error_handler(&error_handler);
   libgap_initialize(argc, argv);
   printf("Initialized\n");
+
   CollectBags(0,1);  // full GC
-  printf("after GC\n");
-  libgap_set_error_handler(&error_handler);
-
   eval("1+2+3;\n");
-
-
   eval("g:=FreeGroup(2);\n");
   eval("a:=g.1;\n");
   eval("b:=g.2;\n");
@@ -77,20 +73,6 @@ int main()
   eval("c:=h.1;\n");
   eval("Set([1..300000], i->Order(c));\n"); 
 
-  libgap_finish_interaction();
   return 0;
 }
 
-
-/*
-
-g:=FreeGroup(2);
-a:=g.1;
-b:=g.2;
-lis:=[a^2, a^2, b*a];
-h:=g/lis;
-c:=h.1;
-Set([1..300000], i->Order(c));
-
-
- */

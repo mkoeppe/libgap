@@ -225,7 +225,7 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
-SAGE_LOCAL = @SAGE_LOCAL@
+SAGE_CFLAGS = @SAGE_CFLAGS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -315,12 +315,11 @@ libgapinclude_HEADERS = \
   libgap.h    libgap_internal.h    
 
 libgap_la_CFLAGS = $(AM_CFLAGS) \
-  -DCONFIG_H @GMP_CFLAGS@ \
-  -I@SAGE_LOCAL@/include/csage -I@SAGE_LOCAL@/include/python2.7
+  -DCONFIG_H @GMP_CFLAGS@ @SAGE_CFLAGS@
 
 
 # the no-undefined is necessary for Cygwin
-libgap_la_LDFLAGS = @GMP_LIBS@ -no-undefined
+libgap_la_LDFLAGS = -lm @GMP_LIBS@ -no-undefined
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
