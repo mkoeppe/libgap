@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "src/libgap.h"
 
-#include "src/config.h"
 #include "src/system.h"
 #include "src/objects.h"
 #include "src/gasman.h"

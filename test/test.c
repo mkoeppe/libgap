@@ -2,7 +2,6 @@
 #include <setjmp.h>
 #include <assert.h>
 
-#include "src/config.h"
 #include "src/system.h"
 #include "src/objects.h"
 #include "src/gap.h"
