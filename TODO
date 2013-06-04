@@ -1,6 +1,7 @@
-Check if we still need the saveload.c patch on Itanium
-
 Currently we use the internal software integer implementation, we
 should probably use GMP. Need to disable GAP's own GMP allocation
 stuff.
+
+LibGAP Signal handlers are disabled, you should not use GAP functions
+that execute external binaries (it may work but SIGCHLD will be lost).
 
