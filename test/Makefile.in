@@ -234,7 +234,7 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-DEFAULT_INCLUDES = -I@top_builddir@/src -I@top_srcdir@
+DEFAULT_INCLUDES = -I@top_srcdir@ -I@top_builddir@
 test_SOURCES = test.c
 test_CFLAGS = @GMP_CFLAGS@
 test_LDADD = @top_builddir@/src/libgap.la
@@ -568,6 +568,9 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	$(MAKE) $(AM_MAKEFLAGS) \
+	  top_distdir="$(top_distdir)" distdir="$(distdir)" \
+	  dist-hook
 check-am: all-am
 	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
@@ -679,7 +682,7 @@ uninstall-am:
 
 .PHONY: CTAGS GTAGS all all-am check check-TESTS check-am clean \
 	clean-checkPROGRAMS clean-generic clean-libtool cscopelist \
-	ctags distclean distclean-compile distclean-generic \
+	ctags dist-hook distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
@@ -691,6 +694,24 @@ uninstall-am:
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am
 
+
+dist-hook:
+	echo '*** /test dist-hook *******************************'
+	chmod 644 $(distdir)/*.c
+	sed -i \
+	   -e 's/ViewObjHandler/libGAP_ViewObjHandler/g' \
+	   -e 's/ExecStatus/libGAP_ExecStatus/g' \
+	   -e 's/BottomLVars/libGAP_BottomLVars/g' \
+	   -e 's/CollectBags/libGAP_CollectBags/g' \
+	   -e 's/ReadEvalCommand/libGAP_ReadEvalCommand/g' \
+	   -e 's/ReadEvalResult/libGAP_ReadEvalResult/g' \
+	   -e 's/GetSymbol/libGAP_GetSymbol/g' \
+	   -e 's/\([^a-zA-Z0-9]\)Symbol/\1libGAP_Symbol/g' \
+	   -e 's/STATUS_END/libGAP_STATUS_END/g' \
+	   -e 's/S_SEMICOLON/libGAP_S_SEMICOLON/g' \
+	   -e 's/S_EOF/libGAP_S_EOF/g' \
+	   $(distdir)/*.c
+	echo '***************************************************'
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

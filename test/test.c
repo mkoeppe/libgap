@@ -2,6 +2,7 @@
 #include <setjmp.h>
 #include <assert.h>
 
+#include "src/config.h"
 #include "src/system.h"
 #include "src/objects.h"
 #include "src/gap.h"
@@ -14,6 +15,12 @@
 #include "src/code.h"
 #include "src/vars.h"
 #include "src/libgap.h"
+
+// Path to the GAP root (for the library)
+#ifndef SYS_DEFAULT_PATHS
+#define SYS_DEFAULT_PATHS "/home/vbraun/Sage/sage/local/gap/latest"
+#endif
+
 
 // using namespace std;
 
@@ -32,7 +39,7 @@ void init()
   char* argv[8];
   argv[0] = "sage";
   argv[1] = "-l";
-  argv[2] = "/home/vbraun/Sage/sage/local/gap/latest";
+  argv[2] = SYS_DEFAULT_PATHS;
   argv[3] = "-m";
   argv[4] = "32M";
   argv[5] = "-q";

@@ -1,14 +1,20 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stddef.h>
-#include "src/libgap.h"
 
+#include "src/config.h"
+#include "src/libgap.h"
 #include "src/system.h"
 #include "src/objects.h"
 #include "src/gasman.h"
 #include "src/code.h"
 #include "src/vars.h"
 #include "src/read.h"
+
+// Path to the GAP root (for the library)
+#ifndef SYS_DEFAULT_PATHS
+#define SYS_DEFAULT_PATHS "/home/vbraun/Sage/sage/local/gap/latest"
+#endif
 
 
 void handler(char* msg)
@@ -21,7 +27,7 @@ int main()
   char* argv[7];
   argv[0] = "gap";
   argv[1] = "-l";
-  argv[2] = "/home/vbraun/Sage/sage/local/gap/latest";
+  argv[2] = SYS_DEFAULT_PATHS;
   argv[3] = "-m";
   argv[4] = "24M";
   argv[5] = "-T";

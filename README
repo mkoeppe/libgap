@@ -1,2 +1,73 @@
-libGAP -- a C library version of the GAP kernel (http://www.gap-system.org)
+LibGAP 
+======
+
+A C library version of the GAP kernel.
+
+GAP (http://www.gap-system.org) is a system fo computational group
+theory. This repo contains a shared library version of the GAP kernel,
+allowing you to directly talk to GAP from your own C/C++ code.
+
+Much of the group theory in Sage (http://www.sagemath.org) is
+implemented using LibGAP.
+
+
+Requirements
+============
+
+Runtime: 
+  * the GAP library (scripts in the GAP language)
+  * GMP/MPIR shared library
+
+Compile-time:
+  * GMP/MPIR headers
+
+Packaging (to run "make dist"):
+  * Python 
+  * The Python PLY module (http://www.dabeaz.com/ply)
+
+
+Packaging
+=========
+
+  * Always use the libgap-x.y.z.tar.gz tarball (the output of "make
+    dist"), and not the files in the repository. Only the former has
+    its symbols transforrmed with the "libGAP_" prefix.
+
+  * Configure with -DSYS_DEFAULT_PATHS=%{_gap_dir} if you want to run
+    the tests.
+
+
+Hacking
+=======
+
+LibGAP aims to track the upstream GAP development as close as
+possible. To update LibGAP-x.y.z to a new GAP-x.y.(z+1) release, use
+the following steps:
+
+  1. Copy the previous and new GAP src directory to upstream-gap-x.y.z
+     and upstream-gap-x.y.(z+1), respectively.
+
+  2. Run scripts/generate_patch.sh, which will generate
+     patches/gap-x.y.z.patch
+
+  3. Replace LibGAP's src with the new upstream-gap-x.y.(z+1).
+
+  4. Apply patches/gap-x.y.z.patch to the new src
+     directory. Hopefully, there are no conflicts. Good luck!
+
+  5. Run "make distcheck".
+
+The tests use unescaped GAP symbols since its easier to develop. The
+test/Makefile.am dist-hook rewrites them with the libGAP_ prefix. If
+you change tests make sure to update the dist-hook in with any new GAP
+symbols that you use.
+
+
+Usage
+=====
+
+See Sage, and in particular $SAGE_ROOT/sage/libs/gap/, for real-world
+usage of LibGAP. Sage contains a Cython interface to LibGAP if you are
+so inclined.
+
 

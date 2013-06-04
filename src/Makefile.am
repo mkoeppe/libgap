@@ -33,11 +33,18 @@ libgapinclude_HEADERS = \
   costab.h    gvars.h     objccoll.h  range.h     string.h               \
   libgap.h    libgap_internal.h    
 
-libgap_la_CFLAGS = -I. $(AM_CFLAGS) \
+libgap_la_CFLAGS = $(AM_CFLAGS) \
   -DCONFIG_H @GMP_CFLAGS@ @SAGE_CFLAGS@
 
 # the no-undefined is necessary for Cygwin
 libgap_la_LDFLAGS = -lm @GMP_LIBS@ -no-undefined
 
+
 dist-hook:
+	echo '*** /src dist-hook *********************************'
 	rm -f $(distdir)/config.h
+	$(top_distdir)/scripts/libGAPify.py --modify $(distdir)
+	chmod 755 $(top_distdir)/scripts $(top_distdir)/scripts/libGAPify.py
+	rm -f $(top_distdir)/scripts/libGAPify.py
+	cp $(top_distdir)/scripts/libGAPify_dummy.py $(top_distdir)/scripts/libGAPify.py
+	echo '***************************************************'
