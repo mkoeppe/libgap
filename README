@@ -29,6 +29,10 @@ Packaging (to run "make dist"):
 Packaging
 =========
 
+The current tarball can be found at
+
+http://boxen.math.washington.edu/home/vbraun/spkg/libgap-x.y.z.tar.gz
+
   * Always use the libgap-x.y.z.tar.gz tarball (the output of "make
     dist"), and not the files in the repository. Only the former has
     its symbols transforrmed with the "libGAP_" prefix.
