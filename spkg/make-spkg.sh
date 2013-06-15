@@ -27,8 +27,8 @@ cd "$SPKG_ROOT"
 tar xf ../../libgap-$VERSION.tar.gz
 mv libgap-$VERSION src
 
-cd "$SPKG_ROOT/src/src"
-"$CWD/libGAPify.py" --modify "$SPKG_ROOT/src/src"
+# cd "$SPKG_ROOT/src/src"
+# "$CWD/libGAPify.py" --modify "$SPKG_ROOT/src/src"
 
 cd "$CWD"
 cp spkg-install "$SPKG_ROOT"
@@ -41,7 +41,7 @@ hg add
 hg commit -m 'This is not the true repository, read SPKG.txt'
 
 cd "$CWD"
-sage -pkg_nc "$LIBGAP_DIR"
+sage -pkg "$LIBGAP_DIR"
 export SAGE_DEBUG=yes
 sage -f -s "./$LIBGAP_DIR.spkg"
 
