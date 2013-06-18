@@ -74,4 +74,8 @@ See Sage, and in particular $SAGE_ROOT/sage/libs/gap/, for real-world
 usage of LibGAP. Sage contains a Cython interface to LibGAP if you are
 so inclined.
 
+Talk about LibGAP:
 
+  * Slides:  https://bitbucket.org/vbraun/libgap/downloads/libGAP.pdf
+
+  * Video: https://www.youtube.com/watch?v=0gOL0QRHkmA
