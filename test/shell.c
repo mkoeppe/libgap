@@ -20,10 +20,6 @@ extern char **environ;
 
 void print_stack_start()
 {
-  register void* ebp asm("ebp");     
-  int i;
-  printf("ebp = %p\n", ebp);
-  printf("&i = %p\n", &i);
   printf("frame addres = %p\n", __builtin_frame_address(0));
 }
 
