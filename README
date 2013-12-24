@@ -37,12 +37,19 @@ http://boxen.math.washington.edu/home/vbraun/spkg/libgap-x.y.z.tar.gz
     dist"), and not the files in the repository. Only the former has
     its symbols transforrmed with the "libGAP_" prefix.
 
-  * Configure with -DSYS_DEFAULT_PATHS=<gap_root> if you want to run
-    the tests, where the path has be quoted such that it ends up with
-    quotation marks in C sources:
+  * For the testsuite, you need to have the gap library installed
+    somewhere. Configure/make libGAP with
+    -DSYS_DEFAULT_PATHS=<gap_root> cflags tests, where the path has be
+    quoted such that it ends up with quotation marks in C sources:
 
         $ ./configure CFLAGS='-DSYS_DEFAULT_PATHS=\"/path/to/gap\"'
+	
+    or 
 
+        $ export CFLAGS='-DSYS_DEFAULT_PATHS=\"/home/vbraun/Sage/git/local/gap/latest\"'
+        $ ./configure
+        $ make check
+	
     For example, using the Gap installation in Sage:
 
         $ ./configure CFLAGS='-DSYS_DEFAULT_PATHS=\"$SAGE_ROOT/local/gap/latest\"'
@@ -76,7 +83,8 @@ the following steps:
 
          $ autoreconf -fiv
 
-  7. Run "make distcheck".
+  7. Run "make distcheck" (the testsuite will fail because it does not
+     pass CFLAGS, ignore).
 
 The tests use unescaped GAP symbols since its easier to develop. The
 test/Makefile.am dist-hook rewrites them with the libGAP_ prefix. If

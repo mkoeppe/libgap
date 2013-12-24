@@ -66,10 +66,6 @@ void init()
     printf("libGAP initialization failed: %s\n", error_msg);
   libgap_finish_interaction();
   libgap_set_error_handler(&error_handler);
-
-  libgap_enter();
-  AssGVar(Last, ReadEvalResult);
-  libgap_exit();
 }   
 
 
