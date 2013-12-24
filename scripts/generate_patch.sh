@@ -8,7 +8,7 @@ fi
 
 VERSION=`autoconf --trace='AC_INIT:$2'`
 
-diff -urd upstream-gap-$VERSION src > patches/gap-$VERSION.patch
+diff -urd upstream-gap-$VERSION/src src > patches/gap-$VERSION.patch
 
 
 
