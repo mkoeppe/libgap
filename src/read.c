@@ -323,7 +323,7 @@ void ReadCallVarAss (
         nest++;
 	if (nest >= 65536)
 	  {
-	    Pr("Warning: abandoning search for %s at 1024th higher frame\n",
+	    Pr("Warning: abandoning search for %s at 65536th higher frame\n",
 	       (Int)Value,0L);
 	    break;
 	  }
@@ -332,7 +332,7 @@ void ReadCallVarAss (
       nest0++;
 	if (nest0 >= 65536)
 	  {
-	    Pr("Warning: abandoning search for %s 4096 frames up stack\n",
+	    Pr("Warning: abandoning search for %s 65536 frames up stack\n",
 	       (Int)Value,0L);
 	    break;
 	  }
@@ -702,8 +702,7 @@ void ReadLongNumber(
 
      /* string in which to accumulate number */
      len = strlen(Value);
-     string = NEW_STRING(len);
-     memcpy(CHARS_STRING(string), (void *)Value, len+1);
+     C_NEW_STRING( string, len, Value );
      done = 0;
 
      while (!done) {
@@ -912,9 +911,8 @@ void ReadString(
      Obj  string;
      UInt len;
 
-     string = NEW_STRING(ValueLen);
+     C_NEW_STRING( string, ValueLen, Value );
      len = ValueLen;
-     memcpy(CHARS_STRING(string), (void *)Value, ValueLen);
 
      while (Symbol == S_PARTIALSTRING) {
          Match(S_PARTIALSTRING, "", follow);
@@ -1113,8 +1111,7 @@ void ReadFuncExpr (
     CountNams += 1;
     ASS_LIST( StackNams, CountNams, nams );
     if ( Symbol != S_RPAREN ) {
-        name = NEW_STRING( strlen(Value) );
-        SyStrncat( CSTR_STRING(name), Value, strlen(Value) );
+        C_NEW_STRING_DYN( name, Value );
         narg += 1;
         ASS_LIST( nams, narg+nloc, name );
         Match(S_IDENT,"identifier",S_RPAREN|S_LOCAL|STATBEGIN|S_END|follow);
@@ -1126,8 +1123,7 @@ void ReadFuncExpr (
                 SyntaxError("name used for two arguments");
             }
         }
-        name = NEW_STRING( strlen(Value) );
-        SyStrncat( CSTR_STRING(name), Value, strlen(Value) );
+        C_NEW_STRING_DYN( name, Value );
         narg += 1;
         ASS_LIST( nams, narg+nloc, name );
         Match(S_IDENT,"identifier",S_RPAREN|S_LOCAL|STATBEGIN|S_END|follow);
@@ -1140,8 +1136,7 @@ void ReadFuncExpr (
                 SyntaxError("name used for argument and local");
             }
         }
-        name = NEW_STRING( strlen(Value) );
-        SyStrncat( CSTR_STRING(name), Value, strlen(Value) );
+        C_NEW_STRING_DYN( name, Value );
         nloc += 1;
         ASS_LIST( nams, narg+nloc, name );
         Match( S_IDENT, "identifier", STATBEGIN|S_END|follow );
@@ -1159,8 +1154,7 @@ void ReadFuncExpr (
                     SyntaxError("name used for two locals");
                 }
             }
-            name = NEW_STRING( strlen(Value) );
-            SyStrncat( CSTR_STRING(name), Value, strlen(Value) );
+            C_NEW_STRING_DYN( name, Value );
             nloc += 1;
             ASS_LIST( nams, narg+nloc, name );
             Match( S_IDENT, "identifier", STATBEGIN|S_END|follow );
@@ -1227,8 +1221,7 @@ void ReadFuncExpr1 (
     SET_LEN_PLIST( nams, 0 );
     CountNams++;
     ASS_LIST( StackNams, CountNams, nams );
-    name = NEW_STRING( strlen(Value) );
-    SyStrncat( CSTR_STRING(name), Value, strlen(Value) );
+    C_NEW_STRING_DYN( name, Value );
     ASS_LIST( nams, 1, name );
 
     /* match away the '->'                                                 */
@@ -2385,8 +2378,7 @@ UInt ReadEvalFile ( void )
     ASS_LIST( StackNams, CountNams, nams );
     if ( Symbol == S_LOCAL ) {
         Match( S_LOCAL, "local", 0L );
-        name = NEW_STRING( strlen(Value) );
-        SyStrncat( CSTR_STRING(name), Value, strlen(Value) );
+        C_NEW_STRING_DYN( name, Value );
         nloc += 1;
         ASS_LIST( nams, nloc, name );
         Match( S_IDENT, "identifier", STATBEGIN|S_END );
@@ -2398,8 +2390,7 @@ UInt ReadEvalFile ( void )
                     SyntaxError("name used for two locals");
                 }
             }
-            name = NEW_STRING( strlen(Value) );
-            SyStrncat( CSTR_STRING(name), Value, strlen(Value) );
+            C_NEW_STRING_DYN( name, Value );
             nloc += 1;
             ASS_LIST( nams, nloc, name );
             Match( S_IDENT, "identifier", STATBEGIN|S_END );
@@ -2466,6 +2457,69 @@ void            ReadEvalError ( void )
     syLongjmp( ReadJmpError, 1 );
 }
 
+/****************************************************************************
+**
+**   Reader state -- the next group of functions are used to "push" the current
+**  interpreter state allowing GAP code to be interpreted in the middle of other
+**  code. This is used, for instance, in the command-line editor.
+*/
+
+
+struct SavedReaderState {
+  Obj                 stackNams;
+  UInt                countNams;
+  UInt                readTop;
+  UInt                readTilde;
+  UInt                currLHSGVar;
+  UInt                userHasQuit;
+  syJmp_buf             readJmpError;
+  UInt                intrCoding;
+  UInt                intrIgnoring;
+  UInt                intrReturning;
+  UInt                nrError;
+};
+
+static void SaveReaderState( struct SavedReaderState *s) {
+  s->stackNams   = StackNams;
+  s->countNams   = CountNams;
+  s->readTop     = ReadTop;
+  s->readTilde   = ReadTilde;
+  s->currLHSGVar = CurrLHSGVar;
+  s->userHasQuit = UserHasQuit;
+  s->intrCoding = IntrCoding;
+  s->intrIgnoring = IntrIgnoring;
+  s->intrReturning = IntrReturning;
+  s->nrError = NrError;
+  memcpy( s->readJmpError, ReadJmpError, sizeof(syJmp_buf) );
+}
+
+static void ClearReaderState( void ) {
+  StackNams   = NEW_PLIST( T_PLIST, 16 );
+  CountNams   = 0;
+  ReadTop     = 0;
+  ReadTilde   = 0;
+  CurrLHSGVar = 0;
+  UserHasQuit = 0;
+  IntrCoding = 0;
+  IntrIgnoring = 0;
+  IntrReturning = 0;
+  NrError = 0;
+}
+
+static void RestoreReaderState( const struct SavedReaderState *s) {
+  memcpy( ReadJmpError, s->readJmpError, sizeof(syJmp_buf) );
+  UserHasQuit = s->userHasQuit;
+  StackNams   = s->stackNams;
+  CountNams   = s->countNams;
+  ReadTop     = s->readTop;
+  ReadTilde   = s->readTilde;
+  CurrLHSGVar = s->currLHSGVar;
+  IntrCoding = s->intrCoding;
+  IntrIgnoring = s->intrIgnoring;
+  IntrReturning = s->intrReturning;
+  NrError = s->nrError;
+}
+
 
 /****************************************************************************
 **
@@ -2478,40 +2532,14 @@ Obj Call0ArgsInNewReader(Obj f)
 {
   /* for the new interpreter context: */
 /*  ExecStatus          type; */
-  Obj                 stackNams;
-  UInt                countNams;
-  UInt                readTop;
-  UInt                readTilde;
-  UInt                currLHSGVar;
-  UInt                userHasQuit;
-  syJmp_buf             readJmpError;
-  UInt                intrCoding;
-  UInt                intrIgnoring;
-  UInt                nrError;
+  struct SavedReaderState s;
   Obj result;
 
   /* remember the old reader context                                     */
-  stackNams   = StackNams;
-  countNams   = CountNams;
-  readTop     = ReadTop;
-  readTilde   = ReadTilde;
-  currLHSGVar = CurrLHSGVar;
-  userHasQuit = UserHasQuit;
-  intrCoding = IntrCoding;
-  intrIgnoring = IntrIgnoring;
-  nrError = NrError;
-  memcpy( readJmpError, ReadJmpError, sizeof(syJmp_buf) );
+  SaveReaderState(&s);
 
   /* intialize everything and begin an interpreter                       */
-  StackNams   = NEW_PLIST( T_PLIST, 16 );
-  CountNams   = 0;
-  ReadTop     = 0;
-  ReadTilde   = 0;
-  CurrLHSGVar = 0;
-  UserHasQuit = 0;
-  IntrCoding = 0;
-  IntrIgnoring = 0;
-  NrError = 0;
+  ClearReaderState();
   IntrBegin( BottomLVars );
 
   if (!READ_ERROR()) {
@@ -2526,16 +2554,7 @@ Obj Call0ArgsInNewReader(Obj f)
   }
 
   /* switch back to the old reader context                               */
-  memcpy( ReadJmpError, readJmpError, sizeof(syJmp_buf) );
-  UserHasQuit = userHasQuit;
-  StackNams   = stackNams;
-  CountNams   = countNams;
-  ReadTop     = readTop;
-  ReadTilde   = readTilde;
-  CurrLHSGVar = currLHSGVar;
-  IntrCoding = intrCoding;
-  IntrIgnoring = intrIgnoring;
-  NrError = nrError;
+  RestoreReaderState(&s);
   return result;
 }
 
@@ -2550,40 +2569,15 @@ Obj Call1ArgsInNewReader(Obj f,Obj a)
 {
   /* for the new interpreter context: */
 /*ExecStatus          type; */
-  Obj                 stackNams;
-  UInt                countNams;
-  UInt                readTop;
-  UInt                readTilde;
-  UInt                currLHSGVar;
-  UInt                userHasQuit;
-  UInt                intrCoding;
-  UInt                intrIgnoring;
-  syJmp_buf             readJmpError;
+  struct SavedReaderState s;
   Obj result;
-  UInt                nrError;
 
   /* remember the old reader context                                     */
-  stackNams   = StackNams;
-  countNams   = CountNams;
-  readTop     = ReadTop;
-  readTilde   = ReadTilde;
-  currLHSGVar = CurrLHSGVar;
-  userHasQuit = UserHasQuit;
-  intrCoding = IntrCoding;
-  intrIgnoring = IntrIgnoring;
-  nrError = NrError;
-  memcpy( readJmpError, ReadJmpError, sizeof(syJmp_buf) );
+
+  SaveReaderState(&s);
 
   /* intialize everything and begin an interpreter                       */
-  StackNams   = NEW_PLIST( T_PLIST, 16 );
-  CountNams   = 0;
-  ReadTop     = 0;
-  ReadTilde   = 0;
-  CurrLHSGVar = 0;
-  UserHasQuit = 0;
-  IntrCoding = 0;
-  IntrIgnoring = 0;
-  NrError = 0;
+  ClearReaderState();
   IntrBegin( BottomLVars );
 
   if (!READ_ERROR()) {
@@ -2598,16 +2592,7 @@ Obj Call1ArgsInNewReader(Obj f,Obj a)
   }
 
   /* switch back to the old reader context                               */
-  memcpy( ReadJmpError, readJmpError, sizeof(syJmp_buf) );
-  IntrCoding = intrCoding;
-  IntrIgnoring = intrIgnoring;
-  StackNams   = stackNams;
-  CountNams   = countNams;
-  ReadTop     = readTop;
-  ReadTilde   = readTilde;
-  CurrLHSGVar = currLHSGVar;
-  UserHasQuit = userHasQuit;
-  NrError = nrError;
+  RestoreReaderState(&s);
   return result;
 }
 

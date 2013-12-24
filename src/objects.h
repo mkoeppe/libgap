@@ -280,10 +280,14 @@ static inline Obj prod_intobjs(Int l, Int r)
 #define T_LVARS                 (FIRST_CONSTANT_TNUM+13)   
 #define T_SINGULAR              (FIRST_CONSTANT_TNUM+14)   
 #define T_POLYMAKE              (FIRST_CONSTANT_TNUM+15)
-#define T_SPARE1                (FIRST_CONSTANT_TNUM+16)
-#define T_SPARE2                (FIRST_CONSTANT_TNUM+17)
-#define T_SPARE3                (FIRST_CONSTANT_TNUM+18)
-#define T_SPARE4                (FIRST_CONSTANT_TNUM+19)
+#define T_TRANS2                (FIRST_CONSTANT_TNUM+16)
+#define T_TRANS4                (FIRST_CONSTANT_TNUM+17)
+#define T_PPERM2                (FIRST_CONSTANT_TNUM+18)
+#define T_PPERM4                (FIRST_CONSTANT_TNUM+19)
+#define T_SPARE1                (FIRST_CONSTANT_TNUM+20)
+#define T_SPARE2                (FIRST_CONSTANT_TNUM+21)
+#define T_SPARE3                (FIRST_CONSTANT_TNUM+22)
+#define T_SPARE4                (FIRST_CONSTANT_TNUM+23)
 #define LAST_CONSTANT_TNUM      (T_SPARE4)
 
 #define IMMUTABLE               1
@@ -631,7 +635,7 @@ extern Obj CopyObj (
 **  structural copy of <obj> and marks <obj> as already copied.
 **
 **  Note that 'COPY_OBJ' and 'CLEAN_OBJ' are macros, so do not call them with
-**  arguments that have sideeffects.
+**  arguments that have side effects.
 */
 #define COPY_OBJ(obj,mut) \
                         ((*CopyObjFuncs[ TNUM_OBJ(obj) ])( obj, mut ))
@@ -645,7 +649,7 @@ extern Obj CopyObj (
 **  mark <obj>.
 **
 **  Note that 'COPY_OBJ' and 'CLEAN_OBJ' are macros, so do not call them with
-**  arguments that have sideeffects.
+**  arguments that have side effects.
 */
 #define CLEAN_OBJ(obj) \
                         ((*CleanObjFuncs[ TNUM_OBJ(obj) ])( obj ))

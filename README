@@ -37,9 +37,15 @@ http://boxen.math.washington.edu/home/vbraun/spkg/libgap-x.y.z.tar.gz
     dist"), and not the files in the repository. Only the former has
     its symbols transforrmed with the "libGAP_" prefix.
 
-  * Configure with -DSYS_DEFAULT_PATHS=%{_gap_dir} if you want to run
-    the tests.
+  * Configure with -DSYS_DEFAULT_PATHS=<gap_root> if you want to run
+    the tests, where the path has be quoted such that it ends up with
+    quotation marks in C sources:
 
+        $ ./configure CFLAGS='-DSYS_DEFAULT_PATHS=\"/path/to/gap\"'
+
+    For example, using the Gap installation in Sage:
+
+        $ ./configure CFLAGS='-DSYS_DEFAULT_PATHS=\"$SAGE_ROOT/local/gap/latest\"'
 
 Hacking
 =======
@@ -54,17 +60,38 @@ the following steps:
   2. Run scripts/generate_patch.sh, which will generate
      patches/gap-x.y.z.patch
 
-  3. Replace LibGAP's src with the new upstream-gap-x.y.(z+1).
+  3. Replace the C sources in LibGAP's src with the new
+     upstream-gap-x.y.(z+1): 
+
+         cp upstream/src/*.[c,h] src/
 
   4. Apply patches/gap-x.y.z.patch to the new src
      directory. Hopefully, there are no conflicts. Good luck!
 
-  5. Run "make distcheck".
+         $ patch -p0 < patches/gap-x.y.z.patch
+
+  5. Update src/Makefile.am if C sources have been added/removed.
+
+  6. Update the version in configure.ac and run 
+
+         $ autoreconf -fiv
+
+  7. Run "make distcheck".
 
 The tests use unescaped GAP symbols since its easier to develop. The
 test/Makefile.am dist-hook rewrites them with the libGAP_ prefix. If
 you change tests make sure to update the dist-hook in with any new GAP
 symbols that you use.
+
+For debugging you should probably build gap
+
+    $ ./configure CFLAGS='-O0 -g3'    # standalone gap
+    $ SAGE_DEBUG=yes ./sage -f gap   # inside of Sage
+
+libgap with debug symbols:
+
+    $ ./configure CFLAGS='-DSYS_DEFAULT_PATHS=\"/path/to/gap\" -O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS'
+	
 
 
 Usage

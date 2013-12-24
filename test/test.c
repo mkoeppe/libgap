@@ -15,10 +15,11 @@
 #include "src/code.h"
 #include "src/vars.h"
 #include "src/libgap.h"
+#include "src/libgap_internal.h"
 
 // Path to the GAP root (for the library)
 #ifndef SYS_DEFAULT_PATHS
-#define SYS_DEFAULT_PATHS "/home/vbraun/Sage/sage/local/gap/latest"
+#define SYS_DEFAULT_PATHS "/home/vbraun/Sage/git/local/gap/latest"
 #endif
 
 
@@ -36,18 +37,39 @@ void error_handler(char* msg)
 
 void init()
 {
-  char* argv[8];
+  printf("Using gap library at %s\n", SYS_DEFAULT_PATHS);
+  char* argv[12];
   argv[0] = "sage";
   argv[1] = "-l";
   argv[2] = SYS_DEFAULT_PATHS;
-  argv[3] = "-m";
-  argv[4] = "32M";
-  argv[5] = "-q";
-  argv[6] = "-T";
-  argv[7] = NULL;
-  int argc=7;
-  libgap_set_error_handler(&error_handler);
+  char* memory_pool = "1000M";
+  argv[3] = "-o";
+  argv[4] = memory_pool;
+  argv[5] = "-s";
+  argv[6] = memory_pool;
+  argv[7] = "-m";
+  argv[8] = "64M";
+  argv[9] = "-q";
+  argv[10] = "-T";
+  argv[11] = NULL;
+  int argc=11;
+  //  libgap_set_error_handler(&error_handler);
+  //  libgap_initialize(argc, argv);
+
   libgap_initialize(argc, argv);
+  libgap_start_interaction("");
+  char * output_msg = libgap_get_output();
+  if (strlen(output_msg) > 0)
+    printf("libGAP initialization failed: %s\n", output_msg);
+  char * error_msg = libgap_get_error();
+  if (strlen(error_msg) > 0)
+    printf("libGAP initialization failed: %s\n", error_msg);
+  libgap_finish_interaction();
+  libgap_set_error_handler(&error_handler);
+
+  libgap_enter();
+  AssGVar(Last, ReadEvalResult);
+  libgap_exit();
 }   
 
 
@@ -90,18 +112,21 @@ void eval(char* input)
   printf("--------------------\n");
   printf("Input: %s", input);
 
+  libgap_enter();
   libgap_start_interaction(input);
-      
+  
   ExecStatus status;
+  status = ReadEvalCommand(BottomLVars);
+  libgap_exit();
+  
   if (signal_occurred) {
     printf("signal caught\n");
+    libgap_enter();
     libgap_finish_interaction();
+    libgap_exit();
     return;
   }
   
-  libgap_enter();
-  status = ReadEvalCommand(BottomLVars);
-  libgap_exit();
 
   if (status != STATUS_END) {
     printf("There was an error, no output.\n");
@@ -126,7 +151,9 @@ void eval(char* input)
   char* out = libgap_get_output();
   printf("Output follows...\n%s", out);
 
+  libgap_enter();
   libgap_finish_interaction();
+  libgap_exit();
 }
 
 
@@ -135,9 +162,11 @@ void eval(char* input)
 int main(void)
 {
   init();
-  // install_signal_handler();
+  install_signal_handler();
 
   eval("0;\n");
+
+  eval("CyclicGroup(2);\n");
 
   eval("1 + CyclicGroup(2);\n");
 

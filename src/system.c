@@ -68,17 +68,17 @@
 /****************************************************************************
 **
 *V  SyKernelVersion  . . . . . . . . . . . . . . . . name of the architecture
-** do not edit the following line. Occurences of `4.6.5' and `today'
+** do not edit the following line. Occurences of `4.7.2' and `today'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyKernelVersion = "4.6.5";
+const Char * SyKernelVersion = "4.7.2";
 
 /****************************************************************************
 *V  SyWindowsPath  . . . . . . . . . . . . . . . . . default path for Windows
-** do not edit the following line. Occurences of `gap4r6'
+** do not edit the following line. Occurences of `gap4r7'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyWindowsPath = "/cygdrive/c/gap4r6";
+const Char * SyWindowsPath = "/cygdrive/c/gap4r7";
 
 /****************************************************************************
 **
@@ -622,7 +622,7 @@ Int SyStrncmp (
     const Char *        str2,
     UInt                len )
 {
-    return SyStrncmp( str1, str2, len );
+    return strncmp( str1, str2, len );
 }
 
 /****************************************************************************
@@ -1137,6 +1137,8 @@ int SyTryToIncreasePool(void)
 
 #endif
 
+int halvingsdone = 0;
+
 void SyInitialAllocPool( void )
 {
 #if HAVE_SYSCONF
@@ -1159,7 +1161,8 @@ void SyInitialAllocPool( void )
            break;
        }
        SyAllocPool = SyAllocPool / 2;
-       fputs("gap: halving pool size.\n", stderr);
+       halvingsdone++;
+       if (SyDebugLoading) fputs("gap: halving pool size.\n", stderr);
        if (SyAllocPool < 16*1024*1024) {
          fputs("gap: cannot allocate initial memory, bye.\n", stderr);
          SyExit( 2 );
@@ -1326,7 +1329,7 @@ UInt * * * SyAllocBags (
 
 #include <mach/mach.h>
 
-#if defined(SYS_IS_DARWIN) && SYS_IS_DARWIN
+#if (defined(SYS_IS_DARWIN) && SYS_IS_DARWIN) || defined(__gnu_hurd__)
 #define task_self mach_task_self
 #endif
 

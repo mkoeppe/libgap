@@ -178,7 +178,7 @@ UInt            Symbol;
 **  clever.  We  group some  symbols that  are syntactically  equivalent like
 **  '*', '/' in a class. We use the least significant 3 bits to differentiate
 **  between members in one class.  And now  every symbol class, many of which
-**  contain   just  one  symbol,  has exactely  one   of  the  remaining most
+**  contain   just  one  symbol,  has exactly  one   of  the  remaining most
 **  significant 29  bits  set.   Thus   sets  of symbols  are  represented as
 **  unsigned long integers, which is typedef-ed to 'TypSymbolSet'.
 **
@@ -1387,7 +1387,7 @@ UInt OpenAppendStream (
 **  'CloseAppend' will  first flush all   pending output and  then  close the
 **  current  output  file.   Subsequent output will  again go to the previous
 **  output file.  'CloseAppend' returns 1 to indicate success.  'CloseAppend'
-**  is exactely equal to 'CloseOutput' so its description applies.
+**  is exactly equal to 'CloseOutput' so its description applies.
 */
 UInt CloseAppend ( void )
 {
@@ -2513,12 +2513,7 @@ void PutLine2(
     }
 
     /* Space for the null is allowed for in GAP strings */
-    str = NEW_STRING( len );
-
-    /* But we have to allow for it in SyStrncat */
-    /*    XXX SyStrncat( CSTR_STRING(str), line, len + 1 );    */
-    /* this contains trailing zero character */
-    memcpy(CHARS_STRING(str),  line, len + 1 );
+    C_NEW_STRING( str, len, line );
 
     /* now delegate to library level */
     CALL_2ARGS( WriteAllFunc, output->stream, str );
@@ -2706,7 +2701,7 @@ Obj FuncToggleEcho( Obj self)
 Obj FuncCPROMPT( Obj self)
 {
   Obj p;
-  C_NEW_STRING( p, strlen( Prompt ), Prompt );
+  C_NEW_STRING_DYN( p, Prompt );
   return p;
 }
 
@@ -3073,7 +3068,7 @@ void SPrTo(Char *buffer, UInt maxlen, const Char *format, Int arg1, Int arg2)
 
 Obj FuncINPUT_FILENAME( Obj self) {
   Obj s;
-  C_NEW_STRING( s, strlen(Input->name), Input->name );
+  C_NEW_STRING_DYN( s, Input->name );
   return s;
 }
 
@@ -3089,7 +3084,7 @@ Obj FuncALL_KEYWORDS(Obj self) {
   l = NEW_PLIST(T_PLIST_EMPTY, 0);
   SET_LEN_PLIST(l,0);
   for (i = 0; i < sizeof(AllKeywords)/sizeof(AllKeywords[0]); i++) {
-    C_NEW_STRING(s,strlen(AllKeywords[i].name),AllKeywords[i].name);
+    C_NEW_STRING_DYN(s,AllKeywords[i].name);
     ASS_LIST(l, i+1, s);
   }
   MakeImmutable(l);

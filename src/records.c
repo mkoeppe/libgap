@@ -54,7 +54,7 @@ UInt            CountRNam;
 **  'NAME_RNAM' returns the name (as a C string) for the record name <rnam>.
 **
 **  Note that 'NAME_RNAM' is a  macro, so do not call  it with arguments that
-**  have sideeffects.
+**  have side effects.
 **
 **  'NAME_RNAM' is defined in the declaration part of this package as follows
 **
@@ -105,10 +105,8 @@ UInt            RNamName (
         CountRNam++;
         rnam = INTOBJ_INT(CountRNam);
         SET_ELM_PLIST( HashRNam, pos, rnam );
-        namx[0] = '\0';
-        SyStrncat( namx, name, 1023 );
-        string = NEW_STRING( strlen(namx) );
-        SyStrncat( CSTR_STRING(string), namx, strlen(namx) );
+        strlcpy( namx, name, sizeof(namx) );
+        C_NEW_STRING_DYN(string, namx);
         GROW_PLIST(    NamesRNam,   CountRNam );
         SET_LEN_PLIST( NamesRNam,   CountRNam );
         SET_ELM_PLIST( NamesRNam,   CountRNam, string );
@@ -240,6 +238,7 @@ Obj             NameRNamHandler (
     Obj                 rnam )
 {
     Obj                 name;
+    Char                *cname;
     while ( ! IS_INTOBJ(rnam)
          || INT_INTOBJ(rnam) <= 0
         || CountRNam < INT_INTOBJ(rnam) ) {
@@ -248,10 +247,8 @@ Obj             NameRNamHandler (
             (Int)TNAM_OBJ(rnam), 0L,
             "you can replace <rnam> via 'return <rnam>;'" );
     }
-    name = NEW_STRING( strlen( NAME_RNAM( INT_INTOBJ(rnam) ) ) );
-    SyStrncat( CSTR_STRING(name),
-               NAME_RNAM( INT_INTOBJ(rnam) ),
-               strlen( NAME_RNAM( INT_INTOBJ(rnam) ) ) );
+    cname = NAME_RNAM( INT_INTOBJ(rnam) );
+    C_NEW_STRING_DYN( name, cname);
     return name;
 }
 
@@ -265,7 +262,7 @@ Obj             NameRNamHandler (
 **  otherwise.
 **
 **  Note that 'IS_REC' is a macro, so do not call  it  with  arguments  that
-**  have sideeffects.
+**  have side effects.
 **
 **  'IS_REC' is defined in the declaration part of this package as follows
 **
@@ -310,7 +307,7 @@ Int             IsRecObject (
 **  is not a record or if <rec> has no component with the record name <rnam>.
 **
 **  Note that 'ELM_REC' is  a macro, so do   not call it with arguments  that
-**  have sideeffects.
+**  have side effects.
 **
 **  'ELM_REC' is defined in the declaration part of this package as follows
 **
@@ -363,7 +360,7 @@ Obj             ElmRecObject (
 **  record.
 **
 **  Note  that 'ISB_REC'  is a macro,  so do not call  it with arguments that
-**  have sideeffects.
+**  have side effects.
 **
 **  'ISB_REC' is defined in the declaration part of this package as follows
 **
@@ -457,7 +454,7 @@ void            AssRecObject (
 **  the record <rec>.
 **
 **  Note that 'UNB_REC' is  a macro, so  do  not call it with  arguments that
-**  have sideeffects.
+**  have side effects.
 **
 **  'UNB_REC' is defined in the declaration part of this package as follows
 **
@@ -555,7 +552,7 @@ Obj FuncALL_RNAMES (
     copy = NEW_PLIST( T_PLIST+IMMUTABLE, CountRNam );
     for ( i = 1;  i <= CountRNam;  i++ ) {
         name = NAME_RNAM( i );
-        C_NEW_STRING(s, strlen(name), name);
+        C_NEW_STRING_DYN(s, name);
         SET_ELM_PLIST( copy, i, s );
     }
     SET_LEN_PLIST( copy, CountRNam );
