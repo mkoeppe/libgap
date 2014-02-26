@@ -1,6 +1,9 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <assert.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "src/config.h"
 #include "src/system.h"
@@ -103,7 +106,7 @@ void install_signal_handler()
 /////////////////////////////////////////////////////////////////
 
 
-void eval(char* input)
+void check(char* input, char* expected)
 {
   printf("--------------------\n");
   printf("Input: %s", input);
@@ -147,9 +150,21 @@ void eval(char* input)
   char* out = libgap_get_output();
   printf("Output follows...\n%s", out);
 
+  if (expected != NULL && strstr(out, expected) == NULL) {
+    printf("Expected substring '%s' not found, aborting.\n", expected);
+    exit(1);
+  }
+
   libgap_enter();
   libgap_finish_interaction();
   libgap_exit();
+}
+
+
+
+void eval(char* input) 
+{
+  return check(input, NULL);
 }
 
 
@@ -182,15 +197,28 @@ int main(void)
   eval("if 4>3 then\nPrint(\"hi\n\");\n fi;\n");
   eval("0;\n");
 
-  eval("rec( a:=0, b:=1, c:=3 );\n");
-  eval("0;\n");
+  check("rec( a:=0, b:=1, c:=3 );\n",
+        "rec( a := 0, b := 1, c := 3 )");
+
+  check("0;\n", 
+        "0");
 
   eval("rec( a=0, b:1, c;3 );\n");
   eval("0;\n");
 
   eval("rec( a=0, b:1, c;3 );\n");
-  eval("\"back to normal\";\n");
+  check("\"back to normal\";\n", 
+        "\"back to normal\"");
+
+  eval("Print(\"Printed Message\");\n");
+
+  unlink("tmp_file.txt");
+  eval("Print(\"Printed Message\");\n");
+  eval("PrintTo(\"tmp_file.txt\", \"Printed Message\");\n");
+  check("StringFile(\"tmp_file.txt\");\n", 
+        "Printed Message");  
 
   eval("1/0;\n");
+  
   return 0;
 }

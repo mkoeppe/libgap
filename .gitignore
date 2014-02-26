@@ -20,6 +20,7 @@ test/shell
 test/error_handler
 test/*.log
 test/*.trs
+test/tmp_file.txt
 *Makefile
 *~#
 *\.rej#
