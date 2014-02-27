@@ -36,3 +36,7 @@ dist-hook:
 	   -e 's/S_EOF/libGAP_S_EOF/g' \
 	   $(distdir)/*.c
 	echo '***************************************************'
+
+clean-local:
+	-rm -rf tmp_file.txt
+
