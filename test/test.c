@@ -126,7 +126,6 @@ void check(char* input, char* expected)
     return;
   }
   
-
   if (status != STATUS_END) {
     printf("There was an error, no output.\n");
     libgap_finish_interaction();
@@ -143,9 +142,17 @@ void check(char* input, char* expected)
     return;
   }
 
-  libgap_enter();
-  ViewObjHandler(ReadEvalResult);
-  libgap_exit();
+  if (ReadEvalResult != NULL) {
+    libgap_enter();
+    ViewObjHandler(ReadEvalResult);
+    libgap_exit();
+  } else {
+    printf("Command returned nothing\n");
+    if (expected != NULL && strstr("Command returned nothing", expected) == NULL) {
+      printf("Expected substring '%s' not found, aborting.\n", expected);
+      exit(1);
+    }
+  }
 
   char* out = libgap_get_output();
   printf("Output follows...\n%s", out);
@@ -173,7 +180,7 @@ void eval(char* input)
 int main(void)
 {
   init();
-  install_signal_handler();
+  // install_signal_handler();
 
   eval("0;\n");
 
