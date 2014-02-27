@@ -1,0 +1,618 @@
+diff -urd upstream-gap-4.7.4/src/c_filt1.c src/c_filt1.c
+--- upstream-gap-4.7.4/src/c_filt1.c	2014-02-20 02:31:11.000000000 +0100
++++ src/c_filt1.c	2014-02-26 23:15:08.414638198 +0100
+@@ -1,6 +1,6 @@
+ #ifndef AVOID_PRECOMPILED
+ /* C file produced by GAC */
+-#include "src/compiled.h"
++#include "compiled.h"
+ 
+ /* global variables used in handlers */
+ static GVar G_IS__FUNCTION;
+diff -urd upstream-gap-4.7.4/src/c_meths1.c src/c_meths1.c
+--- upstream-gap-4.7.4/src/c_meths1.c	2014-02-20 02:31:11.000000000 +0100
++++ src/c_meths1.c	2014-02-26 23:15:08.415638200 +0100
+@@ -1,6 +1,6 @@
+ #ifndef AVOID_PRECOMPILED
+ /* C file produced by GAC */
+-#include "src/compiled.h"
++#include "compiled.h"
+ 
+ /* global variables used in handlers */
+ static GVar G_METHOD__0ARGS;
+Only in src: config.h
+Only in src: config.h.in
+Only in src: config.h.in~
+diff -urd upstream-gap-4.7.4/src/c_oper1.c src/c_oper1.c
+--- upstream-gap-4.7.4/src/c_oper1.c	2014-02-20 02:31:11.000000000 +0100
++++ src/c_oper1.c	2014-02-26 23:15:08.416638202 +0100
+@@ -1,6 +1,6 @@
+ #ifndef AVOID_PRECOMPILED
+ /* C file produced by GAC */
+-#include "src/compiled.h"
++#include "compiled.h"
+ 
+ /* global variables used in handlers */
+ static GVar G_REREADING;
+diff -urd upstream-gap-4.7.4/src/c_random.c src/c_random.c
+--- upstream-gap-4.7.4/src/c_random.c	2014-02-20 02:31:11.000000000 +0100
++++ src/c_random.c	2014-02-26 23:15:08.416638202 +0100
+@@ -1,6 +1,6 @@
+ #ifndef AVOID_PRECOMPILED
+ /* C file produced by GAC */
+-#include "src/compiled.h"
++#include "compiled.h"
+ 
+ /* global variables used in handlers */
+ static GVar G_QUO__INT;
+diff -urd upstream-gap-4.7.4/src/c_type1.c src/c_type1.c
+--- upstream-gap-4.7.4/src/c_type1.c	2014-02-20 02:31:11.000000000 +0100
++++ src/c_type1.c	2014-02-26 23:15:08.417638204 +0100
+@@ -1,6 +1,6 @@
+ #ifndef AVOID_PRECOMPILED
+ /* C file produced by GAC */
+-#include "src/compiled.h"
++#include "compiled.h"
+ 
+ /* global variables used in handlers */
+ static GVar G_NAME__FUNC;
+Only in src: .deps
+diff -urd upstream-gap-4.7.4/src/gap.c src/gap.c
+--- upstream-gap-4.7.4/src/gap.c	2014-02-20 02:31:11.000000000 +0100
++++ src/gap.c	2014-02-26 23:15:08.417638204 +0100
+@@ -217,17 +217,17 @@
+ #endif
+ 
+ static StructImportedGVars ImportedGVars[MAX_IMPORTED_GVARS];
+-static Int NrImportedGVars;
++Int NrImportedGVars;
+ 
+ static StructImportedGVars ImportedFuncs[MAX_IMPORTED_GVARS];
+-static Int NrImportedFuncs;
++Int NrImportedFuncs;
+ 
+ /* int restart_argc; 
+    char **restart_argv; */
+ 
+ char *original_argv0;
+ static char **sysargv;
+-static char **sysenviron;
++char **sysenviron;
+ 
+ /* 
+ syJmp_buf SyRestartBuf;
+@@ -743,11 +743,7 @@
+ }
+ #endif
+ 
+-#ifdef COMPILECYGWINDLL
+-#define main realmain
+-#endif
+-
+-int main (
++int gap_main_loop (
+           int                 argc,
+           char *              argv [],
+           char *              environ [] )
+@@ -1382,6 +1378,7 @@
+ 
+ Obj FuncJUMP_TO_CATCH( Obj self, Obj payload)
+ {
++  libgap_call_error_handler();
+   ThrownObject = payload;
+   syLongjmp(ReadJmpError, 1);
+   return 0;
+diff -urd upstream-gap-4.7.4/src/gasman.c src/gasman.c
+--- upstream-gap-4.7.4/src/gasman.c	2014-02-20 02:31:11.000000000 +0100
++++ src/gasman.c	2014-02-26 23:15:08.418638206 +0100
+@@ -120,8 +120,7 @@
+ #include        "objects.h"             /* objects                         */
+ #include        "scanner.h"             /* scanner                         */
+ 
+-
+-
++#include        "libgap_internal.h"     /* gasman callback                 */
+ 
+ /****************************************************************************
+ **
+@@ -1772,6 +1771,9 @@
+     /* prepare the list of marked bags for the future                      */
+     MarkedBags = 0;
+ 
++    /* call the libgap callback so library users can mark their own bags   */
++    libgap_call_gasman_callback();
++
+     /* mark from the static area                                           */
+     for ( i = 0; i < GlobalBags.nr; i++ )
+         MARK_BAG( *GlobalBags.addr[i] );
+diff -urd upstream-gap-4.7.4/src/iostream.c src/iostream.c
+--- upstream-gap-4.7.4/src/iostream.c	2014-02-20 02:31:11.000000000 +0100
++++ src/iostream.c	2014-02-26 23:15:08.418638206 +0100
+@@ -42,6 +42,8 @@
+ #include        "records.h"             /* generic records                 */
+ #include        "bool.h"                /* True and False                  */
+ 
++#include        "libgap_internal.h"     /* GAP shared library              */
++
+ #include <stdio.h>                      /* standard input/output functions */
+ #include <stdlib.h>
+ #include <string.h>
+@@ -879,8 +881,9 @@
+   InitHdlrFuncsFromTable( GVarFuncs );
+   
+   /* Set up the trap to detect future dying children */
++#ifdef LIBGAP_SIGNALS
+   signal( SIGCHLD, ChildStatusChanged );
+-
++#endif
+   return 0;
+ }
+ 
+Only in src: libgap.c
+Only in src: libgap.h
+Only in src: libgap_internal.h
+Only in src: libgap.la
+Only in src: libgap_la-ariths.lo
+Only in src: libgap_la-ariths.o
+Only in src: libgap_la-blister.lo
+Only in src: libgap_la-blister.o
+Only in src: libgap_la-bool.lo
+Only in src: libgap_la-bool.o
+Only in src: libgap_la-calls.lo
+Only in src: libgap_la-calls.o
+Only in src: libgap_la-c_filt1.lo
+Only in src: libgap_la-c_filt1.o
+Only in src: libgap_la-c_meths1.lo
+Only in src: libgap_la-c_meths1.o
+Only in src: libgap_la-code.lo
+Only in src: libgap_la-code.o
+Only in src: libgap_la-compiler.lo
+Only in src: libgap_la-compiler.o
+Only in src: libgap_la-compstat.lo
+Only in src: libgap_la-compstat.o
+Only in src: libgap_la-c_oper1.lo
+Only in src: libgap_la-c_oper1.o
+Only in src: libgap_la-costab.lo
+Only in src: libgap_la-costab.o
+Only in src: libgap_la-c_random.lo
+Only in src: libgap_la-c_random.o
+Only in src: libgap_la-c_type1.lo
+Only in src: libgap_la-c_type1.o
+Only in src: libgap_la-cyclotom.lo
+Only in src: libgap_la-cyclotom.o
+Only in src: libgap_la-dteval.lo
+Only in src: libgap_la-dteval.o
+Only in src: libgap_la-dt.lo
+Only in src: libgap_la-dt.o
+Only in src: libgap_la-exprs.lo
+Only in src: libgap_la-exprs.o
+Only in src: libgap_la-finfield.lo
+Only in src: libgap_la-finfield.o
+Only in src: libgap_la-funcs.lo
+Only in src: libgap_la-funcs.o
+Only in src: libgap_la-gap.lo
+Only in src: libgap_la-gap.o
+Only in src: libgap_la-gasman.lo
+Only in src: libgap_la-gasman.o
+Only in src: libgap_la-gmpints.lo
+Only in src: libgap_la-gmpints.o
+Only in src: libgap_la-gvars.lo
+Only in src: libgap_la-gvars.o
+Only in src: libgap_la-integer.lo
+Only in src: libgap_la-integer.o
+Only in src: libgap_la-intfuncs.lo
+Only in src: libgap_la-intfuncs.o
+Only in src: libgap_la-intrprtr.lo
+Only in src: libgap_la-intrprtr.o
+Only in src: libgap_la-iostream.lo
+Only in src: libgap_la-iostream.o
+Only in src: libgap_la-libgap.lo
+Only in src: libgap_la-libgap.o
+Only in src: libgap_la-listfunc.lo
+Only in src: libgap_la-listfunc.o
+Only in src: libgap_la-listoper.lo
+Only in src: libgap_la-listoper.o
+Only in src: libgap_la-lists.lo
+Only in src: libgap_la-lists.o
+Only in src: libgap_la-macfloat.lo
+Only in src: libgap_la-macfloat.o
+Only in src: libgap_la-objccoll.lo
+Only in src: libgap_la-objccoll.o
+Only in src: libgap_la-objcftl.lo
+Only in src: libgap_la-objcftl.o
+Only in src: libgap_la-objects.lo
+Only in src: libgap_la-objects.o
+Only in src: libgap_la-objfgelm.lo
+Only in src: libgap_la-objfgelm.o
+Only in src: libgap_la-objpcgel.lo
+Only in src: libgap_la-objpcgel.o
+Only in src: libgap_la-objscoll.lo
+Only in src: libgap_la-objscoll.o
+Only in src: libgap_la-opers.lo
+Only in src: libgap_la-opers.o
+Only in src: libgap_la-permutat.lo
+Only in src: libgap_la-permutat.o
+Only in src: libgap_la-plist.lo
+Only in src: libgap_la-plist.o
+Only in src: libgap_la-pperm.lo
+Only in src: libgap_la-pperm.o
+Only in src: libgap_la-precord.lo
+Only in src: libgap_la-precord.o
+Only in src: libgap_la-range.lo
+Only in src: libgap_la-range.o
+Only in src: libgap_la-rational.lo
+Only in src: libgap_la-rational.o
+Only in src: libgap_la-read.lo
+Only in src: libgap_la-read.o
+Only in src: libgap_la-records.lo
+Only in src: libgap_la-records.o
+Only in src: libgap_la-saveload.lo
+Only in src: libgap_la-saveload.o
+Only in src: libgap_la-scanner.lo
+Only in src: libgap_la-scanner.o
+Only in src: libgap_la-sctable.lo
+Only in src: libgap_la-sctable.o
+Only in src: libgap_la-set.lo
+Only in src: libgap_la-set.o
+Only in src: libgap_la-stats.lo
+Only in src: libgap_la-stats.o
+Only in src: libgap_la-streams.lo
+Only in src: libgap_la-streams.o
+Only in src: libgap_la-string.lo
+Only in src: libgap_la-string.o
+Only in src: libgap_la-sysfiles.lo
+Only in src: libgap_la-sysfiles.o
+Only in src: libgap_la-system.lo
+Only in src: libgap_la-system.o
+Only in src: libgap_la-tietze.lo
+Only in src: libgap_la-tietze.o
+Only in src: libgap_la-trans.lo
+Only in src: libgap_la-trans.o
+Only in src: libgap_la-vars.lo
+Only in src: libgap_la-vars.o
+Only in src: libgap_la-vec8bit.lo
+Only in src: libgap_la-vec8bit.o
+Only in src: libgap_la-vecffe.lo
+Only in src: libgap_la-vecffe.o
+Only in src: libgap_la-vecgf2.lo
+Only in src: libgap_la-vecgf2.o
+Only in src: libgap_la-vector.lo
+Only in src: libgap_la-vector.o
+Only in src: libgap_la-weakptr.lo
+Only in src: libgap_la-weakptr.o
+Only in src: .libs
+Only in src: Makefile
+Only in src: Makefile.am
+Only in src: Makefile.in
+diff -urd upstream-gap-4.7.4/src/scanner.c src/scanner.c
+--- upstream-gap-4.7.4/src/scanner.c	2014-02-20 02:31:11.000000000 +0100
++++ src/scanner.c	2014-02-26 23:15:08.418638206 +0100
+@@ -59,6 +59,8 @@
+ #include        "opers.h"               /* DoFilter...                     */
+ #include        "read.h"                /* Call0ArgsInNewReader            */
+ 
++#include        "libgap_internal.h"     /* GAP shared library              */
++
+ #include <assert.h>
+ #include <limits.h>
+ 
+@@ -2670,152 +2672,12 @@
+          KOutputStream stream,
+          Char                ch )
+ {
+-  Int                 i, hint, spos;
+-  Char                str [MAXLENOUTPUTLINE];
+-
+-
+-
+-  /* '\01', increment indentation level                                  */
+-  if ( ch == '\01' ) {
+-
+-    if (!stream->format)
+-      return;
+-
+-    /* add hint to break line  */
+-    addLineBreakHint(stream, stream->pos, 16*stream->indent, 1);
+-  }
+-
+-  /* '\02', decrement indentation level                                  */
+-  else if ( ch == '\02' ) {
+-
+-    if (!stream -> format)
+-      return;
+-
+-    /* if this is a better place to split the line remember it         */
+-    addLineBreakHint(stream, stream->pos, 16*stream->indent, -1);
+-  }
+-
+-  /* '\03', print line                                                   */
+-  else if ( ch == '\03' ) {
+-
+-    /* print the line                                                  */
+-    if (stream->pos != 0)
+-      {
+-        stream->line[ stream->pos ] = '\0';
+-        PutLineTo(stream, stream->pos );
+-
+-        /* start the next line                                         */
+-        stream->pos      = 0;
+-      }
+-    /* reset line break hints                                          */
+-    stream->hints[0] = -1;
+-
+-  }
+-
+-  /* <newline> or <return>, print line, indent next                      */
+-  else if ( ch == '\n' || ch == '\r' ) {
+-
+-    /* put the character on the line and terminate it                  */
+-    stream->line[ stream->pos++ ] = ch;
+-    stream->line[ stream->pos   ] = '\0';
+-
+-    /* print the line                                                  */
+-    PutLineTo( stream, stream->pos );
+-
+-    /* and dump it from the buffer */
+-    stream->pos = 0;
+-    if (stream -> format)
+-      {
+-        /* indent for next line                                         */
+-        for ( i = 0;  i < stream->indent; i++ )
+-          stream->line[ stream->pos++ ] = ' ';
+-      }
+-    /* reset line break hints                                       */
+-    stream->hints[0] = -1;
+-
+-  }
+-
+-  /* normal character, room on the current line                          */
+-  else if ( stream->pos < SyNrCols-2-NoSplitLine ) {
+-
+-    /* put the character on this line                                  */
+-    stream->line[ stream->pos++ ] = ch;
+-
+-  }
+-
++  if (ch <= 3)  // GAP control characters
++    return;
++  if (stream->file == 1)
++    libgap_append_stdout(ch);
+   else
+-    {
+-      /* position to split                                              */
+-      if ( (hint = nrLineBreak(stream)) != -1 )
+-        spos = stream->hints[3*hint];
+-      else
+-        spos = 0;
+-
+-      /* if we are going to split at the end of the line, and we are
+-         formatting discard blanks */
+-      if ( stream->format && spos == stream->pos && ch == ' ' ) {
+-        ;
+-      }
+-
+-      /* full line, acceptable split position                              */
+-      else if ( stream->format && spos != 0 ) {
+-
+-        /* add character to the line, terminate it                         */
+-        stream->line[ stream->pos++ ] = ch;
+-        stream->line[ stream->pos++ ] = '\0';
+-
+-        /* copy the rest after the best split position to a safe place     */
+-        for ( i = spos; i < stream->pos; i++ )
+-          str[ i-spos ] = stream->line[ i ];
+-        str[ i-spos] = '\0';
+-
+-        /* print line up to the best split position                        */
+-        stream->line[ spos++ ] = '\n';
+-        stream->line[ spos   ] = '\0';
+-        PutLineTo( stream, spos );
+-        spos--;
+-
+-        /* indent for the rest                                             */
+-        stream->pos = 0;
+-        for ( i = 0; i < stream->hints[3*hint+2]; i++ )
+-          stream->line[ stream->pos++ ] = ' ';
+-        spos -= stream->hints[3*hint+2];
+-
+-        /* copy the rest onto the next line                                */
+-        for ( i = 0; str[ i ] != '\0'; i++ )
+-          stream->line[ stream->pos++ ] = str[ i ];
+-        /* recover line break hints for copied rest                      */
+-        for ( i = hint+1; stream->hints[3*i] != -1; i++ )
+-        {
+-          stream->hints[3*(i-hint-1)] = stream->hints[3*i]-spos;
+-          stream->hints[3*(i-hint-1)+1] = stream->hints[3*i+1];
+-          stream->hints[3*(i-hint-1)+2] = stream->hints[3*i+2];
+-        }
+-        stream->hints[3*(i-hint-1)] = -1;
+-      }
+-
+-      /* full line, no split position                                       */
+-      else {
+-
+-        if (stream->format)
+-          {
+-            /* append a '\',*/
+-            stream->line[ stream->pos++ ] = '\\';
+-            stream->line[ stream->pos++ ] = '\n';
+-          }
+-        /* and print the line                                */
+-        stream->line[ stream->pos   ] = '\0';
+-        PutLineTo( stream, stream->pos );
+-
+-        /* add the character to the next line                              */
+-        stream->pos = 0;
+-        stream->line[ stream->pos++ ] = ch;
+-
+-        if (stream->format)
+-          stream->hints[0] = -1;
+-      }
+-
+-    }
++    libgap_append_stderr(ch);
+ }
+ 
+ /****************************************************************************
+Only in src: stamp-h1
+diff -urd upstream-gap-4.7.4/src/sysfiles.c src/sysfiles.c
+--- upstream-gap-4.7.4/src/sysfiles.c	2014-02-20 02:31:11.000000000 +0100
++++ src/sysfiles.c	2014-02-26 23:15:08.419638208 +0100
+@@ -38,6 +38,8 @@
+ #include        "records.h"             /* generic records                 */
+ #include        "bool.h"                /* Global True and False           */
+ 
++#include        "libgap_internal.h"     /* GAP shared library              */
++
+ #include        <assert.h>
+ #include        <fcntl.h>
+ 
+@@ -1115,16 +1117,20 @@
+ 
+ void syAnswerCont ( int signr )
+ {
++#ifdef LIBGAP_SIGNALS
+     syStartraw( syFid );
+     signal( SIGCONT, SIG_DFL );
+     kill( getpid(), SIGCONT );
++#endif
+ }
+ 
+ void syAnswerTstp ( int signr )
+ {
++#ifdef LIBGAP_SIGNALS
+     syStopraw( syFid );
+     signal( SIGCONT, syAnswerCont );
+     kill( getpid(), SIGTSTP );
++#endif
+ }
+ 
+ #endif
+@@ -1197,12 +1203,13 @@
+ 
+ #endif
+ 
+-
++#ifdef LIBGAP_SIGNALS
+ #ifdef SIGTSTP
+     /* install signal handler for stop                                     */
+     syFid = fid;
+     signal( SIGTSTP, syAnswerTstp );
+ #endif
++#endif
+ 
+     /* indicate success                                                    */
+     return 1;
+@@ -1225,10 +1232,12 @@
+     if ( SyWindow )
+         return;
+ 
++#ifdef LIBGAP_SIGNALS
+ #ifdef SIGTSTP
+     /* remove signal handler for stop                                      */
+     signal( SIGTSTP, SIG_DFL );
+ #endif
++#endif
+ 
+ #if HAVE_TERMIOS_H
+ 
+@@ -1321,11 +1330,13 @@
+ 
+ void SyInstallAnswerIntr ( void )
+ {
++#ifdef LIBGAP_SIGNALS
+     if ( signal( SIGINT, SIG_IGN ) != SIG_IGN )
+     {
+         signal( SIGINT, syAnswerIntr );
+         siginterrupt( SIGINT, 0 );
+     }
++#endif
+ }
+ 
+ 
+@@ -1390,7 +1401,9 @@
+             if (CO <= 0)
+                 CO = win.ws_col;
+         }
++#ifdef LIBGAP_SIGNALS
+         (void) signal(SIGWINCH, syWindowChangeIntr);
++#endif
+     }
+ #endif /* TIOCGWINSZ */
+ 
+@@ -2995,7 +3008,13 @@
+     UInt                length,
+     Int                 fid)
+ {
+-  return syFgets( line, length, fid, 1);
++  if(fid!=0 && fid!=2) {
++    // not stdin/stderr; probably file IO. Do the standard thing.
++    // printf("SyFgets fid=%i\n", fid);
++    return syFgets( line, length, fid, 1);
++  }
++  return libgap_get_input(line, length);
++  // return syFgets( line, length, fid, 1);
+ }
+ 
+ 
+@@ -3127,7 +3146,7 @@
+ # endif
+ #endif
+ 
+-extern char ** environ;
++#include "libgap_internal.h"
+ 
+ void NullSignalHandler(int scratch) {}
+ 
+@@ -3242,6 +3261,7 @@
+        `After that, we call the old signal handler, in case any other children have died in the
+        meantime. This resets the handler */
+ 
++#ifdef LIBGAP_SIGNALS
+     func2 = signal( SIGCHLD, SIG_DFL );
+ 
+     /* This may return SIG_DFL (0x0) or SIG_IGN (0x1) if the previous handler
+@@ -3250,6 +3270,7 @@
+      * is to do nothing */
+     if(func2 == SIG_ERR || func2 == SIG_DFL || func2 == SIG_IGN)
+       func2 = &NullSignalHandler;
++#endif
+ 
+     /* clone the process                                                   */
+     pid = vfork();
+@@ -3261,8 +3282,9 @@
+     if ( pid != 0 ) {
+ 
+         /* ignore a CTRL-C                                                 */
++#ifdef LIBGAP_SIGNALS
+         func = signal( SIGINT, SIG_IGN );
+-
++#endif
+         /* wait for some action                                            */
+ #if HAVE_WAITPID
+         wait_pid = waitpid( pid, &status, 0 );
+@@ -3270,18 +3292,24 @@
+         wait_pid = wait4( pid, &status, 0, &usage );
+ #endif
+         if ( wait_pid == -1 ) {
++#ifdef LIBGAP_SIGNALS
+             signal( SIGINT, func );
+             (*func2)(SIGCHLD);
++#endif
+             return -1;
+         }
+ 
+         if ( WIFSIGNALED(status) ) {
++#ifdef LIBGAP_SIGNALS
+             signal( SIGINT, func );
+             (*func2)(SIGCHLD);
++#endif
+             return -1;
+         }
++#ifdef LIBGAP_SIGNALS
+         signal( SIGINT, func );
+         (*func2)(SIGCHLD);
++#endif
+         return WEXITSTATUS(status);
+     }
+ 
