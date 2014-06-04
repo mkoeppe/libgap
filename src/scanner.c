@@ -2672,27 +2672,12 @@ void PutChrTo (
          KOutputStream stream,
          Char                ch )
 {
-  // printf("PutChrTo %i %i %c %hhx\n", stream->file, stream->isstream, ch, ch);
   if (ch <= 3)  // GAP control characters
     return;
-
-  // Magic constants are defined in SyFopen
-  if (stream->file == 0) {        // negative number indicates an error
-    assert(False);
-  } else if (stream->file == 0) { // 0 identifies the standard input file "*stdin*"
-    assert(False);
-  } else if (stream->file == 1) { // 1 identifies the standard outpt file "*stdout*"
+  if (stream->file == 1)
     libgap_append_stdout(ch);
-  } else if (stream->file == 2) { // 2 identifies the brk loop input file "*errin*"
-    assert(False);
-  } else if (stream->file == 3) { // 3 identifies the error messages file "*errout*"
+  else
     libgap_append_stderr(ch);
-  } else {                        // anything else is a real file descriptor
-    stream->line[stream->pos++] = ch;
-    stream->line[stream->pos++] = '\0';
-    PutLineTo(stream, stream->pos);
-    stream->pos = 0;
-  }
 }
 
 /****************************************************************************
