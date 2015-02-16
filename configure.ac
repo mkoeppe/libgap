@@ -1,7 +1,7 @@
 AC_PREREQ([2.66])
 
 # Note: the version number must match the GAP version number
-AC_INIT([libGAP], [4.7.5.1], [sage-devel@googlegroups.com])
+AC_INIT([libGAP], [4.7.7], [sage-devel@googlegroups.com])
 
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE

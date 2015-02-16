@@ -57,7 +57,14 @@
 
 #ifdef USE_GMP
 
+// GMP must be included outside of 'extern C'
+#ifdef GAP_IN_EXTERN_C
+}
+#endif
 #include <gmp.h>
+#ifdef GAP_IN_EXTERN_C
+extern "C" {
+#endif
 
 #include        "gmpints.h"             /* GMP integers                    */
 
@@ -521,7 +528,7 @@ Obj FuncIntHexString( Obj self,  Obj str )
 
   len = GET_LEN_STRING(str);
   if (len == 0) {
-    res = INT_INTOBJ(0);
+    res = INTOBJ_INT(0);
     return res;
   }
   if (*(CHARS_STRING(str)) == '-') {
@@ -2037,8 +2044,8 @@ Obj RemInt ( Obj opL, Obj opR )
     }
     
     /* maybe it's trivial                                                   */
-    if ( INTBASE % abs(INT_INTOBJ(opR)) == 0 ) {
-      c = ADDR_INT(opL)[0] % abs(INT_INTOBJ(opR));
+    if ( INTBASE % INT_INTOBJ(AbsInt(opR)) == 0 ) {
+      c = ADDR_INT(opL)[0] % INT_INTOBJ(AbsInt(opR));
     }
     
     /* otherwise run through the left operand and divide digitwise         */

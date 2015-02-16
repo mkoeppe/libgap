@@ -75,7 +75,7 @@ the following steps:
   4. Apply patches/gap-x.y.z.patch to the new src
      directory. Hopefully, there are no conflicts. Good luck!
 
-         $ patch -p0 < patches/gap-x.y.z.patch
+         $ cd src && patch -p1 < ../patches/gap-x.y.z.patch
 
   5. Update src/Makefile.am if C sources have been added/removed.
 
