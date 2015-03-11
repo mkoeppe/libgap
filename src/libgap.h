@@ -41,7 +41,7 @@ void libgap_initialize(int argc, char** argv);
  * finalize libgap so that it can be reinitialized with a different
  * memory pool...
  */
-void libgap_finalize();
+void libgap_finalize(void);
 
 
 /*************************************************************************/
@@ -122,7 +122,7 @@ extern int libgap_in_enter_exit_block;
  * collection.
  */
 
-typedef void(*libgap_gasman_callback_ptr)();
+typedef void(*libgap_gasman_callback_ptr)(void);
 void libgap_set_gasman_callback(libgap_gasman_callback_ptr callback);
 
 /*************************************************************************/
@@ -138,7 +138,7 @@ void libgap_set_error_handler(libgap_error_func_ptr callback);
 
 
 /* GAP uses this function to call the error handler, and you can too */
-void libgap_call_error_handler();
+void libgap_call_error_handler(void);
 
 
 /* libGAP is supposed to be used as follows from your code:
@@ -160,8 +160,8 @@ void libgap_call_error_handler();
  */
 void libgap_start_interaction(char* inputline);
 void libgap_set_input(char* line);
-char* libgap_get_output();
-void libgap_finish_interaction();
+char* libgap_get_output(void);
+void libgap_finish_interaction(void);
 
 
 #endif /* LIBGAP__H */
