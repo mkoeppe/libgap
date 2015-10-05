@@ -7,7 +7,7 @@ GAP (http://www.gap-system.org) is a system fo computational group
 theory. This repo contains a shared library version of the GAP kernel,
 allowing you to directly talk to GAP from your own C/C++ code.
 
-Much of the group theory in Sage (http://www.sagemath.org) is
+Much of the group theory in SageMath (http://www.sagemath.org) is
 implemented using LibGAP.
 
 
@@ -31,7 +31,7 @@ Packaging
 
 The current tarball can be found at
 
-http://boxen.math.washington.edu/home/vbraun/spkg/libgap-x.y.z.tar.gz
+https://bitbucket.org/vbraun/libgap/downloads/libgap-x.y.z.tar.gz
 
   * Always use the libgap-x.y.z.tar.gz tarball (the output of "make
     dist"), and not the files in the repository. Only the former has
@@ -50,7 +50,7 @@ http://boxen.math.washington.edu/home/vbraun/spkg/libgap-x.y.z.tar.gz
         $ ./configure
         $ make check
 	
-    For example, using the Gap installation in Sage:
+    For example, using the GAP installation in SageMath:
 
         $ ./configure CFLAGS='-DSYS_DEFAULT_PATHS=\"$SAGE_ROOT/local/gap/latest\"'
 
@@ -86,17 +86,17 @@ the following steps:
   7. Run "make distcheck" (the testsuite will fail because it does not
      pass CFLAGS, ignore).
 
-The tests use unescaped GAP symbols since its easier to develop. The
+The tests use unescaped GAP symbols since it's easier to develop. The
 test/Makefile.am dist-hook rewrites them with the libGAP_ prefix. If
 you change tests make sure to update the dist-hook in with any new GAP
 symbols that you use.
 
-For debugging you should probably build gap
+For debugging you should probably build GAP
 
-    $ ./configure CFLAGS='-O0 -g3'    # standalone gap
-    $ SAGE_DEBUG=yes ./sage -f gap   # inside of Sage
+    $ ./configure CFLAGS='-O0 -g3'    # standalone GAP
+    $ SAGE_DEBUG=yes ./sage -f gap   # inside SageMath
 
-libgap with debug symbols:
+LibGAP with debug symbols:
 
     $ ./configure CFLAGS='-DSYS_DEFAULT_PATHS=\"/path/to/gap\" -O0 -g3 -DDEBUG_MASTERPOINTERS -DDEBUG_GLOBAL_BAGS -DDEBUG_FUNCTIONS_BAGS'
 	
@@ -105,8 +105,8 @@ libgap with debug symbols:
 Usage
 =====
 
-See Sage, and in particular $SAGE_ROOT/sage/libs/gap/, for real-world
-usage of LibGAP. Sage contains a Cython interface to LibGAP if you are
+See SageMath, and in particular $SAGE_ROOT/sage/libs/gap/, for real-world
+usage of LibGAP. SageMath contains a Cython interface to LibGAP if you are
 so inclined.
 
 Talk about LibGAP:
