@@ -1,6 +1,6 @@
 diff -urd upstream-gap-4.7.8/src/c_filt1.c src/c_filt1.c
---- upstream-gap-4.7.8/src/c_filt1.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/c_filt1.c	2015-06-18 18:14:43.839427997 +0200
+--- upstream-gap-4.7.8/src/c_filt1.c	2015-06-09 21:38:36.000000000 +0100
++++ src/c_filt1.c	2015-12-24 06:39:27.843652800 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -10,8 +10,8 @@ diff -urd upstream-gap-4.7.8/src/c_filt1.c src/c_filt1.c
  /* global variables used in handlers */
  static GVar G_IS__FUNCTION;
 diff -urd upstream-gap-4.7.8/src/c_meths1.c src/c_meths1.c
---- upstream-gap-4.7.8/src/c_meths1.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/c_meths1.c	2015-06-18 18:14:43.840427985 +0200
+--- upstream-gap-4.7.8/src/c_meths1.c	2015-06-09 21:38:36.000000000 +0100
++++ src/c_meths1.c	2015-12-24 06:39:27.847652849 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -20,12 +20,10 @@ diff -urd upstream-gap-4.7.8/src/c_meths1.c src/c_meths1.c
  
  /* global variables used in handlers */
  static GVar G_METHOD__0ARGS;
-Only in src: config.h
 Only in src: config.h.in
-Only in src: config.h.in~
 diff -urd upstream-gap-4.7.8/src/c_oper1.c src/c_oper1.c
---- upstream-gap-4.7.8/src/c_oper1.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/c_oper1.c	2015-06-18 18:14:43.842427960 +0200
+--- upstream-gap-4.7.8/src/c_oper1.c	2015-06-09 21:38:36.000000000 +0100
++++ src/c_oper1.c	2015-12-24 06:39:27.847652849 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -35,8 +33,8 @@ diff -urd upstream-gap-4.7.8/src/c_oper1.c src/c_oper1.c
  /* global variables used in handlers */
  static GVar G_REREADING;
 diff -urd upstream-gap-4.7.8/src/c_random.c src/c_random.c
---- upstream-gap-4.7.8/src/c_random.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/c_random.c	2015-06-18 18:14:43.842427960 +0200
+--- upstream-gap-4.7.8/src/c_random.c	2015-06-09 21:38:36.000000000 +0100
++++ src/c_random.c	2015-12-24 06:39:27.847652849 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -46,8 +44,8 @@ diff -urd upstream-gap-4.7.8/src/c_random.c src/c_random.c
  /* global variables used in handlers */
  static GVar G_QUO__INT;
 diff -urd upstream-gap-4.7.8/src/c_type1.c src/c_type1.c
---- upstream-gap-4.7.8/src/c_type1.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/c_type1.c	2015-06-18 18:14:43.843427947 +0200
+--- upstream-gap-4.7.8/src/c_type1.c	2015-06-09 21:38:36.000000000 +0100
++++ src/c_type1.c	2015-12-24 06:39:27.847652849 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -56,10 +54,9 @@ diff -urd upstream-gap-4.7.8/src/c_type1.c src/c_type1.c
  
  /* global variables used in handlers */
  static GVar G_NAME__FUNC;
-Only in src: .deps
 diff -urd upstream-gap-4.7.8/src/gap.c src/gap.c
---- upstream-gap-4.7.8/src/gap.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/gap.c	2015-06-18 18:14:43.845427922 +0200
+--- upstream-gap-4.7.8/src/gap.c	2015-06-09 21:38:36.000000000 +0100
++++ src/gap.c	2015-12-24 06:39:27.859653000 +0000
 @@ -217,17 +217,17 @@
  #endif
  
@@ -103,8 +100,8 @@ diff -urd upstream-gap-4.7.8/src/gap.c src/gap.c
    syLongjmp(ReadJmpError, 1);
    return 0;
 diff -urd upstream-gap-4.7.8/src/gasman.c src/gasman.c
---- upstream-gap-4.7.8/src/gasman.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/gasman.c	2015-06-18 18:14:43.845427922 +0200
+--- upstream-gap-4.7.8/src/gasman.c	2015-06-09 21:38:36.000000000 +0100
++++ src/gasman.c	2015-12-24 06:39:27.859653000 +0000
 @@ -120,8 +120,7 @@
  #include        "objects.h"             /* objects                         */
  #include        "scanner.h"             /* scanner                         */
@@ -126,8 +123,8 @@ diff -urd upstream-gap-4.7.8/src/gasman.c src/gasman.c
      for ( i = 0; i < GlobalBags.nr; i++ )
          MARK_BAG( *GlobalBags.addr[i] );
 diff -urd upstream-gap-4.7.8/src/iostream.c src/iostream.c
---- upstream-gap-4.7.8/src/iostream.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/iostream.c	2015-06-18 18:14:43.846427910 +0200
+--- upstream-gap-4.7.8/src/iostream.c	2015-06-09 21:38:36.000000000 +0100
++++ src/iostream.c	2015-12-24 06:39:27.863653050 +0000
 @@ -42,6 +42,8 @@
  #include        "records.h"             /* generic records                 */
  #include        "bool.h"                /* True and False                  */
@@ -151,142 +148,11 @@ diff -urd upstream-gap-4.7.8/src/iostream.c src/iostream.c
 Only in src: libgap.c
 Only in src: libgap.h
 Only in src: libgap_internal.h
-Only in src: libgap.la
-Only in src: libgap_la-ariths.lo
-Only in src: libgap_la-ariths.o
-Only in src: libgap_la-blister.lo
-Only in src: libgap_la-blister.o
-Only in src: libgap_la-bool.lo
-Only in src: libgap_la-bool.o
-Only in src: libgap_la-calls.lo
-Only in src: libgap_la-calls.o
-Only in src: libgap_la-c_filt1.lo
-Only in src: libgap_la-c_filt1.o
-Only in src: libgap_la-c_meths1.lo
-Only in src: libgap_la-c_meths1.o
-Only in src: libgap_la-code.lo
-Only in src: libgap_la-code.o
-Only in src: libgap_la-compiler.lo
-Only in src: libgap_la-compiler.o
-Only in src: libgap_la-compstat.lo
-Only in src: libgap_la-compstat.o
-Only in src: libgap_la-c_oper1.lo
-Only in src: libgap_la-c_oper1.o
-Only in src: libgap_la-costab.lo
-Only in src: libgap_la-costab.o
-Only in src: libgap_la-c_random.lo
-Only in src: libgap_la-c_random.o
-Only in src: libgap_la-c_type1.lo
-Only in src: libgap_la-c_type1.o
-Only in src: libgap_la-cyclotom.lo
-Only in src: libgap_la-cyclotom.o
-Only in src: libgap_la-dteval.lo
-Only in src: libgap_la-dteval.o
-Only in src: libgap_la-dt.lo
-Only in src: libgap_la-dt.o
-Only in src: libgap_la-exprs.lo
-Only in src: libgap_la-exprs.o
-Only in src: libgap_la-finfield.lo
-Only in src: libgap_la-finfield.o
-Only in src: libgap_la-funcs.lo
-Only in src: libgap_la-funcs.o
-Only in src: libgap_la-gap.lo
-Only in src: libgap_la-gap.o
-Only in src: libgap_la-gasman.lo
-Only in src: libgap_la-gasman.o
-Only in src: libgap_la-gmpints.lo
-Only in src: libgap_la-gmpints.o
-Only in src: libgap_la-gvars.lo
-Only in src: libgap_la-gvars.o
-Only in src: libgap_la-integer.lo
-Only in src: libgap_la-integer.o
-Only in src: libgap_la-intfuncs.lo
-Only in src: libgap_la-intfuncs.o
-Only in src: libgap_la-intrprtr.lo
-Only in src: libgap_la-intrprtr.o
-Only in src: libgap_la-iostream.lo
-Only in src: libgap_la-iostream.o
-Only in src: libgap_la-libgap.lo
-Only in src: libgap_la-libgap.o
-Only in src: libgap_la-listfunc.lo
-Only in src: libgap_la-listfunc.o
-Only in src: libgap_la-listoper.lo
-Only in src: libgap_la-listoper.o
-Only in src: libgap_la-lists.lo
-Only in src: libgap_la-lists.o
-Only in src: libgap_la-macfloat.lo
-Only in src: libgap_la-macfloat.o
-Only in src: libgap_la-objccoll.lo
-Only in src: libgap_la-objccoll.o
-Only in src: libgap_la-objcftl.lo
-Only in src: libgap_la-objcftl.o
-Only in src: libgap_la-objects.lo
-Only in src: libgap_la-objects.o
-Only in src: libgap_la-objfgelm.lo
-Only in src: libgap_la-objfgelm.o
-Only in src: libgap_la-objpcgel.lo
-Only in src: libgap_la-objpcgel.o
-Only in src: libgap_la-objscoll.lo
-Only in src: libgap_la-objscoll.o
-Only in src: libgap_la-opers.lo
-Only in src: libgap_la-opers.o
-Only in src: libgap_la-permutat.lo
-Only in src: libgap_la-permutat.o
-Only in src: libgap_la-plist.lo
-Only in src: libgap_la-plist.o
-Only in src: libgap_la-pperm.lo
-Only in src: libgap_la-pperm.o
-Only in src: libgap_la-precord.lo
-Only in src: libgap_la-precord.o
-Only in src: libgap_la-range.lo
-Only in src: libgap_la-range.o
-Only in src: libgap_la-rational.lo
-Only in src: libgap_la-rational.o
-Only in src: libgap_la-read.lo
-Only in src: libgap_la-read.o
-Only in src: libgap_la-records.lo
-Only in src: libgap_la-records.o
-Only in src: libgap_la-saveload.lo
-Only in src: libgap_la-saveload.o
-Only in src: libgap_la-scanner.lo
-Only in src: libgap_la-scanner.o
-Only in src: libgap_la-sctable.lo
-Only in src: libgap_la-sctable.o
-Only in src: libgap_la-set.lo
-Only in src: libgap_la-set.o
-Only in src: libgap_la-stats.lo
-Only in src: libgap_la-stats.o
-Only in src: libgap_la-streams.lo
-Only in src: libgap_la-streams.o
-Only in src: libgap_la-string.lo
-Only in src: libgap_la-string.o
-Only in src: libgap_la-sysfiles.lo
-Only in src: libgap_la-sysfiles.o
-Only in src: libgap_la-system.lo
-Only in src: libgap_la-system.o
-Only in src: libgap_la-tietze.lo
-Only in src: libgap_la-tietze.o
-Only in src: libgap_la-trans.lo
-Only in src: libgap_la-trans.o
-Only in src: libgap_la-vars.lo
-Only in src: libgap_la-vars.o
-Only in src: libgap_la-vec8bit.lo
-Only in src: libgap_la-vec8bit.o
-Only in src: libgap_la-vecffe.lo
-Only in src: libgap_la-vecffe.o
-Only in src: libgap_la-vecgf2.lo
-Only in src: libgap_la-vecgf2.o
-Only in src: libgap_la-vector.lo
-Only in src: libgap_la-vector.o
-Only in src: libgap_la-weakptr.lo
-Only in src: libgap_la-weakptr.o
-Only in src: .libs
-Only in src: Makefile
 Only in src: Makefile.am
 Only in src: Makefile.in
 diff -urd upstream-gap-4.7.8/src/scanner.c src/scanner.c
---- upstream-gap-4.7.8/src/scanner.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/scanner.c	2015-06-18 18:14:43.847427897 +0200
+--- upstream-gap-4.7.8/src/scanner.c	2015-06-09 21:38:36.000000000 +0100
++++ src/scanner.c	2015-12-24 06:39:27.883653299 +0000
 @@ -59,6 +59,8 @@
  #include        "opers.h"               /* DoFilter...                     */
  #include        "read.h"                /* Call0ArgsInNewReader            */
@@ -467,10 +333,9 @@ diff -urd upstream-gap-4.7.8/src/scanner.c src/scanner.c
  }
  
  /****************************************************************************
-Only in src: stamp-h1
 diff -urd upstream-gap-4.7.8/src/sysfiles.c src/sysfiles.c
---- upstream-gap-4.7.8/src/sysfiles.c	2015-06-09 22:38:36.000000000 +0200
-+++ src/sysfiles.c	2015-06-18 18:14:43.848427885 +0200
+--- upstream-gap-4.7.8/src/sysfiles.c	2015-06-09 21:38:36.000000000 +0100
++++ src/sysfiles.c	2015-12-24 06:39:27.891653399 +0000
 @@ -38,6 +38,8 @@
  #include        "records.h"             /* generic records                 */
  #include        "bool.h"                /* Global True and False           */
