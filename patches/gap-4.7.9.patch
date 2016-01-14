@@ -1,6 +1,6 @@
-diff -urd upstream-gap-4.7.8/src/c_filt1.c src/c_filt1.c
---- upstream-gap-4.7.8/src/c_filt1.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/c_filt1.c	2015-12-24 06:39:27.843652800 +0000
+diff -urd upstream-gap-4.7.9/src/c_filt1.c src/c_filt1.c
+--- upstream-gap-4.7.9/src/c_filt1.c	2015-11-29 20:45:39.000000000 +0000
++++ src/c_filt1.c	2015-12-24 06:49:21.032041582 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -9,9 +9,9 @@ diff -urd upstream-gap-4.7.8/src/c_filt1.c src/c_filt1.c
  
  /* global variables used in handlers */
  static GVar G_IS__FUNCTION;
-diff -urd upstream-gap-4.7.8/src/c_meths1.c src/c_meths1.c
---- upstream-gap-4.7.8/src/c_meths1.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/c_meths1.c	2015-12-24 06:39:27.847652849 +0000
+diff -urd upstream-gap-4.7.9/src/c_meths1.c src/c_meths1.c
+--- upstream-gap-4.7.9/src/c_meths1.c	2015-11-29 20:45:39.000000000 +0000
++++ src/c_meths1.c	2015-12-24 06:49:21.036041590 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -20,10 +20,12 @@ diff -urd upstream-gap-4.7.8/src/c_meths1.c src/c_meths1.c
  
  /* global variables used in handlers */
  static GVar G_METHOD__0ARGS;
+Only in src: config.h
 Only in src: config.h.in
-diff -urd upstream-gap-4.7.8/src/c_oper1.c src/c_oper1.c
---- upstream-gap-4.7.8/src/c_oper1.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/c_oper1.c	2015-12-24 06:39:27.847652849 +0000
+Only in src: config.h.in~
+diff -urd upstream-gap-4.7.9/src/c_oper1.c src/c_oper1.c
+--- upstream-gap-4.7.9/src/c_oper1.c	2015-11-29 20:45:39.000000000 +0000
++++ src/c_oper1.c	2015-12-24 06:49:21.036041590 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -32,9 +34,9 @@ diff -urd upstream-gap-4.7.8/src/c_oper1.c src/c_oper1.c
  
  /* global variables used in handlers */
  static GVar G_REREADING;
-diff -urd upstream-gap-4.7.8/src/c_random.c src/c_random.c
---- upstream-gap-4.7.8/src/c_random.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/c_random.c	2015-12-24 06:39:27.847652849 +0000
+diff -urd upstream-gap-4.7.9/src/c_random.c src/c_random.c
+--- upstream-gap-4.7.9/src/c_random.c	2015-11-29 20:45:39.000000000 +0000
++++ src/c_random.c	2015-12-24 06:49:21.040041599 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -43,9 +45,9 @@ diff -urd upstream-gap-4.7.8/src/c_random.c src/c_random.c
  
  /* global variables used in handlers */
  static GVar G_QUO__INT;
-diff -urd upstream-gap-4.7.8/src/c_type1.c src/c_type1.c
---- upstream-gap-4.7.8/src/c_type1.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/c_type1.c	2015-12-24 06:39:27.847652849 +0000
+diff -urd upstream-gap-4.7.9/src/c_type1.c src/c_type1.c
+--- upstream-gap-4.7.9/src/c_type1.c	2015-11-29 20:45:39.000000000 +0000
++++ src/c_type1.c	2015-12-24 06:49:21.040041599 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -54,9 +56,10 @@ diff -urd upstream-gap-4.7.8/src/c_type1.c src/c_type1.c
  
  /* global variables used in handlers */
  static GVar G_NAME__FUNC;
-diff -urd upstream-gap-4.7.8/src/gap.c src/gap.c
---- upstream-gap-4.7.8/src/gap.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/gap.c	2015-12-24 06:39:27.859653000 +0000
+Only in src: .deps
+diff -urd upstream-gap-4.7.9/src/gap.c src/gap.c
+--- upstream-gap-4.7.9/src/gap.c	2015-11-29 20:45:39.000000000 +0000
++++ src/gap.c	2015-12-24 06:49:21.044041609 +0000
 @@ -217,17 +217,17 @@
  #endif
  
@@ -99,9 +102,9 @@ diff -urd upstream-gap-4.7.8/src/gap.c src/gap.c
    ThrownObject = payload;
    syLongjmp(ReadJmpError, 1);
    return 0;
-diff -urd upstream-gap-4.7.8/src/gasman.c src/gasman.c
---- upstream-gap-4.7.8/src/gasman.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/gasman.c	2015-12-24 06:39:27.859653000 +0000
+diff -urd upstream-gap-4.7.9/src/gasman.c src/gasman.c
+--- upstream-gap-4.7.9/src/gasman.c	2015-11-29 20:45:39.000000000 +0000
++++ src/gasman.c	2015-12-24 06:49:21.044041609 +0000
 @@ -120,8 +120,7 @@
  #include        "objects.h"             /* objects                         */
  #include        "scanner.h"             /* scanner                         */
@@ -122,9 +125,9 @@ diff -urd upstream-gap-4.7.8/src/gasman.c src/gasman.c
      /* mark from the static area                                           */
      for ( i = 0; i < GlobalBags.nr; i++ )
          MARK_BAG( *GlobalBags.addr[i] );
-diff -urd upstream-gap-4.7.8/src/iostream.c src/iostream.c
---- upstream-gap-4.7.8/src/iostream.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/iostream.c	2015-12-24 06:39:27.863653050 +0000
+diff -urd upstream-gap-4.7.9/src/iostream.c src/iostream.c
+--- upstream-gap-4.7.9/src/iostream.c	2015-11-29 20:45:39.000000000 +0000
++++ src/iostream.c	2015-12-24 06:49:21.044041609 +0000
 @@ -42,6 +42,8 @@
  #include        "records.h"             /* generic records                 */
  #include        "bool.h"                /* True and False                  */
@@ -148,11 +151,12 @@ diff -urd upstream-gap-4.7.8/src/iostream.c src/iostream.c
 Only in src: libgap.c
 Only in src: libgap.h
 Only in src: libgap_internal.h
+Only in src: Makefile
 Only in src: Makefile.am
 Only in src: Makefile.in
-diff -urd upstream-gap-4.7.8/src/scanner.c src/scanner.c
---- upstream-gap-4.7.8/src/scanner.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/scanner.c	2015-12-24 06:39:27.883653299 +0000
+diff -urd upstream-gap-4.7.9/src/scanner.c src/scanner.c
+--- upstream-gap-4.7.9/src/scanner.c	2015-11-29 20:45:39.000000000 +0000
++++ src/scanner.c	2015-12-24 06:49:21.044041609 +0000
 @@ -59,6 +59,8 @@
  #include        "opers.h"               /* DoFilter...                     */
  #include        "read.h"                /* Call0ArgsInNewReader            */
@@ -333,9 +337,10 @@ diff -urd upstream-gap-4.7.8/src/scanner.c src/scanner.c
  }
  
  /****************************************************************************
-diff -urd upstream-gap-4.7.8/src/sysfiles.c src/sysfiles.c
---- upstream-gap-4.7.8/src/sysfiles.c	2015-06-09 21:38:36.000000000 +0100
-+++ src/sysfiles.c	2015-12-24 06:39:27.891653399 +0000
+Only in src: stamp-h1
+diff -urd upstream-gap-4.7.9/src/sysfiles.c src/sysfiles.c
+--- upstream-gap-4.7.9/src/sysfiles.c	2015-11-29 20:45:39.000000000 +0000
++++ src/sysfiles.c	2015-12-24 06:49:21.048041618 +0000
 @@ -38,6 +38,8 @@
  #include        "records.h"             /* generic records                 */
  #include        "bool.h"                /* Global True and False           */
