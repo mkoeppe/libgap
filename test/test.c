@@ -115,7 +115,7 @@ void check(char* input, char* expected)
   libgap_start_interaction(input);
   
   ExecStatus status;
-  status = ReadEvalCommand(BottomLVars);
+  status = ReadEvalCommand(BottomLVars, 0); /* 2nd parameter is "dualSemicolon" */
   libgap_exit();
   
   if (signal_occurred) {
