@@ -36,7 +36,8 @@ libgapinclude_HEADERS = \
   pperm.h     trans.h \
   libgap.h    libgap_internal.h \
   aobjects.h  atomic.h    ffdata.h    objccoll-impl.h \
-  objscoll-impl.h profile.h thread.h tls.h
+  objscoll-impl.h profile.h thread.h tls.h \
+  gap_version.h
 
 
 libgap_la_CFLAGS = $(AM_CFLAGS) \
