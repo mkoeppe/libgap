@@ -55,7 +55,6 @@ int libgap_in_enter_exit_block = 0; /* false */
 extern char **sysenviron;
 extern Int NrImportedGVars;
 extern Int NrImportedFuncs;
-extern Obj ErrorHandler;
 
 
 
@@ -68,7 +67,6 @@ void libgap_initialize(int argc, char** argv)
   sysenviron = environ;
   NrImportedGVars = 0;
   NrImportedFuncs = 0;
-  ErrorHandler = (Obj) 0;
   UserHasQUIT = 0;
   UserHasQuit = 0;
   libgap_mark_stack_bottom();
