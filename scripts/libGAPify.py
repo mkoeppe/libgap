@@ -33,7 +33,10 @@ class Lexer_C(object):
         'termios', 'termio', 'sgttyb', 'rusage', 'pid_t',
         'vm_address_t', 'printf', '__builtin_frame_address',
         'RTLD_LAZY', 'WEXITSTATUS', 'WIFEXITED',
-        'mp_limb_t', 'mp_size_t'
+        'mp_limb_t', 'mp_size_t',
+        # C99-int specific stuff
+        'int8_t',  'int16_t',   'int32_t',   'int64_t',
+        'uint8_t', 'uint16_t',  'uint32_t',  'uint64_t'
         )
     
     tokens = (
