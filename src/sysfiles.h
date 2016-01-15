@@ -307,9 +307,17 @@ extern void SyFputs (
 **
 **  'SyIsIntr' returns 1 if the user typed '<ctr>-C' and 0 otherwise.
 */
+
 extern void SyInstallAnswerIntr ( void );
 
 extern UInt SyIsIntr ( void );
+
+extern int SyHaveAlarms;
+extern volatile int SyAlarmRunning;
+extern volatile int SyAlarmHasGoneOff;
+
+extern void SyInstallAlarm( UInt seconds, UInt nanoseconds);
+extern void SyStopAlarm( UInt *seconds, UInt *nanoseconds);
 
 
 /****************************************************************************
@@ -545,10 +553,14 @@ extern Obj SyIsDir (
 
 /****************************************************************************
 **
-*F  SyFindGapRootFile( <filename> ) . . . . . . . .  find file in system area
+*F  SyFindGapRootFile( <filename>, <buffer> ) . . .  find file in system area
+**
+**  <buffer> must point to a buffer of at least 256 characters. The returned
+**  pointer will either be NULL, or into <buffer>
 */
 extern Char * SyFindGapRootFile (
-            const Char *    filename );
+            const Char *    filename,
+            Char *          buffer);
 
 
 /****************************************************************************

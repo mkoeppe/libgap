@@ -17,10 +17,10 @@
 **  except file/stream handling which is done in "sysfiles.h".
 */
 
-#define _GNU_SOURCE  /* is used for ptsname_r prototype etc. */
-
 #ifndef GAP_SYSTEM_H
 #define GAP_SYSTEM_H
+
+#define NOOP ((void) 0)
 
 /****************************************************************************
 **
@@ -120,8 +120,32 @@
 **  '(U)Int' should be the same length as a bag identifier
 */
 
-/* 64 bit machines -- well alphas anyway                                   */
+
+#if HAVE_STDINT_H
+#include <stdint.h>
+typedef char              Char;
+
+typedef int8_t   Int1;
+typedef int16_t  Int2;
+typedef int32_t  Int4;
+typedef int64_t  Int8;
+
+typedef uint8_t  UChar;
+typedef uint8_t  UInt1;
+typedef uint16_t UInt2;
+typedef uint32_t UInt4;
+typedef uint64_t UInt8;
+
 #ifdef SYS_IS_64_BIT
+typedef Int8     Int;
+typedef UInt8    UInt;
+#else
+typedef Int4     Int;
+typedef UInt4    UInt;
+#endif
+
+/* 64 bit machines                                                         */
+#elif defined( SYS_IS_64_BIT )
 typedef char                    Char;
 typedef signed char             Int1;
 typedef short int               Int2;
@@ -135,7 +159,7 @@ typedef unsigned int            UInt4;
 typedef unsigned long int       UInt8;
 typedef unsigned long int       UInt;
 
-/* 32bit machines                                                          */
+/* 32 bit machines                                                         */
 #else
 typedef char                    Char;
 typedef signed char             Int1;
@@ -150,44 +174,6 @@ typedef unsigned long int       UInt4;
 typedef unsigned long int       UInt;
 typedef unsigned long long int  UInt8;
 
-#endif
-
-
-/****************************************************************************
-**
-*F  Macros to allow detection of dangerous assignments
-**
-**  NL makes its argument not a valid lvalue, but has no effect at runtime
-*/
-
-#ifdef __GNUC__ 
-static inline Char IDENT_Char(Char x)
-{
-     return x;
-}
-#define NL_Char(x) (IDENT_Char((x)))
-#else
-#define NL_Char(x) (x)
-#endif
-
-#ifdef __GNUC__ 
-static inline Int IDENT_Int(Int x)
-{
-     return x;
-}
-#define NL_Int(x) (IDENT_Int((x)))
-#else
-#define NL_Int(x) (x)
-#endif
-
-#ifdef __GNUC__ 
-static inline UInt IDENT_UInt(UInt x)
-{
-     return x;
-}
-#define NL_UInt(x) (IDENT_UInt((x)))
-#else
-#define NL_UInt(x) (x)
 #endif
 
 
@@ -238,41 +224,14 @@ extern const Char * SyArchitecture;
 /****************************************************************************
 **
 *V  SyKernelVersion  . . . . . . . . . . . . . . . .  kernel version number
+*V  SyBuildVersion . . . . . . . . . . . . . . . . .  kernel version number
+*V  SyBuildDateTime  . . . . . . . . . . . . . . . .  kernel build time
+**
+** SyBuildVersion will replace SyKernelVersion
 */
 extern const Char * SyKernelVersion;
-
-/****************************************************************************
-**
-*V  SyAutoloadPackages  . . . . . . . . . .  automatically load packages
-**
-**  0: no 
-**  1: yes
-*/
-extern UInt SyAutoloadPackages;
-
-/****************************************************************************
-**
-*V  SyBreakSuppress  . . . . . . . . never enter a break loop
-**
-**  0: no 
-**  1: yes
-*/
-extern UInt SyBreakSuppress;
-
-
-/****************************************************************************
-**
-*V  SyBanner  . . . . . . . . . . . . . . . . . . . . . . . . surpress banner
-**
-**  'SyBanner' determines whether GAP should print the banner.
-**
-**  Per default it  is true,  i.e.,  GAP prints the  nice  banner.  It can be
-**  changed by the '-b' option to have GAP surpress the banner.
-**
-**  Put in this package because the command line processing takes place here.
-*/
-extern UInt SyBanner;
-
+extern const Char * SyBuildVersion;
+extern const Char * SyBuildDateTime;
 
 /****************************************************************************
 **
@@ -683,65 +642,11 @@ extern UInt SyTimeChildrenSys ( void );
 
 /****************************************************************************
 **
-*F  SyStrlen( <str> ) . . . . . . . . . . . . . . . . . .  length of a string
-**
-**  'SyStrlen' returns the length of the string <str>, i.e.,  the  number  of
-**  characters in <str> that precede the terminating null character.
-*/
-extern UInt SyStrlen (
-            const Char *     str );
-
-
-/****************************************************************************
-**
-*F  SyStrcmp( <str1>, <str2> )  . . . . . . . . . . . . . compare two strings
-**
-**  'SyStrcmp' returns an integer greater than, equal to, or less  than  zero
-**  according to whether <str1> is greater  than,  equal  to,  or  less  than
-**  <str2> lexicographically.
-*/
-extern Int SyStrcmp (
-            const Char *    str1,
-            const Char *    str2 );
-
-
-/****************************************************************************
-**
-*F  SyStrncmp( <str1>, <str2>, <len> )  . . . . . . . . . compare two strings
-**
-**  'SyStrncmp' returns an integer greater than, equal to,  or less than zero
-**  according  to whether  <str1>  is greater than,  equal  to,  or less than
-**  <str2> lexicographically.  'SyStrncmp' compares at most <len> characters.
-*/
-extern Int SyStrncmp (
-            const Char *    str1,
-            const Char *    str2,
-            UInt            len );
-
-/****************************************************************************
-**
 *F  SyIntString( <string> ) . . . . . . . . extract a C integer from a string
 **
 */
 
 extern Int SyIntString( const Char *string );
-
-
-
-/****************************************************************************
-**
-*F  SyStrncat( <dst>, <src>, <len> )  . . . . .  append one string to another
-**
-**  'SyStrncat'  appends characters from the  <src>  to <dst>  until either a
-**  null character  is  encoutered  or  <len>  characters have   been copied.
-**  <dst> becomes the concatenation of <dst> and <src>.  The resulting string
-**  is always null terminated.  'SyStrncat' returns a pointer to <dst>.
-*/
-extern Char * SyStrncat (
-            Char *              dst,
-            const Char *        src,
-            UInt                len );
-
 
 
 /****************************************************************************
@@ -1148,6 +1053,8 @@ extern Char *getOptionArg(Char key, UInt which);
 #endif
 #endif
 
+extern syJmp_buf AlarmJumpBuffer;
+
 
 
 /****************************************************************************
@@ -1165,6 +1072,11 @@ extern Char *getOptionArg(Char key, UInt which);
 extern void InitSystem (
             Int                 argc,
             Char *              argv [] );
+
+
+// FIXME: The TLS macro is for compatibility with the HPC-GAP branch, and helps
+// to keep the diffs between it and master branch small(er).
+#define TLS(x) x
 
 
 #endif // GAP_SYSTEM_H

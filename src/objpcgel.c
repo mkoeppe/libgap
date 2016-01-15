@@ -16,6 +16,7 @@
 
 #include        "gvars.h"               /* global variables                */
 #include        "gap.h"                 /* error handling, initialisation  */
+#include        "tls.h"                 /* thread-local storage            */
 
 #include        "calls.h"               /* generic call mechanism          */
 
@@ -29,10 +30,14 @@
 #include        "ariths.h"              /* basic arithmetic                */
 #include        "bool.h"                /* booleans                        */
 
+#include        "code.h"                /* coder                           */
+#include        "tls.h"                 /* thread-local storage            */
 #include        "objfgelm.h"            /* objects of free groups          */
 #include        "objscoll.h"            /* single collector                */
 
 #include        "objpcgel.h"            /* objects of polycyclic groups    */
+
+#include	"thread.h"		/* threads			   */
 
 
 /****************************************************************************
@@ -746,7 +751,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoPcElements ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

@@ -114,6 +114,10 @@
 
 #include        "intfuncs.h"
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
 #include <stdio.h>
 
 /* for fallbacks to library */
@@ -122,9 +126,9 @@ Obj String;
 
 /****************************************************************************
 **
-*F  TypeInt(<int>)  . . . . . . . . . . . . . . . . . . . . . kind of integer
+*F  TypeInt(<int>)  . . . . . . . . . . . . . . . . . . . . . type of integer
 **
-**  'TypeInt' returns the kind of the integer <int>.
+**  'TypeInt' returns the type of the integer <int>.
 **
 **  'TypeInt' is the function in 'TypeObjFuncs' for integers.
 */
@@ -509,6 +513,26 @@ void            PrintInt (
 }
 
 /****************************************************************************
+**  
+**  Implementation of Log2Int for C integers.
+*/
+
+Int CLog2Int(Int a)
+{
+  Int res, mask;
+  if (a < 0) a = -a;
+  if (a < 1) return -1;
+  if (a < 65536) {
+    for(mask = 2, res = 0; ;mask *= 2, res += 1) {
+      if(a < mask) return res;
+    }
+  }
+  for(mask = 65536, res = 15; ;mask *= 2, res += 1) {
+    if(a < mask) return res;
+  }
+}
+
+/****************************************************************************
 **
 *F  FuncLog2Int( <self>, <int> ) . . . . . . . . . nr of bits of integer - 1
 **
@@ -516,20 +540,13 @@ void            PrintInt (
 */
 Obj FuncLog2Int( Obj self, Obj integer)
 {
-  Int res, d;
+  Int d;
   Int a, len;
-  Int mask;
   TypDigit dmask;
 
   /* case of small ints */
   if (IS_INTOBJ(integer)) {
-    a = INT_INTOBJ(integer);
-    if (a < 0) a = -a;
-    res = NR_SMALL_INT_BITS;
-    for(res = NR_SMALL_INT_BITS - 1, mask = (Int)1 << (NR_SMALL_INT_BITS-1);
-        (mask & a) == 0 && mask != (Int)0;
-        mask = mask >> 1, res--);
-    return INTOBJ_INT(res);
+    return INTOBJ_INT(CLog2Int(INT_INTOBJ(integer)));
   }
 
   /* case of long ints */
@@ -1639,6 +1656,8 @@ Obj             PowInt (
     Obj                 pow;
 
     /* power with a large exponent                                         */
+    ReadGuard(opL);
+    ReadGuard(opR);
     if ( ! IS_INTOBJ(opR) ) {
         if ( opL == INTOBJ_INT(0) )
             pow = INTOBJ_INT(0);
@@ -2071,7 +2090,7 @@ Obj FuncIS_INT (
       || TNUM_OBJ(val) == T_INTNEG ) {
         return True;
     }
-    else if ( TNUM_OBJ(val) <= FIRST_EXTERNAL_TNUM ) {
+    else if ( TNUM_OBJ(val) < FIRST_EXTERNAL_TNUM ) {
         return False;
     }
     else {
@@ -3328,10 +3347,13 @@ static Int InitKernel (
     ImportFuncFromLibrary( "String", &String );
     ImportFuncFromLibrary( "One", &OneAttr);
 
-    /* install the kind functions                                          */
+    /* install the type functions                                          */
     TypeObjFuncs[ T_INT    ] = TypeIntSmall;
     TypeObjFuncs[ T_INTPOS ] = TypeIntLargePos;
     TypeObjFuncs[ T_INTNEG ] = TypeIntLargeNeg;
+
+    MakeBagTypePublic( T_INTPOS );
+    MakeBagTypePublic( T_INTNEG );
 
     /* return success                                                      */
     return 0;
@@ -3385,7 +3407,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoInt ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

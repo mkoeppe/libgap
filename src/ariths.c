@@ -33,6 +33,11 @@
 #include        "lists.h"               /* generic lists                   */
 #include        "string.h"              /* strings                         */
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
+
 
 /****************************************************************************
 **
@@ -2006,7 +2011,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoAriths ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

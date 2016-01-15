@@ -44,6 +44,10 @@
 
 #include        "range.h"               /* ranges                          */
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
 #include <assert.h>
 
 #define IS_IMM_PLIST(list)  ((TNUM_OBJ(list) - T_PLIST) % 2)
@@ -792,7 +796,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoVector ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

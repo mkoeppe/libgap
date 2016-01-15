@@ -31,6 +31,10 @@
 #include        "string.h"
 #include        <assert.h>
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
 /* the following two declarations would belong in `saveload.h', but then all
  * files get macfloat dependencies */
 extern Double LoadDouble( void);
@@ -50,9 +54,9 @@ extern void SaveDouble( Double d);
 
 /****************************************************************************
 **
-*F  TypeMacfloat( <macfloat> )  . . . . . . . . . . . . . . . kind of a macfloat value
+*F  TypeMacfloat( <macfloat> )  . . . . . . . . . .  type of a macfloat value
 **
-**  'TypeMacfloat' returns the kind of macfloatean values.
+**  'TypeMacfloat' returns the type of macfloatean values.
 **
 **  'TypeMacfloat' is the function in 'TypeObjFuncs' for macfloatean values.
 */
@@ -570,12 +574,13 @@ static Int InitKernel (
     /* install the marking functions for macfloatean values                    */
     InfoBags[ T_MACFLOAT ].name = "macfloat";
     InitMarkFuncBags( T_MACFLOAT, MarkNoSubBags );
+    MakeBagTypePublic( T_MACFLOAT );
 
     /* init filters and functions                                          */
     InitHdlrFiltsFromTable( GVarFilts );
     InitHdlrFuncsFromTable( GVarFuncs );
 
-    /* install the kind function                                           */
+    /* install the type function                                           */
     ImportGVarFromLibrary( "TYPE_MACFLOAT", &TYPE_MACFLOAT );
     TypeObjFuncs[ T_MACFLOAT ] = TypeMacfloat;
 
@@ -669,7 +674,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoMacfloat ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

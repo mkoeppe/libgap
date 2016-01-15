@@ -9,6 +9,8 @@
 **
 **  This file contains the functions of the objects package.
 */
+#include	<stdlib.h>
+
 #include        "system.h"              /* Ints, UInts, SyIsIntr           */
 
 
@@ -38,17 +40,50 @@
 
 #include        "saveload.h"            /* saving and loading              */
 
+#include        "aobjects.h"            /* atomic objects                  */
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+//#include	"traverse.h"		/* object traversal		   */
+#include	"tls.h"			/* thread-local storage		   */
+
+
+static Int lastFreePackageTNUM = FIRST_PACKAGE_TNUM;
+
+/****************************************************************************
+**
+*F  RegisterPackageTNUM( <name>, <typeObjFunc> )
+**
+**  Allocates a TNUM for use by a package. The parameters <name> and
+**  <typeObjFunc> are used to initialize the relevant entries in the
+**  InfoBags and TypeObjFuncs arrays.
+**
+**  If allocation fails (e.g. because no more TNUMs are available),
+**  a negative value is returned.
+*/
+Int RegisterPackageTNUM( const char *name, Obj (*typeObjFunc)(Obj obj) )
+{
+    if (lastFreePackageTNUM > LAST_PACKAGE_TNUM)
+        return -1;
+
+    Int tnum = lastFreePackageTNUM++;
+
+    InfoBags[tnum].name = name;
+    TypeObjFuncs[tnum] = typeObjFunc;
+
+    return tnum;
+}
+
 
 /****************************************************************************
 **
 
-*F  FamilyTypeHandler( <self>, <kind> ) . . . . . . handler for 'FAMILY_TYPE'
+*F  FamilyTypeHandler( <self>, <type> ) . . . . . . handler for 'FAMILY_TYPE'
 */
 Obj FamilyTypeHandler (
     Obj                 self,
-    Obj                 kind )
+    Obj                 type )
 {
-    return FAMILY_TYPE( kind );
+    return FAMILY_TYPE( type );
 }
 
 
@@ -67,13 +102,13 @@ Obj FamilyObjHandler (
 /****************************************************************************
 **
 
-*F  TYPE_OBJ( <obj> ) . . . . . . . . . . . . . . . . . . . kind of an object
+*F  TYPE_OBJ( <obj> ) . . . . . . . . . . . . . . . . . . . type of an object
 **
-**  'TYPE_OBJ' returns the kind of the object <obj>.
+**  'TYPE_OBJ' returns the type of the object <obj>.
 **
 **  'TYPE_OBJ' is defined in the declaration part of this package.
 */
-Obj (*TypeObjFuncs[ LAST_REAL_TNUM+1 ]) ( Obj obj );
+Obj (*TypeObjFuncs[LAST_REAL_TNUM+1]) ( Obj obj );
 
 Obj TypeObjError (
     Obj                 obj )
@@ -106,7 +141,7 @@ Obj TypeObjHandler (
 **
 **  'IS_MUTABLE_OBJ' is defined in the declaration part of this package.
 */
-Int (*IsMutableObjFuncs[ LAST_REAL_TNUM+1 ]) ( Obj obj );
+Int (*IsMutableObjFuncs[LAST_REAL_TNUM+1]) ( Obj obj );
 
 Obj IsMutableObjFilt;
 
@@ -153,7 +188,7 @@ Obj IsMutableObjHandler (
 **
 **  'IS_COPYABLE_OBJ' is defined in the declaration part of this package.
 */
-Int (*IsCopyableObjFuncs[ LAST_REAL_TNUM+1 ]) ( Obj obj );
+Int (*IsCopyableObjFuncs[LAST_REAL_TNUM+1]) ( Obj obj );
 
 Obj IsCopyableObjFilt;
 
@@ -196,7 +231,7 @@ Obj IsCopyableObjHandler (
 
 *V  ShallowCopyObjFuncs[<type>] . . . . . . . . . .  shallow copier functions
 */
-Obj (*ShallowCopyObjFuncs[ LAST_REAL_TNUM+1 ]) ( Obj obj );
+Obj (*ShallowCopyObjFuncs[LAST_REAL_TNUM+1]) ( Obj obj );
 
 Obj ShallowCopyObjOper;
 
@@ -812,8 +847,8 @@ static inline UInt IS_MARKED( Obj obj )
   UInt i;
   if (!IS_MARKABLE(obj))
     return 0;
-  for (i = 0; i < PrintObjDepth-1; i++)
-    if (PrintObjThiss[i] == obj)
+  for (i = 0; i < TLS(PrintObjDepth)-1; i++)
+    if (TLS(PrintObjThiss)[i] == obj)
       return 1;
   return 0;
 }
@@ -840,13 +875,13 @@ void            PrintObj (
 
     /* check for interrupts                                                */
     if ( SyIsIntr() ) {
-        i = PrintObjDepth;
+        i = TLS(PrintObjDepth);
         Pr( "%c%c", (Int)'\03', (Int)'\04' );
         ErrorReturnVoid(
             "user interrupt while printing",
             0L, 0L,
             "you can 'return;'" );
-        PrintObjDepth = i;
+        TLS(PrintObjDepth) = i;
     }
 
     /* First check if <obj> is actually the current object being Viewed
@@ -854,29 +889,29 @@ void            PrintObj (
 
     lastPV = LastPV;
     LastPV = 1;
-    fromview = (lastPV == 2) && (obj == PrintObjThis);
-    
+    fromview = (lastPV == 2) && (obj == TLS(PrintObjThis));
+
     /* if <obj> is a subobject, then mark and remember the superobject
        unless ViewObj has done that job already */
     
-    if ( !fromview  && 0 < PrintObjDepth ) {
-        if ( IS_MARKABLE(PrintObjThis) )  MARK( PrintObjThis );
-        PrintObjThiss[PrintObjDepth-1]   = PrintObjThis;
-        PrintObjIndices[PrintObjDepth-1] = PrintObjIndex;
+    if ( !fromview  && 0 < TLS(PrintObjDepth) ) {
+        if ( IS_MARKABLE(TLS(PrintObjThis)) )  MARK( TLS(PrintObjThis) );
+        TLS(PrintObjThiss)[TLS(PrintObjDepth)-1]   = TLS(PrintObjThis);
+        TLS(PrintObjIndices)[TLS(PrintObjDepth)-1] = TLS(PrintObjIndex);
     }
 
     /* handle the <obj>                                                    */
     if (!fromview)
       {
-	PrintObjDepth += 1;
-	PrintObjThis   = obj;
-	PrintObjIndex  = 0;
+	TLS(PrintObjDepth) += 1;
+	TLS(PrintObjThis)   = obj;
+	TLS(PrintObjIndex)  = 0;
       }
 
     /* dispatch to the appropriate printing function                       */
-    if ( (! IS_MARKED( PrintObjThis )) ) {
-      if (PrintObjDepth < MAXPRINTDEPTH) {
-        (*PrintObjFuncs[ TNUM_OBJ(PrintObjThis) ])( PrintObjThis );
+    if ( (! IS_MARKED( TLS(PrintObjThis) )) ) {
+      if (TLS(PrintObjDepth) < MAXPRINTDEPTH) {
+        (*PrintObjFuncs[ TNUM_OBJ(TLS(PrintObjThis)) ])( TLS(PrintObjThis) );
       }
       else {
         /* don't recurse if depth too high */
@@ -887,9 +922,9 @@ void            PrintObj (
     /* or print the path                                                   */
     else {
         Pr( "~", 0L, 0L );
-        for ( i = 0; PrintObjThis != PrintObjThiss[i]; i++ ) {
-            (*PrintPathFuncs[ TNUM_OBJ(PrintObjThiss[i])])
-                ( PrintObjThiss[i], PrintObjIndices[i] );
+        for ( i = 0; TLS(PrintObjThis) != TLS(PrintObjThiss)[i]; i++ ) {
+            (*PrintPathFuncs[ TNUM_OBJ(TLS(PrintObjThiss)[i])])
+                ( TLS(PrintObjThiss)[i], TLS(PrintObjIndices)[i] );
         }
     }
 
@@ -897,13 +932,13 @@ void            PrintObj (
     /* done with <obj>                                                     */
     if (!fromview)
       {
-	PrintObjDepth -= 1;
+	TLS(PrintObjDepth) -= 1;
 	
 	/* if <obj> is a subobject, then restore and unmark the superobject    */
-	if ( 0 < PrintObjDepth ) {
-	  PrintObjThis  = PrintObjThiss[PrintObjDepth-1];
-	  PrintObjIndex = PrintObjIndices[PrintObjDepth-1];
-	  if ( IS_MARKED(PrintObjThis) )  UNMARK( PrintObjThis );
+	if ( 0 < TLS(PrintObjDepth) ) {
+	  TLS(PrintObjThis)  = TLS(PrintObjThiss)[TLS(PrintObjDepth)-1];
+	  TLS(PrintObjIndex) = TLS(PrintObjIndices)[TLS(PrintObjDepth)-1];
+	  if ( IS_MARKED(TLS(PrintObjThis)) )  UNMARK( TLS(PrintObjThis) );
 	}
       }
     LastPV = lastPV;
@@ -953,7 +988,7 @@ Obj PrintObjHandler (
 Obj FuncSET_PRINT_OBJ_INDEX (Obj self, Obj ind)
 {
   if (IS_INTOBJ(ind))
-    PrintObjIndex = INT_INTOBJ(ind);
+    TLS(PrintObjIndex) = INT_INTOBJ(ind);
   return 0;
 }
 
@@ -980,21 +1015,21 @@ void            ViewObj (
     LastPV = 2;
     
     /* if <obj> is a subobject, then mark and remember the superobject     */
-    if ( 0 < PrintObjDepth ) {
-        if ( IS_MARKABLE(PrintObjThis) )  MARK( PrintObjThis );
-        PrintObjThiss[PrintObjDepth-1]   = PrintObjThis;
-        PrintObjIndices[PrintObjDepth-1] =  PrintObjIndex;
+    if ( 0 < TLS(PrintObjDepth) ) {
+        if ( IS_MARKABLE(TLS(PrintObjThis)) )  MARK( TLS(PrintObjThis) );
+        TLS(PrintObjThiss)[TLS(PrintObjDepth)-1]   = TLS(PrintObjThis);
+        TLS(PrintObjIndices)[TLS(PrintObjDepth)-1] =  TLS(PrintObjIndex);
     }
 
     /* handle the <obj>                                                    */
-    PrintObjDepth += 1;
-    PrintObjThis   = obj;
-    PrintObjIndex  = 0;
+    TLS(PrintObjDepth) += 1;
+    TLS(PrintObjThis)   = obj;
+    TLS(PrintObjIndex)  = 0;
 
     /* dispatch to the appropriate viewing function                       */
 
-    if ( ! IS_MARKED( PrintObjThis ) ) {
-      if (PrintObjDepth < MAXPRINTDEPTH) {
+    if ( ! IS_MARKED( TLS(PrintObjThis) ) ) {
+      if (TLS(PrintObjDepth) < MAXPRINTDEPTH) {
         DoOperation1Args( ViewObjOper, obj );
       }
       else {
@@ -1006,20 +1041,20 @@ void            ViewObj (
     /* or view the path                                                   */
     else {
         Pr( "~", 0L, 0L );
-        for ( i = 0; PrintObjThis != PrintObjThiss[i]; i++ ) {
-            (*PrintPathFuncs[ TNUM_OBJ(PrintObjThiss[i]) ])
-                ( PrintObjThiss[i], PrintObjIndices[i] );
+        for ( i = 0; TLS(PrintObjThis) != TLS(PrintObjThiss)[i]; i++ ) {
+            (*PrintPathFuncs[ TNUM_OBJ(TLS(PrintObjThiss)[i]) ])
+                ( TLS(PrintObjThiss)[i], TLS(PrintObjIndices)[i] );
         }
     }
 
     /* done with <obj>                                                     */
-    PrintObjDepth -= 1;
+    TLS(PrintObjDepth) -= 1;
 
     /* if <obj> is a subobject, then restore and unmark the superobject    */
-    if ( 0 < PrintObjDepth ) {
-        PrintObjThis  = PrintObjThiss[PrintObjDepth-1];
-        PrintObjIndex = PrintObjIndices[PrintObjDepth-1];
-        if ( IS_MARKED(PrintObjThis) )  UNMARK( PrintObjThis );
+    if ( 0 < TLS(PrintObjDepth) ) {
+        TLS(PrintObjThis)  = TLS(PrintObjThiss)[TLS(PrintObjDepth)-1];
+        TLS(PrintObjIndex) = TLS(PrintObjIndices)[TLS(PrintObjDepth)-1];
+        if ( IS_MARKED(TLS(PrintObjThis)) )  UNMARK( TLS(PrintObjThis) );
     }
 
     LastPV = lastPV;
@@ -1087,14 +1122,14 @@ Obj             IS_COMOBJ_Handler (
 
 /****************************************************************************
 **
-*F  SET_TYPE_COMOBJ_Handler( <self>, <obj>, <kind> ) . . .  'SET_TYPE_COMOBJ'
+*F  SET_TYPE_COMOBJ_Handler( <self>, <obj>, <type> ) . . .  'SET_TYPE_COMOBJ'
 */
 Obj SET_TYPE_COMOBJ_Handler (
     Obj                 self,
     Obj                 obj,
-    Obj                 kind )
+    Obj                 type )
 {
-    TYPE_COMOBJ( obj ) = kind;
+    TYPE_COMOBJ( obj ) = type;
     RetypeBag( obj, T_COMOBJ );
     CHANGED_BAG( obj );
     return obj;
@@ -1127,14 +1162,14 @@ Obj IS_POSOBJ_Handler (
 
 /****************************************************************************
 **
-*F  SET_TYPE_POSOBJ_Handler( <self>, <obj>, <kind> )  . . .  'SET_TYPE_POSOB'
+*F  SET_TYPE_POSOBJ_Handler( <self>, <obj>, <type> )  . . .  'SET_TYPE_POSOB'
 */
 Obj SET_TYPE_POSOBJ_Handler (
     Obj                 self,
     Obj                 obj,
-    Obj                 kind )
+    Obj                 type )
 {
-    TYPE_POSOBJ( obj ) = kind;
+    TYPE_POSOBJ( obj ) = type;
     RetypeBag( obj, T_POSOBJ );
     CHANGED_BAG( obj );
     return obj;
@@ -1179,14 +1214,14 @@ Obj             IS_DATOBJ_Handler (
 
 /****************************************************************************
 **
-*F  SET_TYPE_DATOBJ_Handler( <self>, <obj>, <kind> ) . . .  'SET_TYPE_DATOBJ'
+*F  SET_TYPE_DATOBJ_Handler( <self>, <obj>, <type> ) . . .  'SET_TYPE_DATOBJ'
 */
 Obj SET_TYPE_DATOBJ_Handler (
     Obj                 self,
     Obj                 obj,
-    Obj                 kind )
+    Obj                 type )
 {
-    TYPE_DATOBJ( obj ) = kind;
+    TYPE_DATOBJ( obj ) = type;
     RetypeBag( obj, T_DATOBJ );
     CHANGED_BAG( obj );
     return obj;
@@ -1223,11 +1258,9 @@ Obj IsIdenticalHandler (
 **  No saving function may allocate any bag
 */
 
-void (*SaveObjFuncs[ 256 ]) (Obj obj);
+void (*SaveObjFuncs[256]) ( Obj obj );
 
-void SaveObjError (
-                   Obj obj
-                   )
+void SaveObjError( Obj obj )
 {
   ErrorQuit(
             "Panic: tried to save an object of unknown type '%d'",
@@ -1252,11 +1285,9 @@ void SaveObjError (
 **  No loading function may allocate any bag
 */
 
-void (*LoadObjFuncs[ 256 ]) (Bag bag);
+void (*LoadObjFuncs[256]) ( Obj obj );
 
-void LoadObjError (
-                   Obj obj
-                   )
+void LoadObjError( Obj obj )
 {
   ErrorQuit(
             "Panic: tried to load an object of unknown type '%d'",
@@ -1460,6 +1491,52 @@ Obj FuncCLONE_OBJ (
     return 0;
 }
 
+/****************************************************************************
+**
+
+*F  FuncSWITCH_OBJ( <self>, <obj1>, <obj2> ) . . .  switch <obj1> and <obj2>
+**
+**  `SWITCH_OBJ' exchanges the objects referenced by its two arguments.  It
+**   is not allowed to switch clone small integers or finite field elements.
+**
+**   This is inspired by the Smalltalk 'become:' operation.
+*/
+
+Obj FuncSWITCH_OBJ(Obj self, Obj obj1, Obj obj2) {
+    Obj *ptr1, *ptr2;
+
+    if ( IS_INTOBJ(obj1) || IS_INTOBJ(obj2) ) {
+        ErrorReturnVoid( "small integer objects cannot be switched", 0, 0,
+                         "you can 'return;' to leave them in place" );
+        return 0;
+    }
+    if ( IS_FFE(obj1) || IS_FFE(obj2) ) {
+        ErrorReturnVoid( "finite field elements cannot be switched", 0, 0,
+                         "you can 'return;' to leave them in place" );
+        return 0;
+    }
+    ptr1 = PTR_BAG(obj1);
+    ptr2 = PTR_BAG(obj2);
+    PTR_BAG(obj2) = ptr1;
+    PTR_BAG(obj1) = ptr2;
+    CHANGED_BAG(obj1);
+    CHANGED_BAG(obj2);
+    return (Obj) 0;
+}
+
+
+/****************************************************************************
+**
+
+*F  FuncFORCE_SWITCH_OBJ( <self>, <obj1>, <obj2> ) .  switch <obj1> and <obj2>
+**
+**  In GAP, FORCE_SWITCH_OBJ does the same thing as SWITCH_OBJ. In HPC_GAP
+**  it allows public objects to be exchanged.
+*/
+
+Obj FuncFORCE_SWITCH_OBJ(Obj self, Obj obj1, Obj obj2) {
+    return FuncSWITCH_OBJ(self, obj1, obj2);
+}
 
 /****************************************************************************
 **
@@ -1512,7 +1589,7 @@ static StructGVarOper GVarOpers [] = {
 */
 static StructGVarFunc GVarFuncs [] = {
 
-    { "FAMILY_TYPE", 1, "kind",
+    { "FAMILY_TYPE", 1, "type",
       FamilyTypeHandler, "src/objects.c:FAMILY_TYPE" },
 
     { "TYPE_OBJ", 1, "obj",
@@ -1554,6 +1631,12 @@ static StructGVarFunc GVarFuncs [] = {
     { "CLONE_OBJ", 2, "obj, dst, src",
       FuncCLONE_OBJ, "src/objects.c:CLONE_OBJ" },
 
+    { "SWITCH_OBJ", 2, "obj1, obj2",
+      FuncSWITCH_OBJ, "src/objects.c:SWITCH_OBJ" },
+
+    { "FORCE_SWITCH_OBJ", 2, "obj1, obj2",
+      FuncFORCE_SWITCH_OBJ, "src/objects.c:FORCE_SWITCH_OBJ" },
+
     { "SET_PRINT_OBJ_INDEX", 1, "index",
       FuncSET_PRINT_OBJ_INDEX, "src/objects.c:SET_PRINT_OBJ_INDEX" },
 
@@ -1589,9 +1672,9 @@ static Int InitKernel (
     InfoBags[         T_DATOBJ +COPYING ].name = "object (data,copied)";
     InitMarkFuncBags( T_DATOBJ +COPYING , MarkOneSubBags  );
 
-
-    for ( t = FIRST_REAL_TNUM; t <= LAST_REAL_TNUM; t++ )
+    for ( t = FIRST_REAL_TNUM; t <= LAST_REAL_TNUM; t++ ) {
         TypeObjFuncs[ t ] = TypeObjError;
+    }
 
     TypeObjFuncs[ T_COMOBJ ] = TypeComObj;
     TypeObjFuncs[ T_POSOBJ ] = TypePosObj;
@@ -1784,7 +1867,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoObjects ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 
@@ -1794,4 +1876,3 @@ StructInitInfo * InitInfoObjects ( void )
 
 *E  objects.c . . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-

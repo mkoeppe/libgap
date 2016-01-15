@@ -16,6 +16,16 @@
 #ifndef GAP_STATS_H
 #define GAP_STATS_H
 
+/****************************************************************************
+**
+*V  ExecStatFuncs[<type>] . . . . . .  executor for statements of type <type>
+**
+**  'ExecStatFuncs' is   the dispatch table  that contains  for every type of
+**  statements a pointer to the executor  for statements of  this type, i.e.,
+**  the function  that should  be  called  if a  statement   of that type  is
+**  executed.
+*/
+extern  UInt            (* ExecStatFuncs[256]) ( Stat stat );
 
 /****************************************************************************
 **
@@ -35,19 +45,14 @@
 **  executor, i.e., to the  function that executes statements  of the type of
 **  <stat>.
 */
-#define EXEC_STAT(stat) ( (*ExecStatFuncs[ TNUM_STAT(stat) ]) ( stat ) )
 
+#include <stdio.h>
 
-/****************************************************************************
-**
-*V  ExecStatFuncs[<type>] . . . . . .  executor for statements of type <type>
-**
-**  'ExecStatFuncs' is   the dispatch table  that contains  for every type of
-**  statements a pointer to the executor  for statements of  this type, i.e.,
-**  the function  that should  be  called  if a  statement   of that type  is
-**  executed.
-*/
-extern  UInt            (* ExecStatFuncs[256]) ( Stat stat );
+static inline UInt EXEC_STAT(Stat stat)
+{ 
+  return ( (*ExecStatFuncs[ TNUM_STAT(stat) ]) ( stat ) ); 
+}
+//#define EXEC_STAT(stat) ( (*ExecStatFuncs[ TNUM_STAT(stat) ]) ( stat ) )
 
 
 /****************************************************************************
@@ -69,10 +74,10 @@ extern  Stat            CurrStat;
 *F  RES_BRK_CURR_STAT() . . . . . . . . restore currently executing statement
 */
 #ifndef NO_BRK_CURR_STAT
-#define SET_BRK_CURR_STAT(stat) (CurrStat = (stat))
+#define SET_BRK_CURR_STAT(stat) (TLS(CurrStat) = (stat))
 #define OLD_BRK_CURR_STAT       Stat oldStat;
-#define REM_BRK_CURR_STAT()     (oldStat = CurrStat)
-#define RES_BRK_CURR_STAT()     (CurrStat = oldStat)
+#define REM_BRK_CURR_STAT()     (oldStat = TLS(CurrStat))
+#define RES_BRK_CURR_STAT()     (TLS(CurrStat) = oldStat)
 #endif
 #ifdef  NO_BRK_CURR_STAT
 #define SET_BRK_CURR_STAT(stat) /* do nothing */
@@ -105,6 +110,7 @@ extern UInt TakeInterrupt();
 **  those systems the executors test 'SyIsIntr' at regular intervals.
 */
 extern  void            InterruptExecStat ( );
+extern  void            UnInterruptExecStat ( );
 
 
 /****************************************************************************

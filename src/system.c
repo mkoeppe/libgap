@@ -33,6 +33,8 @@
 
 #include        "system.h"              /* system dependent part           */
 
+#include        "gap_version.h"         /* SCM information                 */
+
 #include        "gap.h"                 /* get UserHasQUIT                 */
 
 #include        "sysfiles.h"            /* file input/output               */
@@ -66,19 +68,40 @@
 #endif
 
 /****************************************************************************
+**  The following function is from profile.c. We put a prototype here
+**  Rather than #include "profile.h" to avoid pulling in large chunks
+**  of the GAP type system
+*/    
+Int enableProfilingAtStartup( Char **argv, void * dummy);
+Int enableCodeCoverageAtStartup( Char **argv, void * dummy);
+
+/****************************************************************************
 **
-*V  SyKernelVersion  . . . . . . . . . . . . . . . . name of the architecture
-** do not edit the following line. Occurences of `4.7.9' and `today'
+*V  SyKernelVersion  . . . . . . . . . . . . . . . hard coded kernel version
+** do not edit the following line. Occurences of `4.dev' and `today'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyKernelVersion = "4.7.9";
+const Char * SyKernelVersion = "4.dev";
+
+/****************************************************************************
+**
+*V  SyBuildVersion  . . . . . . . . . . . . . . . . source version for build 
+*V  SyBuildDate . . . . . . . . . . . . . . . . . . . date and time of build 
+** GAP_BUILD_VERSION is defined in a generated header file gap_version.h,
+** and will typically contain the tag and commit SHA that was used to build
+** the executable.
+**
+** This variable will replace SyKernelVersion above.
+*/
+const Char * SyBuildVersion  = GAP_BUILD_VERSION;
+const Char * SyBuildDateTime = GAP_BUILD_DATETIME;
 
 /****************************************************************************
 *V  SyWindowsPath  . . . . . . . . . . . . . . . . . default path for Windows
-** do not edit the following line. Occurences of `gap4r7'
+** do not edit the following line. Occurences of `gap4dev'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyWindowsPath = "/cygdrive/c/gap4r7";
+const Char * SyWindowsPath = "/cygdrive/c/gap4dev";
 
 /****************************************************************************
 **
@@ -364,7 +387,7 @@ Int SyStorOverrun;
 *V  SyStorKill . . . . . . . . . . . . . . . . . . maximal size of workspace
 **
 **  'SyStorKill' is really the maximal size of the workspace allocated by 
-**  Gasman. GAP exists before trying to allocate more than this amount
+**  Gasman in kB. GAP exits before trying to allocate more than this amount
 **  of memory.
 **
 **  This is per default disabled (i.e. = 0).
@@ -581,58 +604,9 @@ UInt SyTimeChildrenSys ( void )
 
 /****************************************************************************
 **
-*F  SyStrlen( <str> ) . . . . . . . . . . . . . . . . . .  length of a string
-**
-**  'SyStrlen' returns the length of the string <str>, i.e.,  the  number  of
-**  characters in <str> that precede the terminating null character.
-*/
-UInt SyStrlen (
-    const Char *         str )
-{
-    return strlen( str );
-}
-
-
-/****************************************************************************
-**
-*F  SyStrcmp( <str1>, <str2> )  . . . . . . . . . . . . . compare two strings
-**
-**  'SyStrcmp' returns an integer greater than, equal to, or less  than  zero
-**  according to whether <str1> is greater  than,  equal  to,  or  less  than
-**  <str2> lexicographically.
-*/
-Int SyStrcmp (
-    const Char *        str1,
-    const Char *        str2 )
-{
-    return strcmp( str1, str2 );
-}
-
-
-/****************************************************************************
-**
-*F  SyStrncmp( <str1>, <str2>, <len> )  . . . . . . . . . compare two strings
-**
-**  'SyStrncmp' returns an integer greater than, equal to,  or less than zero
-**  according  to whether  <str1>  is greater than,  equal  to,  or less than
-**  <str2> lexicographically.  'SyStrncmp' compares at most <len> characters.
-*/
-Int SyStrncmp (
-    const Char *        str1,
-    const Char *        str2,
-    UInt                len )
-{
-    return strncmp( str1, str2, len );
-}
-
-/****************************************************************************
-**
 *F  SyIntString( <string> ) . . . . . . . . extract a C integer from a string
 **
 */
-
-
-
 
 #if HAVE_ATOL
 Int SyIntString( const Char *string) {
@@ -661,27 +635,7 @@ Int SyIntString( const Char *string) {
   return sign*x;
 }
 
-
 #endif
-
-
-
-/****************************************************************************
-**
-*F  SyStrncat( <dst>, <src>, <len> )  . . . . .  append one string to another
-**
-**  'SyStrncat'  appends characters from the  <src>  to <dst>  until either a
-**  null character  is  encoutered  or  <len>  characters have   been copied.
-**  <dst> becomes the concatenation of <dst> and <src>.  The resulting string
-**  is always null terminated.  'SyStrncat' returns a pointer to <dst>.
-*/
-Char * SyStrncat (
-    Char *              dst,
-    const Char *        src,
-    UInt                len )
-{
-    return strncat( dst, src, len );
-}
 
 
 #ifndef HAVE_STRLCPY
@@ -1469,28 +1423,13 @@ void SySleep ( UInt secs )
 **
 **  If the user calls 'QUIT_GAP' with a value, then the global variable
 **  'UserHasQUIT' will be set, and their requested return value will be
-**  in 'UserHasQUITReturnValue'. If the return value would be 0, we check
+**  in 'SystemErrorCode'. If the return value would be 0, we check
 **  this calue and use it instead.
 */
 void SyExit (
     UInt                ret )
 {
-#if SYS_IS_CYGWIN32
-  if (ret!=0) {
-    Int c;
-    fputs("gap: Press <Enter> to end program\n",stderr);
-    do {
-      c=SyGetch(1);   /* wait for the user to type <return> */
-    } while (c!='\n' && c!=' ');
-  }
-
-#endif
-    if(ret == 0) {
-        exit(UserHasQUITReturnValue);
-    }
-    else {
         exit( (int)ret );
-    }
 }
 
 /****************************************************************************
@@ -1657,7 +1596,8 @@ static UInt ParseMemory( Char * s)
 
 
 struct optInfo {
-  Char key;
+  Char shortkey;
+  Char longkey[50];
   Int (*handler)(Char **, void *);
   void *otherArg;
   UInt minargs;
@@ -1727,33 +1667,37 @@ static Int preAllocAmount;
 /* These are just the options that need kernel processing. Additional options will be 
    recognised and handled in the library */
 
+/* These options must be kept in sync with those in system.g, so the help output
+   is correct */
 struct optInfo options[] = {
-  { 'B',  storeString, &SyArchitecture, 1}, /* default architecture needs to be passed from kernel 
-                                               to library. Might be needed for autoload of compiled files */
-  { 'C',  processCompilerArgs, 0, 4}, /* must handle in kernel */
-  { 'D',  toggle, &SyDebugLoading, 0}, /* must handle in kernel */
-  { 'K',  storeMemory2, &SyStorKill, 1}, /* could handle from library with new interface */
-  { 'L',  storeString, &SyRestoring, 1}, /* must be handled in kernel  */
-  { 'M',  toggle, &SyUseModule, 0}, /* must be handled in kernel */
-  { 'X',  toggle, &SyCheckCRCCompiledModule, 0}, /* must be handled in kernel */
-  { 'R',  unsetString, &SyRestoring, 0}, /* kernel */
-  { 'U',  storeString, SyCompileOptions, 1}, /* kernel */
-  { 'a',  storeMemory, &preAllocAmount, 1 }, /* kernel -- is this still useful */
-  { 'c',  storeMemory, &SyCacheSize, 1 }, /* kernel, unless we provided a hook to set it from library, 
+  { 'B',  "architecture", storeString, &SyArchitecture, 1}, /* default architecture needs to be passed from kernel 
+                                                                  to library. Might be needed for autoload of compiled files */
+  { 'C',  "", processCompilerArgs, 0, 4}, /* must handle in kernel */
+  { 'D',  "debug-loading", toggle, &SyDebugLoading, 0}, /* must handle in kernel */
+  { 'K',  "maximal-workspace", storeMemory2, &SyStorKill, 1}, /* could handle from library with new interface */
+  { 'L', "", storeString, &SyRestoring, 1}, /* must be handled in kernel  */
+  { 'M', "", toggle, &SyUseModule, 0}, /* must be handled in kernel */
+  { 'X', "", toggle, &SyCheckCRCCompiledModule, 0}, /* must be handled in kernel */
+  { 'R', "", unsetString, &SyRestoring, 0}, /* kernel */
+  { 'U', "", storeString, SyCompileOptions, 1}, /* kernel */
+  { 'a', "", storeMemory, &preAllocAmount, 1 }, /* kernel -- is this still useful */
+  { 'c', "", storeMemory, &SyCacheSize, 1 }, /* kernel, unless we provided a hook to set it from library, 
                                            never seems to be useful */
-  { 'e',  toggle, &SyCTRD, 0 }, /* kernel */
-  { 'f',  forceLineEditing, (void *)2, 0 }, /* probably library now */
-  { 'E',  toggle, &SyUseReadline, 0 }, /* kernel */
-  { 'i',  storeString, SySystemInitFile, 1}, /* kernel */
-  { 'l',  setGapRootPath, 0, 1}, /* kernel */
-  { 'm',  storeMemory2, &SyStorMin, 1 }, /* kernel */
-  { 'r',  toggle, &IgnoreGapRC, 0 }, /* kernel */
-  { 's',  storeMemory, &SyAllocPool, 1 }, /* kernel */
-  { 'n',  forceLineEditing, 0, 0}, /* prob library */
-  { 'o',  storeMemory2, &SyStorMax, 1 }, /* library with new interface */
-  { 'p',  toggle, &SyWindow, 0 }, /* ?? */
-  { 'q',  toggle, &SyQuiet, 0 }, /* ?? */
-  { '\0',0,0}};
+  { 'e', "", toggle, &SyCTRD, 0 }, /* kernel */
+  { 'f', "", forceLineEditing, (void *)2, 0 }, /* probably library now */
+  { 'E', "", toggle, &SyUseReadline, 0 }, /* kernel */
+  { 'i', "", storeString, SySystemInitFile, 1}, /* kernel */
+  { 'l', "roots", setGapRootPath, 0, 1}, /* kernel */
+  { 'm', "", storeMemory2, &SyStorMin, 1 }, /* kernel */
+  { 'r', "", toggle, &IgnoreGapRC, 0 }, /* kernel */
+  { 's', "", storeMemory, &SyAllocPool, 1 }, /* kernel */
+  { 'n', "", forceLineEditing, 0, 0}, /* prob library */
+  { 'o', "", storeMemory2, &SyStorMax, 1 }, /* library with new interface */
+  { 'p', "", toggle, &SyWindow, 0 }, /* ?? */
+  { 'q', "", toggle, &SyQuiet, 0 }, /* ?? */
+  { 0  , "prof",  enableProfilingAtStartup, 0, 1},    /* enable profiling at startup, has to be kernel to start early enough */
+  { 0  , "cover",  enableCodeCoverageAtStartup, 0, 1}, /* enable code coverage at startup, has to be kernel to start early enough */
+  { 0, "",0,0}};
 
 
 Char ** SyOriginalArgv;
@@ -1771,7 +1715,6 @@ void InitSystem (
 
     /* Initialize global and static variables. Do it here rather than
        with initializers to allow for restart */
-    /* SyBanner = 1; */
     SyCTRD = 1;             
     SyCacheSize = 0;
     SyCheckCRCCompiledModule = 0;
@@ -1780,8 +1723,6 @@ void InitSystem (
     SyHasUserHome = 0;
     SyLineEdit = 1;
     SyUseReadline = 1;
-    /* SyAutoloadPackages = 1; */
-    /*  SyBreakSuppress = 0; */
     SyMsgsFlagBags = 0;
     SyNrCols = 0;
     SyNrColsLocked = 0;
@@ -1830,8 +1771,8 @@ void InitSystem (
 #if HAVE_TTYNAME
     syBuf[0].fp = fileno(stdin);
     syBuf[0].bufno = -1;
-    if ( isatty( fileno(stdin) ) ) {
-        if ( isatty( fileno(stdout) )
+    if ( isatty( fileno(stdin) ) && ttyname(fileno(stdin)) != NULL ) {
+        if ( isatty( fileno(stdout) ) && ttyname(fileno(stdout)) != NULL
           && ! strcmp( ttyname(fileno(stdin)), ttyname(fileno(stdout)) ) )
             syBuf[0].echo = fileno(stdout);
         else
@@ -1844,8 +1785,8 @@ void InitSystem (
     }
     syBuf[1].echo = syBuf[1].fp = fileno(stdout); 
     syBuf[1].bufno = -1;
-    if ( isatty( fileno(stderr) ) ) {
-        if ( isatty( fileno(stdin) )
+    if ( isatty( fileno(stderr) ) && ttyname(fileno(stderr)) != NULL ) {
+        if ( isatty( fileno(stdin) ) && ttyname(fileno(stdin)) != NULL
           && ! strcmp( ttyname(fileno(stdin)), ttyname(fileno(stderr)) ) )
             syBuf[2].fp = fileno(stdin);
         else
@@ -1900,14 +1841,16 @@ void InitSystem (
       {
         if (argv[1][0] == '-' ) {
 
-          if ( strlen(argv[1]) != 2 ) {
+          if ( strlen(argv[1]) != 2 && argv[1][1] != '-') {
             FPUTS_TO_STDERR("gap: sorry, options must not be grouped '");
             FPUTS_TO_STDERR(argv[1]);  FPUTS_TO_STDERR("'.\n");
             goto usage;
           }
 
 
-          for (i = 0; options[i].key != argv[1][1] && options[i].key; i++)
+          for (i = 0;  options[i].shortkey != argv[1][1] &&
+                       (argv[1][1] != '-' || argv[1][2] == 0 || strcmp(options[i].longkey, argv[1] + 2)) &&
+                       (options[i].shortkey != 0 || options[i].longkey[0] != 0); i++)
             ;
 
         
@@ -1961,6 +1904,11 @@ void InitSystem (
         SyStorMax = SyStorMin;
     }
 
+    /* fix pool size if larger than SyStorKill */
+    if ( SyStorKill != 0 && SyAllocPool != 0 &&
+                            SyAllocPool > 1024 * SyStorKill ) {
+        SyAllocPool = SyStorKill * 1024;
+    }
     /* fix pool size if it is given and lower than SyStorMax */
     if ( SyAllocPool != 0 && SyAllocPool < SyStorMax * 1024) {
         SyAllocPool = SyStorMax * 1024;
@@ -2015,6 +1963,14 @@ void InitSystem (
 
         strxcpy(DotGapPath, getenv("HOME"), sizeof(DotGapPath));
 # if defined(SYS_IS_DARWIN) && SYS_IS_DARWIN
+        /* On Darwin, add .gap to the sys roots, but leave */
+        /* DotGapPath at $HOME/Library/Preferences/GAP     */
+        strxcat(DotGapPath, "/.gap;", sizeof(DotGapPath));
+        if (!IgnoreGapRC) {
+          SySetGapRootPath(DotGapPath);
+        }
+		
+        strxcpy(DotGapPath, getenv("HOME"), sizeof(DotGapPath));
         strxcat(DotGapPath, "/Library/Preferences/GAP;", sizeof(DotGapPath));
 # elif defined(__CYGWIN__)
         strxcat(DotGapPath, "/_gap;", sizeof(DotGapPath));
@@ -2066,4 +2022,3 @@ usage:
 **
 *E  system.c  . . . . . . . . . . . . . . . . . . . . . . . . . . . ends here
 */
-

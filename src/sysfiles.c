@@ -38,6 +38,10 @@
 #include        "records.h"             /* generic records                 */
 #include        "bool.h"                /* Global True and False           */
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
 #include        "libgap_internal.h"     /* GAP shared library              */
 
 #include        <assert.h>
@@ -137,6 +141,7 @@ Int SyFindOrLinkGapRootFile (
     Int                 found_gap = 0;
     Int                 found_dyn = 0;
     Int                 found_sta = 0;
+    Char                tmpbuffer[256];
     Char *              tmp;
     Char                module[256];
     Char                name[256];
@@ -154,7 +159,7 @@ Int SyFindOrLinkGapRootFile (
 
     /* find the GAP file                                                   */
     result->pathname[0] = '\0';
-    tmp = SyFindGapRootFile(filename);
+    tmp = SyFindGapRootFile(filename, tmpbuffer);
     if ( tmp ) {
         strxcpy( result->pathname, tmp, sizeof(result->pathname) );
         strxcpy( name, tmp, sizeof(name) );
@@ -221,7 +226,7 @@ Int SyFindOrLinkGapRootFile (
         strxcat( module, filename, sizeof(module) );
     }
     strxcat( module, ".so", sizeof(module) );
-    tmp = SyFindGapRootFile(module);
+    tmp = SyFindGapRootFile(module, tmpbuffer);
 
     /* special handling for the case of package files */
     if (!tmp && !strncmp(filename, "pkg", 3)) {
@@ -257,7 +262,7 @@ Int SyFindOrLinkGapRootFile (
           strxcat( module, p2, sizeof(module) );
         }
         strxcat( module, ".so", sizeof(module) );
-        tmp = SyFindGapRootFile(module);
+        tmp = SyFindGapRootFile(module, tmpbuffer);
 
      }
     if ( tmp ) {
@@ -871,12 +876,16 @@ Int SyFopen (
           return 3;
     }
 
+    HashLock(&syBuf);
     /* try to find an unused file identifier                               */
     for ( fid = 4; fid < sizeof(syBuf)/sizeof(syBuf[0]); ++fid )
         if ( syBuf[fid].fp == -1 )
           break;
-    if ( fid == sizeof(syBuf)/sizeof(syBuf[0]) )
+    
+    if ( fid == sizeof(syBuf)/sizeof(syBuf[0]) ) {
+        HashUnlock(&syBuf);
         return (Int)-1;
+    }
 
     /* set up <namegz> and <cmd> for pipe command                          */
     namegz[0] = '\0';
@@ -926,14 +935,20 @@ Int SyFopen (
     }
 #endif
     else {
+        HashUnlock(&syBuf);
         return (Int)-1;
     }
 
+    HashUnlock(&syBuf);
+
+    if(strncmp(mode, "r", 1) == 0)
+        SySetBuffering(fid);
 
     /* return file identifier                                              */
     return fid;
 }
 
+// Lock on SyBuf for both SyBuf and SyBuffers
 
 UInt SySetBuffering( UInt fid )
 {
@@ -945,16 +960,19 @@ UInt SySetBuffering( UInt fid )
     return 1;
 
   bufno = 0;
+  HashLock(&syBuf);
   while (bufno < sizeof(syBuffers)/sizeof(syBuffers[0]) &&
          syBuffers[bufno].inuse != 0)
     bufno++;
-  if (bufno >= sizeof(syBuffers)/sizeof(syBuffers[0]))
-    return 0;
+  if (bufno >= sizeof(syBuffers)/sizeof(syBuffers[0])) {
+      HashUnlock(&syBuf);
+      return 0;
+  }
   syBuf[fid].bufno = bufno;
   syBuffers[bufno].inuse = 1;
   syBuffers[bufno].bufstart = 0;
   syBuffers[bufno].buflen = 0;
-
+  HashUnlock(&syBuf);
   return 1;
 }
 
@@ -982,7 +1000,7 @@ Int SyFclose (
     if ( fid == 0 || fid == 1 || fid == 2 || fid == 3 ) {
         return -1;
     }
-
+    HashLock(&syBuf);
     /* try to close the file                                               */
     if ( (syBuf[fid].pipe == 0 && close( syBuf[fid].fp ) == EOF)
       || (syBuf[fid].pipe == 1 && pclose( syBuf[fid].pipehandle ) == -1
@@ -994,6 +1012,7 @@ Int SyFclose (
         fputs("gap: 'SyFclose' cannot close file, ",stderr);
         fputs("maybe your file system is full?\n",stderr);
         syBuf[fid].fp = -1;
+        HashUnlock(&syBuf);
         return -1;
     }
 
@@ -1001,6 +1020,7 @@ Int SyFclose (
     if (syBuf[fid].bufno >= 0)
       syBuffers[syBuf[fid].bufno].inuse = 0;
     syBuf[fid].fp = -1;
+    HashUnlock(&syBuf);
     return 0;
 }
 
@@ -1267,6 +1287,7 @@ void syStopraw (
 #endif /* HAVE_SGTTY_H || HAVE_TERMIO_H || HAVE_TERMIOS_H */
 
 
+
 /****************************************************************************
 **
 
@@ -1286,7 +1307,7 @@ void syStopraw (
 **  For  UNIX  we  install 'syAnswerIntr' to  answer interrupt 'SIGINT'. If
 **  two interrupts  occur within 1 second 'syAnswerIntr' exits GAP.
 */
-#if HAVE_SIGNAL
+#if HAVE_SIGNAL 
 
 
 UInt            syLastIntr;             /* time of the last interrupt      */
@@ -1349,6 +1370,223 @@ UInt SyIsIntr ( void )
     return isIntr;
 }
 
+
+/* Code for Timeouts */
+
+volatile int SyAlarmRunning = 0;
+volatile int SyAlarmHasGoneOff = 0;
+
+#endif
+
+#if HAVE_TIMER_CREATE && HAVE_SIGACTION
+
+/* Could live without sigaction but it seems to be pretty universal */
+
+/* This uses the POSIX 2001 API
+   which allows per-thread timing and minimises risk of
+   interference with other code using timers.
+
+   Sadly it's not always available, so we have an alternative implementation
+   below using the odler setitimer interface */
+
+/* Handler for the Alarm signal */
+
+int SyHaveAlarms = 1;
+
+/* This API lets us pick wich signal to use */
+#define TIMER_SIGNAL SIGVTALRM
+
+
+/* For now anyway we create one timer at initialisation and use it */
+static timer_t syTimer = 0;
+
+#if SYS_IS_CYGWIN32
+#define MY_CLOCK CLOCK_REALTIME
+#else
+#define MY_CLOCK CLOCK_THREAD_CPUTIME_ID
+#endif
+
+static void SyInitAlarm( void ) {
+/* Create the CPU timer used for timeouts */
+  struct sigevent se;
+  se.sigev_notify = SIGEV_SIGNAL;
+  se.sigev_signo = TIMER_SIGNAL;
+  se.sigev_value.sival_int = 0x12345678;
+  if (timer_create( MY_CLOCK, &se, &syTimer)) {
+    Pr("#E  Could not create interval timer. Timeouts will not be supported\n",0L,0L);
+    SyHaveAlarms = 0;
+  }
+}
+
+static void syAnswerAlarm ( int signr, siginfo_t * si, void *context)
+{
+    /* interrupt the executor                                             
+       Later we might want to do something cleverer with throwing an 
+       exception or dealing better if this isn't our timer     */
+  assert( signr == TIMER_SIGNAL);
+  assert( si->si_signo == TIMER_SIGNAL);
+  assert( si->si_code == SI_TIMER);
+  assert( si->si_value.sival_int == 0x12345678 );
+  SyAlarmRunning = 0;
+  SyAlarmHasGoneOff = 1;
+  InterruptExecStat();
+}
+
+ 
+void SyInstallAlarm ( UInt seconds, UInt nanoseconds )
+{
+  struct sigaction sa;
+  
+  sa.sa_handler = NULL;
+  sa.sa_sigaction = syAnswerAlarm;
+  sigemptyset(&(sa.sa_mask));
+  sa.sa_flags = SA_RESETHAND | SA_SIGINFO | SA_RESTART;
+  
+  /* First install the handler */
+  if (sigaction( TIMER_SIGNAL, &sa, NULL ))
+    {
+      ErrorReturnVoid("Could not set handler for alarm signal",0L,0L,"you can return to ignore");
+      return;
+    }
+
+  
+  struct itimerspec tv;
+  tv.it_value.tv_sec = (time_t)seconds;
+  tv.it_value.tv_nsec = (long)nanoseconds;
+  tv.it_interval.tv_sec = (time_t)0;
+  tv.it_interval.tv_nsec = 0L;
+  
+  SyAlarmRunning = 1;
+  SyAlarmHasGoneOff = 0;
+  if (timer_settime(syTimer, 0, &tv, NULL)) {
+    signal(TIMER_SIGNAL, SIG_DFL);
+    ErrorReturnVoid("Could not set interval timer", 0L, 0L, "you can return to ignore");
+  }
+  return;
+}
+
+void SyStopAlarm(UInt *seconds, UInt *nanoseconds) {
+  struct itimerspec tv, buf;
+  tv.it_value.tv_sec = (time_t)0;
+  tv.it_value.tv_nsec = 0L;
+  tv.it_interval.tv_sec = (time_t)0;
+  tv.it_interval.tv_nsec = 0L;
+
+  timer_settime(syTimer, 0, &tv, &buf);
+  SyAlarmRunning = 0;
+  signal(TIMER_SIGNAL, SIG_IGN);
+
+  if (seconds)
+    *seconds = (UInt)buf.it_value.tv_sec;
+  if (nanoseconds)
+    *nanoseconds = (UInt)buf.it_value.tv_nsec;
+  return;
+}
+
+#else
+#if HAVE_SETITIMER && HAVE_SIGACTION
+
+/* Using setitimer and getitimer from sys/time.h */
+/* again sigaction could be replaced by signal if that was useful
+ sigaction is just a bit more robust */
+
+/* Handler for the Alarm signal */
+
+int SyHaveAlarms = 1;
+
+
+static void SyInitAlarm( void ) {
+  /* No initialisation in this case */
+  return; 
+}
+
+static void syAnswerAlarm ( int signr, siginfo_t * si, void *context)
+{
+    /* interrupt the executor                                             
+       Later we might want to do something cleverer with throwing an 
+       exception or dealing better if this isn't our timer     */
+  assert( signr == SIGVTALRM);
+  assert( si->si_signo == SIGVTALRM);
+  SyAlarmRunning = 0;
+  SyAlarmHasGoneOff = 1;
+  InterruptExecStat();
+}
+
+ 
+void SyInstallAlarm ( UInt seconds, UInt nanoseconds )
+{
+  struct sigaction sa;
+  
+  sa.sa_handler = NULL;
+  sa.sa_sigaction = syAnswerAlarm;
+  sigemptyset(&(sa.sa_mask));
+  sa.sa_flags = SA_RESETHAND | SA_SIGINFO | SA_RESTART;
+
+  
+  /* First install the handler */
+  if (sigaction( SIGVTALRM, &sa, NULL ))
+    {
+      ErrorReturnVoid("Could not set handler for alarm signal",0L,0L,"you can return to ignore");
+      return;
+    }
+
+  
+  struct itimerval tv;
+  tv.it_value.tv_sec = (time_t)seconds;
+  tv.it_value.tv_usec = (suseconds_t)(nanoseconds/1000);
+  tv.it_interval.tv_sec = (time_t)0;
+  tv.it_interval.tv_usec = (suseconds_t)0L;
+  
+  SyAlarmRunning = 1;
+  SyAlarmHasGoneOff = 0;
+  if (setitimer(ITIMER_VIRTUAL, &tv, NULL)) {
+    signal(SIGVTALRM, SIG_IGN);
+    ErrorReturnVoid("Could not set interval timer", 0L, 0L, "you can return to ignore");
+  }
+  return;
+}
+
+void SyStopAlarm(UInt *seconds, UInt *nanoseconds) {
+  struct itimerval tv, buf;
+  tv.it_value.tv_sec = (time_t)0;
+  tv.it_value.tv_usec = (suseconds_t)0L;
+  tv.it_interval.tv_sec = (time_t)0;
+  tv.it_interval.tv_usec = (suseconds_t)0L;
+
+  setitimer(ITIMER_VIRTUAL, &tv, &buf);
+  SyAlarmRunning = 0;
+  signal(SIGVTALRM, SIG_IGN);
+
+  if (seconds)
+    *seconds = (UInt)buf.it_value.tv_sec;
+  if (nanoseconds)
+    *nanoseconds = 1000*(UInt)buf.it_value.tv_usec;
+  return;
+}
+
+#else
+int SyHaveAlarms = 0;
+
+/* stub implementations */
+
+static void SyInitAlarm( void ) {
+  /* No initialisation in this case */
+  return; 
+}
+
+ 
+void SyInstallAlarm ( UInt seconds, UInt nanoseconds )
+{
+  assert(0);
+  return;
+}
+
+void SyStopAlarm(UInt *seconds, UInt *nanoseconds) {
+  assert(0);
+  return;
+}
+
+#endif
 #endif
 
 
@@ -2145,6 +2383,32 @@ Char * syFgetsNoEdit (
 {
   UInt x = 0;
   int ret = 0;
+
+  /* if stream is buffered, and the buffer has a full line,
+   * grab it -- we could make more use of the buffer, but
+   * this covers the majority of cases simply. */
+#ifndef LINE_END_HACK
+  UInt bufno;
+  Char* newlinepos;
+  Char* bufstart;
+  int buflen;
+  if(!syBuf[fid].isTTY && syBuf[fid].bufno >= 0) {
+    bufno = syBuf[fid].bufno;
+    if (syBuffers[bufno].bufstart < syBuffers[bufno].buflen) {
+      bufstart = syBuffers[bufno].buf + syBuffers[bufno].bufstart;
+      buflen = syBuffers[bufno].buflen - syBuffers[bufno].bufstart;
+      newlinepos = memchr(bufstart, '\n', buflen);
+      if(newlinepos && (newlinepos - bufstart) < length - 2) {
+          newlinepos++;
+          memcpy(line, bufstart, newlinepos - bufstart);
+          line[newlinepos - bufstart] = '\0';
+          syBuffers[bufno].bufstart += (newlinepos - bufstart);
+          return line;
+      }
+    }
+  }
+#endif
+
   while (x < length -1) {
     if (!block && x && !HasAvailableBytes( fid ))
       {
@@ -2382,13 +2646,13 @@ Char * readlineFgets (
   rl_event_hook = (OnCharReadHookActive != (Obj) 0) ? charreadhook_rl : 0;
   /* now do the real work */
   doingReadline = 1;
-  rlres = readline(Prompt);
+  rlres = readline(TLS(Prompt));
   doingReadline = 0;
   /* we get a NULL pointer on EOF, say by pressing Ctr-d  */
   if (!rlres) {
     if (!SyCTRD) {
       while (!rlres)
-        rlres = readline(Prompt);
+        rlres = readline(TLS(Prompt));
     }
     else {
       printf("\n");fflush(stdout);
@@ -3640,19 +3904,18 @@ Obj SyIsDir ( const Char * name )
 
 /****************************************************************************
 **
-*F  SyFindGapRootFile( <filename> ) . . . . . . . .  find file in system area
+*F  SyFindGapRootFile( <filename>,<buffer> ) . .  find file in system area
 */
-Char * SyFindGapRootFile ( const Char * filename )
+Char * SyFindGapRootFile ( const Char * filename, Char * result )
 {
-    static Char     result[256];
     Int             k;
 
     for ( k=0;  k<sizeof(SyGapRootPaths)/sizeof(SyGapRootPaths[0]);  k++ ) {
         if ( SyGapRootPaths[k][0] ) {
             result[0] = '\0';
-            if (strlcpy( result, SyGapRootPaths[k], sizeof(result) ) >= sizeof(result))
+            if (strlcpy( result, SyGapRootPaths[k], 256 ) >= 256)
                 continue;
-            if (strlcat( result, filename, sizeof(result) ) >= sizeof(result))
+            if (strlcat( result, filename, 256 ) >= 256)
             	continue;
             if ( SyIsReadableFile(result) == 0 ) {
                 return result;
@@ -3817,6 +4080,7 @@ static StructGVarFunc GVarFuncs [] = {
        FuncREADLINEINITLINE, "src/sysfiles.c:FuncREADLINEINITLINE" },
 #endif
 
+
     { 0 } };
 
 
@@ -3849,6 +4113,8 @@ static Int postRestore (
 static Int InitKernel(
       StructInitInfo * module )
 {
+  SyInitAlarm();
+  
   /* init filters and functions                                          */
   InitHdlrFuncsFromTable( GVarFuncs );
 
@@ -3896,7 +4162,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoSysFiles ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

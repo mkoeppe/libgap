@@ -12,7 +12,6 @@
 **  This file implements the  functions  handling  GMP integers.
 **
 */
-#include        <sys/mman.h>
 #include        "system.h"              /* Ints, UInts                     */
 
 #include        "gasman.h"              /* garbage collector               */
@@ -57,6 +56,9 @@
 
 #ifdef USE_GMP
 
+/* TODO: Remove after Ward2 */
+#ifndef WARD_ENABLED
+
 // GMP must be included outside of 'extern C'
 #ifdef GAP_IN_EXTERN_C
 }
@@ -67,6 +69,16 @@ extern "C" {
 #endif
 
 #include        "gmpints.h"             /* GMP integers                    */
+
+#ifdef SYS_IS_64_BIT
+#define SaveLimb SaveUInt8
+#define LoadLimb LoadUInt8
+#else
+#define SaveLimb SaveUInt4
+#define LoadLimb LoadUInt4
+#endif
+
+#define INTBASE            (1L << (GMP_LIMB_BITS/2))
 
 
 /* macros to save typing later :)                                          */
@@ -140,7 +152,7 @@ Obj FuncIS_INT ( Obj self, Obj val )
        || TNUM_OBJ(val) == T_INTNEG ) {
     return True;
   }
-  else if ( TNUM_OBJ(val) <= FIRST_EXTERNAL_TNUM ) {
+  else if ( TNUM_OBJ(val) < FIRST_EXTERNAL_TNUM ) {
     return False;
   }
   else {
@@ -444,7 +456,7 @@ Obj FuncHexStringInt( Obj self, Obj integer )
     }
     
     /* else we create a string big enough for any immediate integer        */
-    res = NEW_STRING(2 * NR_HEX_DIGITS + 1);
+    res = NEW_STRING(2 * INTEGER_UNIT_SIZE + 1);
     p = CHARS_STRING(res);
     /* handle sign */
     if (n<0) {
@@ -456,8 +468,8 @@ Obj FuncHexStringInt( Obj self, Obj integer )
       SET_LEN_STRING(res, GET_LEN_STRING(res)-1);
     /* collect digits, skipping leading zeros                              */
     j = 0;
-    nf = ((UInt)15) << (4*(2*NR_HEX_DIGITS-1));
-    for (i = 2*NR_HEX_DIGITS; i; i-- ) {
+    nf = ((UInt)15) << (4*(2*INTEGER_UNIT_SIZE-1));
+    for (i = 2*INTEGER_UNIT_SIZE; i; i-- ) {
       a = ((UInt)n & nf) >> (4*(i-1));
       if (j==0 && a==0) SET_LEN_STRING(res, GET_LEN_STRING(res)-1);
       else if (a<10) p[j++] = a + '0';
@@ -565,8 +577,8 @@ Obj FuncIntHexString( Obj self,  Obj str )
   }
 
   else {
-    nd = (len-i)/NR_HEX_DIGITS;
-    if (nd * NR_HEX_DIGITS < (len-i)) nd++;
+    nd = (len-i)/INTEGER_UNIT_SIZE;
+    if (nd * INTEGER_UNIT_SIZE < (len-i)) nd++;
     /*   nd += ((3*nd) % 4); */
     if (sign == 1)
       res = NewBag( T_INTPOS, nd*sizeof(TypLimb) );
@@ -599,6 +611,25 @@ Obj FuncIntHexString( Obj self,  Obj str )
   }
 }
 
+/****************************************************************************
+**  
+**  Implementation of Log2Int for C integers.
+*/
+
+Int CLog2Int(Int a)
+{
+  Int res, mask;
+  if (a < 0) a = -a;
+  if (a < 1) return -1;
+  if (a < 65536) {
+    for(mask = 2, res = 0; ;mask *= 2, res += 1) {
+      if(a < mask) return res;
+    }
+  }
+  for(mask = 65536, res = 15; ;mask *= 2, res += 1) {
+    if(a < mask) return res;
+  }
+}
 
 /****************************************************************************
 **
@@ -608,20 +639,13 @@ Obj FuncIntHexString( Obj self,  Obj str )
 */
 Obj FuncLog2Int( Obj self, Obj integer)
 {
-  Int res, d;
+  Int d;
   Int a, len;
-  Int mask;
   TypLimb dmask;
   
   /* case of small ints                                                    */
   if (IS_INTOBJ(integer)) {
-    a = INT_INTOBJ(integer);
-    if (a < 0) a = -a;
-    res = NR_SMALL_INT_BITS;
-    for(res = NR_SMALL_INT_BITS - 1, mask = (Int)1 << (NR_SMALL_INT_BITS-1);
-        (mask & a) == 0 && mask != (Int)0;
-        mask = mask >> 1, res--);
-    return INTOBJ_INT(res);
+    return INTOBJ_INT(CLog2Int(INT_INTOBJ(integer)));
   }
 
   /* case of long ints                                                     */
@@ -1270,6 +1294,7 @@ Obj ProdInt ( Obj gmpL, Obj gmpR )
   Int                   i;            /* hold small int value              */
   Int                   k;            /* hold small int value              */
   TypLimb           carry;            /* most significant limb             */
+  TypLimb      tmp1, tmp2;
   
   /* multiplying two small integers                                        */
   if ( ARE_INTOBJS( gmpL, gmpR ) ) {
@@ -1295,8 +1320,9 @@ Obj ProdInt ( Obj gmpL, Obj gmpR )
     if ( k < 0 )  k = -k;
     
     /* multiply                                                            */
-    mpn_mul_n( ADDR_INT( prd ), (TypLimb*)( &i ),
-               (TypLimb*)( &k ), (TypGMPSize)1 );
+    tmp1 = (TypLimb)i;
+    tmp2 = (TypLimb)k;
+    mpn_mul_n( ADDR_INT( prd ), &tmp1, &tmp2, 1 );
   }
   
   /* multiply a small and a large integer                                  */
@@ -2375,7 +2401,7 @@ Obj FuncRandomIntegerMT(Obj self, Obj mtstr, Obj nrbits)
   Obj res;
   Int i, n, q, r, qoff, len;
   UInt4 *mt, rand;
-  TypLimb *pt;
+  UInt4 *pt;
   while (! IsStringConv(mtstr)) {
      mtstr = ErrorReturnObj(
          "<mtstr> must be a string, not a %s)",
@@ -2415,30 +2441,24 @@ Obj FuncRandomIntegerMT(Obj self, Obj mtstr, Obj nrbits)
 #endif
   }
   else {
-     /* large int case - number of Limbs */
-     q = n / GMP_LIMB_BITS;
-     r = n - q*GMP_LIMB_BITS;
+     /* large int case */
+     q = n / 32;
+     r = n - q * 32;
+     /* qoff = number of 32 bit words we need */
      qoff = q + (r==0 ? 0:1);
-     len = qoff;
+     /* len = number of limbs we need (limbs currently are either 32 or 64 bit wide) */
+     len = (qoff*4 +  sizeof(TypLimb) - 1) / sizeof(TypLimb);
      res = NewBag( T_INTPOS, len*sizeof(TypLimb) );
-     pt = ADDR_INT(res);
+     pt = (UInt4*) ADDR_INT(res);
      mt = (UInt4*) CHARS_STRING(mtstr);
-#ifdef SYS_IS_64_BIT
      for (i = 0; i < qoff; i++, pt++) {
-       rand = (TypLimb) nextrandMT_int32(mt);
-       *pt = rand; 
-       rand = (TypLimb) nextrandMT_int32(mt);
-       *pt |= (UInt)rand << 32; 
+       rand = (UInt4) nextrandMT_int32(mt);
+       *pt = rand;
      }
-#else
-     for (i = 0; i < qoff; i++, pt++) {
-       rand = nextrandMT_int32(mt);
-       *pt = (TypLimb) rand;
-     }
-#endif
      if (r != 0) {
-       ADDR_INT(res)[qoff-1] = ADDR_INT(res)[qoff-1] & ((TypLimb)(-1)
-                                                      >> (GMP_LIMB_BITS-r));
+       /* we generated too many random bits -- chop of the extra bits */
+       pt = (UInt4*) ADDR_INT(res);
+       pt[qoff-1] = pt[qoff-1] & ((UInt4)(-1) >> (32-r));
      }
      /* shrink bag if necessary */
      res = GMP_NORMALIZE(res);
@@ -2523,23 +2543,6 @@ static StructGVarFunc GVarFuncs [] = {
 **
 *F  InitKernel( <module> )  . . . . . . . . initialise kernel data structures
 */
-
-static void *allocForGmp(size_t size) {
-  return mmap((void *)0, size, PROT_READ| PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-}
-
-static void *reallocForGmp (void *old, size_t old_size, size_t new_size) {
-  void * newptr = allocForGmp(new_size);
-  size_t common_size = (new_size < old_size) ? new_size:old_size;
-  memcpy(newptr, old, common_size);
-  munmap(old, old_size);
-  return newptr;
-}
-
-static  void freeForGmp (void *ptr, size_t size) {
-  munmap(ptr, size);
-}
-
 static Int InitKernel ( StructInitInfo * module )
 {
   UInt                t1,  t2;
@@ -2548,8 +2551,6 @@ static Int InitKernel ( StructInitInfo * module )
     FPUTS_TO_STDERR("Panic, GMP limb size mismatch\n");
     SyExit( 1 ); 
   }
-
-   mp_set_memory_functions( allocForGmp, reallocForGmp, freeForGmp); 
 
   /* init filters and functions                                            */
   InitHdlrFiltsFromTable( GVarFilts );
@@ -2636,11 +2637,14 @@ static Int InitKernel ( StructInitInfo * module )
   ImportFuncFromLibrary( "String", &String );
   ImportFuncFromLibrary( "One", &OneAttr);
 
-  /* install the kind functions                                          */
+  /* install the type functions                                          */
   TypeObjFuncs[ T_INT    ] = TypeIntSmall;
   TypeObjFuncs[ T_INTPOS ] = TypeIntLargePos;
   TypeObjFuncs[ T_INTNEG ] = TypeIntLargeNeg;
 
+  MakeBagTypePublic( T_INTPOS );
+  MakeBagTypePublic( T_INTNEG );
+  
   /* return success                                                        */
   return 0;
 }
@@ -2691,12 +2695,11 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoInt ( void )
 {
-  FillInVersion( &module );
   return &module;
 }
 
-/* corresponds to USE_GMP test at start */
-#endif
+#endif /* ! WARD_ENABLED */
+#endif /* USE_GMP */
 
 /****************************************************************************
 **

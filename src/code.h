@@ -19,16 +19,6 @@
 
 /****************************************************************************
 **
-
-*S  T_BODY  . . . . . . . . . . . . . . . . . . . . type of function body bag
-**
-**  'T_BODY' is the type of the function body bags.
-*/
-#define T_BODY                  175
-
-
-/****************************************************************************
-**
 *T  Stat  . . . . . . . . . . . . . . . . . . . . . . . .  type of statements
 **
 **  'Stat' is the type of statements.
@@ -36,7 +26,7 @@
 **  If 'Stat' is different  from 'Expr', then  a lot of things will  probably
 **  break.
 */
-#define Stat            UInt
+#define Stat            UInt8
 
 
 /****************************************************************************
@@ -163,7 +153,11 @@ extern  Stat *          PtrBody;
 
 #define T_PROCCALL_OPTS         (FIRST_STAT_TNUM+ 79)
 
-#define LAST_STAT_TNUM          T_PROCCALL_OPTS
+#define T_ATOMIC               (FIRST_STAT_TNUM+80)
+
+#define LAST_STAT_TNUM          T_ATOMIC
+
+#define T_NO_STAT		(Stat)(-1)
 
 
 /****************************************************************************
@@ -172,7 +166,7 @@ extern  Stat *          PtrBody;
 **
 **  'TNUM_STAT' returns the type of the statement <stat>.
 */
-#define TNUM_STAT(stat) (ADDR_STAT(stat)[-1] & 0xFF)
+#define TNUM_STAT(stat) ((Int)(ADDR_STAT(stat)[-1] & 0xFF))
 
 
 /****************************************************************************
@@ -181,7 +175,43 @@ extern  Stat *          PtrBody;
 **
 **  'SIZE_STAT' returns the size of the statement <stat>.
 */
-#define SIZE_STAT(stat) (ADDR_STAT(stat)[-1] >> 8)
+#define SIZE_STAT(stat) ((Int)(ADDR_STAT(stat)[-1] >> 8 & 0xFFFFFF))
+
+/****************************************************************************
+**
+*F  LINE_STAT(<stat>) . . . . . . . . . . . . . . line number of a statement
+**
+**  'LINE_STAT' returns the line number of the statement <stat>.
+*/
+#define LINE_STAT(stat) ((Int)(ADDR_STAT(stat)[-1] >> 32 & 0xFFFF))
+
+/****************************************************************************
+**
+*F  FILENAMEID_STAT(<stat>) . . . . . . . . . . . . file name of a statement
+**
+**  'FILENAMEID_STAT' returns the file the statment <stat> was read from.
+**  This should be looked up in the FilenameCache variable
+*/
+#define FILENAMEID_STAT(stat) ((Int)(ADDR_STAT(stat)[-1] >> 48 & 0x7FFF))
+
+/****************************************************************************
+**
+*F  FILENAME_STAT(<stat>) . . . . . . . . . . . . file name of a statement
+**
+**  'FILENAME_STAT' returns a gap string containing the file where the statment
+**  <stat> was read from.
+*/
+Obj FILENAME_STAT(Stat stat);
+
+/****************************************************************************
+**
+*F  VISITED_STAT(<stat>) . . . . . . . . . . . . if statement has even been run
+**
+**  'VISITED_STAT' returns true if the statement has ever been executed
+**  while profiling is turned on.
+*/
+#define VISITED_STAT(stat) (ADDR_STAT(stat)[-1] >> 63 && 0x1)
+
 
 
 /****************************************************************************
@@ -191,7 +221,7 @@ extern  Stat *          PtrBody;
 **  'ADDR_STAT' returns   the  absolute address of the    memory block of the
 **  statement <stat>.
 */
-#define ADDR_STAT(stat) ((Stat*)(((char*)PtrBody)+(stat)))
+#define ADDR_STAT(stat) ((Stat*)(((char*)TLS(PtrBody))+(stat)))
 
 
 /****************************************************************************
@@ -359,7 +389,12 @@ extern  Stat *          PtrBody;
 #define T_FLOAT_EXPR_EAGER      (FIRST_EXPR_TNUM+82)
 #define T_FLOAT_EXPR_LAZY       (FIRST_EXPR_TNUM+83)
 
-#define LAST_EXPR_TNUM          T_FLOAT_EXPR_LAZY
+#define T_ELM2_LIST             (FIRST_EXPR_TNUM+84)
+#define T_ELMX_LIST             (FIRST_EXPR_TNUM+85)
+#define T_ASS2_LIST             (FIRST_EXPR_TNUM+86)
+#define T_ASSX_LIST             (FIRST_EXPR_TNUM+87)
+
+#define LAST_EXPR_TNUM          T_ASSX_LIST
 
 
 /****************************************************************************
@@ -670,6 +705,51 @@ extern  void            CodeForEndBody (
             UInt                nr );
 
 extern  void            CodeForEnd ( void );
+
+/****************************************************************************
+**
+*F  CodeAtomicBegin()  . . . . . . .  code atomic-statement, begin of statement
+*F  CodeAtomicBeginBody()  . . . . . . . . code atomic-statement, begin of body
+*F  CodeAtomicEndBody( <nr> )  . . . . . . . code atomic-statement, end of body
+*F  CodeAtomicEnd()  . . . . . . . . .  code atomic-statement, end of statement
+**
+**  'CodeAtomicBegin'  is an action to  code a atomic-statement.   It is called
+**  when the  reader encounters the 'atomic',  i.e., *before* the condition is
+**  read.
+**
+**  'CodeAtomicBeginBody'  is  an action   to code a  atomic-statement.   It is
+**  called when  the reader encounters  the beginning  of the statement body,
+**  i.e., *after* the condition is read.
+**
+**  'CodeAtomicEndBody' is an action to  code a atomic-statement.  It is called
+**  when the reader encounters  the end of  the statement body.  <nr> is  the
+**  number of statements in the body.
+**
+**  'CodeAtomicEnd' is an action to code a atomic-statement.  It is called when
+**  the reader encounters  the end  of the  statement, i.e., immediate  after
+**  'CodeAtomicEndBody'.
+**
+**  These functions are just placeholders for the future HPC-GAP code.
+*/
+
+void CodeAtomicBegin ( void );
+
+void CodeAtomicBeginBody ( UInt nrexprs );
+
+void CodeAtomicEndBody (
+    UInt                nrstats );
+void CodeAtomicEnd ( void );
+
+/****************************************************************************
+**
+*F  CodeQualifiedExprBegin()  . . . code readonly/readwrite expression start
+*F  CodeQualifiedExprEnd()  . . . . . code readonly/readwrite expression end
+**
+*/
+
+void CodeQualifiedExprBegin(UInt qual);
+
+void CodeQualifiedExprEnd( void );
 
 
 /****************************************************************************
@@ -1080,17 +1160,17 @@ extern  void            CodeIsbGVar (
 *F  CodeAssListLevel(<level>) . . . . . . .  code assignment to several lists
 *F  CodeAsssListLevel(<level>)  . . code multiple assignment to several lists
 */
-extern  void            CodeAssList ( void );
+extern  void            CodeAssList ( Int narg );
 
 extern  void            CodeAsssList ( void );
 
-extern  void            CodeAssListLevel (
+extern  void            CodeAssListLevel ( Int narg,
             UInt                level );
 
 extern  void            CodeAsssListLevel (
             UInt                level );
 
-extern  void            CodeUnbList ( void );
+extern  void            CodeUnbList ( Int narg );
 
 
 /****************************************************************************
@@ -1100,17 +1180,18 @@ extern  void            CodeUnbList ( void );
 *F  CodeElmListLevel(<level>) . . . . . . . . code selection of several lists
 *F  CodeElmsListLevel(<level>)  . .  code multiple selection of several lists
 */
-extern  void            CodeElmList ( void );
+extern  void            CodeElmList ( Int narg );
 
 extern  void            CodeElmsList ( void );
 
 extern  void            CodeElmListLevel (
-            UInt                level );
+					  Int narg,
+					  UInt level);
 
 extern  void            CodeElmsListLevel (
             UInt                level );
 
-extern  void            CodeIsbList ( void );
+extern  void            CodeIsbList ( Int narg );
 
 
 /****************************************************************************

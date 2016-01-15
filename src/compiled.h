@@ -54,6 +54,9 @@ extern "C" {
 #include        "range.h"               /* ranges                          */
 #include        "string.h"              /* strings                         */
 
+#include        "code.h"                /* coder                           */
+#include        "tls.h"                 /* thread-local storage            */
+
 #include        "objfgelm.h"            /* objects of free groups          */
 #include        "objpcgel.h"            /* objects of polycyclic groups    */
 #include        "objscoll.h"            /* single collector                */
@@ -66,9 +69,6 @@ extern "C" {
 #include        "costab.h"              /* coset table                     */
 #include        "tietze.h"              /* tietze helper functions         */
 
-#include        "code.h"                /* coder                           */
-
-#include        "vars.h"                /* variables                       */
 #include        "exprs.h"               /* expressions                     */
 #include        "stats.h"               /* statements                      */
 #include        "funcs.h"               /* functions                       */
@@ -86,7 +86,9 @@ extern "C" {
 #include        "sysfiles.h"            /* file input/output               */
 #include        "weakptr.h"             /* weak pointers                   */
 
+#include        "vars.h"                /* variables                       */
 
+#include        "aobjects.h"            /* atomic variables                */
 extern Obj InfoDecision;
 extern Obj InfoDoPrint;
 extern Obj CurrentAssertionLevel;
@@ -115,10 +117,10 @@ typedef UInt    RNam;
  if ( ! IS_INTOBJ(obj) ) ErrorQuitIntSmall(obj);
 
 #define CHECK_INT_SMALL_POS(obj) \
- if ( ! IS_INTOBJ(obj) || INT_INTOBJ(obj) <= 0 ) ErrorQuitIntSmallPos(obj);
+ if ( ! IS_POS_INTOBJ(obj) ) ErrorQuitIntSmallPos(obj);
 
 #define CHECK_INT_POS(obj) \
- if ( TNUM_OBJ(obj) != T_INTPOS && (! IS_INTOBJ(obj) || INT_INTOBJ(obj) <= 0) ) ErrorQuitIntPos(obj);
+ if ( TNUM_OBJ(obj) != T_INTPOS && ( ! IS_POS_INTOBJ(obj)) ) ErrorQuitIntPos(obj);
 
 #define CHECK_BOOL(obj) \
  if ( obj != True && obj != False ) ErrorQuitBool(obj);
@@ -135,7 +137,7 @@ typedef UInt    RNam;
 #define SWITCH_TO_NEW_FRAME     SWITCH_TO_NEW_LVARS
 #define SWITCH_TO_OLD_FRAME     SWITCH_TO_OLD_LVARS
 
-#define CURR_FRAME              CurrLVars
+#define CURR_FRAME              TLS(CurrLVars)
 #define CURR_FRAME_1UP          ENVI_FUNC( PTR_BAG( CURR_FRAME     )[0] )
 #define CURR_FRAME_2UP          ENVI_FUNC( PTR_BAG( CURR_FRAME_1UP )[0] )
 #define CURR_FRAME_3UP          ENVI_FUNC( PTR_BAG( CURR_FRAME_2UP )[0] )
@@ -144,7 +146,7 @@ typedef UInt    RNam;
 #define CURR_FRAME_6UP          ENVI_FUNC( PTR_BAG( CURR_FRAME_5UP )[0] )
 #define CURR_FRAME_7UP          ENVI_FUNC( PTR_BAG( CURR_FRAME_6UP )[0] )
 
-/* #define OBJ_LVAR(lvar)  PtrLVars[(lvar)+2] */
+/* #define OBJ_LVAR(lvar)  TLS(PtrLVars)[(lvar)+2] */
 #define OBJ_LVAR_0UP(lvar) \
     OBJ_LVAR(lvar)
 #define OBJ_LVAR_1UP(lvar) \
@@ -164,7 +166,7 @@ typedef UInt    RNam;
 #define OBJ_LVAR_8UP(lvar) \
     PTR_BAG(CURR_FRAME_8UP)[(lvar)+2]
 
-/* #define ASS_LVAR(lvar,obj) do { PtrLVars[(lvar)+2] = (obj); } while ( 0 ) */
+/* #define ASS_LVAR(lvar,obj) do { TLS(PtrLVars)[(lvar)+2] = (obj); } while ( 0 ) */
 #define ASS_LVAR_0UP(lvar,obj) \
     ASS_LVAR(lvar,obj)
 #define ASS_LVAR_1UP(lvar,obj) \
@@ -240,13 +242,13 @@ typedef UInt    RNam;
 
 
 #define C_ELM_LIST(elm,list,p) \
- elm = IS_INTOBJ(p) ? ELM_LIST( list, INT_INTOBJ(p) ) : ELMB_LIST(list, p);
+ elm = IS_POS_INTOBJ(p) ? ELM_LIST( list, INT_INTOBJ(p) ) : ELMB_LIST(list, p);
 
 #define C_ELM_LIST_NLE(elm,list,p) \
- elm = IS_INTOBJ(p) ? ELMW_LIST( list, INT_INTOBJ(p) ) : ELMB_LIST(list, p);
+ elm = IS_POS_INTOBJ(p) ? ELMW_LIST( list, INT_INTOBJ(p) ) : ELMB_LIST(list, p);
 
 #define C_ELM_LIST_FPL(elm,list,p) \
- if ( IS_INTOBJ(p) && IS_PLIST(list) ) { \
+ if ( IS_POS_INTOBJ(p) && IS_PLIST(list) ) { \
   if ( INT_INTOBJ(p) <= LEN_PLIST(list) ) { \
    elm = ELM_PLIST( list, INT_INTOBJ(p) ); \
    if ( elm == 0 ) elm = ELM_LIST( list, INT_INTOBJ(p) ); \
@@ -254,16 +256,16 @@ typedef UInt    RNam;
  } else C_ELM_LIST( elm, list, p )
 
 #define C_ELM_LIST_NLE_FPL(elm,list,p) \
- if ( IS_INTOBJ(p) && IS_PLIST(list) ) { \
+ if ( IS_POS_INTOBJ(p) && IS_PLIST(list) ) { \
   elm = ELM_PLIST( list, INT_INTOBJ(p) ); \
  } else C_ELM_LIST_NLE(elm, list, p)
 
 #define C_ASS_LIST(list,p,rhs) \
-  if (IS_INTOBJ(p)) ASS_LIST( list, INT_INTOBJ(p), rhs ); \
+  if (IS_POS_INTOBJ(p)) ASS_LIST( list, INT_INTOBJ(p), rhs ); \
   else ASSB_LIST(list, p, rhs);
 
 #define C_ASS_LIST_FPL(list,p,rhs) \
- if ( IS_INTOBJ(p) && TNUM_OBJ(list) == T_PLIST ) { \
+ if ( IS_POS_INTOBJ(p) && TNUM_OBJ(list) == T_PLIST ) { \
   if ( LEN_PLIST(list) < INT_INTOBJ(p) ) { \
    GROW_PLIST( list, (UInt)INT_INTOBJ(p) ); \
    SET_LEN_PLIST( list, INT_INTOBJ(p) ); \
@@ -276,7 +278,7 @@ typedef UInt    RNam;
  }
 
 #define C_ASS_LIST_FPL_INTOBJ(list,p,rhs) \
- if ( IS_INTOBJ(p) && TNUM_OBJ(list) == T_PLIST) { \
+ if ( IS_POS_INTOBJ(p) && TNUM_OBJ(list) == T_PLIST) { \
   if ( LEN_PLIST(list) < INT_INTOBJ(p) ) { \
    GROW_PLIST( list, (UInt)INT_INTOBJ(p) ); \
    SET_LEN_PLIST( list, INT_INTOBJ(p) ); \
@@ -288,10 +290,10 @@ typedef UInt    RNam;
  }
 
 #define C_ISB_LIST( list, pos) \
-  ((IS_INTOBJ(pos) ? ISB_LIST(list, INT_INTOBJ(pos)) : ISBB_LIST( list, pos)) ? True : False)
+  ((IS_POS_INTOBJ(pos) ? ISB_LIST(list, INT_INTOBJ(pos)) : ISBB_LIST( list, pos)) ? True : False)
 
 #define C_UNB_LIST( list, pos) \
-   if (IS_INTOBJ(pos)) UNB_LIST(list, INT_INTOBJ(pos)); else UNBB_LIST(list, pos);
+   if (IS_POS_INTOBJ(pos)) UNB_LIST(list, INT_INTOBJ(pos)); else UNBB_LIST(list, pos);
 
 extern  void            AddList (
             Obj                 list,
@@ -341,8 +343,7 @@ static inline void C_SET_LIMB2(Obj bag, UInt limbnumber, UInt2 value)  {
 
 #if INTEGER_UNIT_SIZE == 2
   ((UInt2 *)ADDR_OBJ(bag))[limbnumber] = value;
-#else
-#if INTEGER_UNIT_SIZE == 4
+#elif INTEGER_UNIT_SIZE == 4
   UInt4 *p;
   if (limbnumber % 2) {
     p = ((UInt4 *)ADDR_OBJ(bag)) + (limbnumber-1) / 2;
@@ -354,7 +355,7 @@ static inline void C_SET_LIMB2(Obj bag, UInt limbnumber, UInt2 value)  {
 #else
   UInt8 *p;
     p  = ((UInt8 *)ADDR_OBJ(bag)) + limbnumber/4;
-    switch(limbnumber %4) {
+    switch(limbnumber % 4) {
     case 0: 
       *p = (*p & 0xFFFFFFFFFFFF0000UL) | (UInt8)value;
       break;
@@ -365,10 +366,9 @@ static inline void C_SET_LIMB2(Obj bag, UInt limbnumber, UInt2 value)  {
       *p = (*p & 0xFFFF0000FFFFFFFFUL) | ((UInt8)value << 32);
       break;
     case 3:
-      *p = (*p & 0xFFFFFFFFFFFFUL) | ((UInt8)value << 48);
+      *p = (*p & 0x0000FFFFFFFFFFFFUL) | ((UInt8)value << 48);
       break;
     }
-#endif
 #endif  
 }
 
@@ -376,8 +376,7 @@ static inline void C_SET_LIMB4(Obj bag, UInt limbnumber, UInt4 value)  {
 
 #if INTEGER_UNIT_SIZE == 4
   ((UInt4 *)ADDR_OBJ(bag))[limbnumber] = value;
-#else
-#if INTEGER_UNIT_SIZE == 8
+#elif INTEGER_UNIT_SIZE == 8
   UInt8 *p;
   if (limbnumber % 2) {
     p = ((UInt8*)ADDR_OBJ(bag)) + (limbnumber-1) / 2;
@@ -389,7 +388,6 @@ static inline void C_SET_LIMB4(Obj bag, UInt limbnumber, UInt4 value)  {
 #else
   ((UInt2 *)ADDR_OBJ(bag))[2*limbnumber] = (UInt2)(value & 0xFFFFUL);
   ((UInt2 *)ADDR_OBJ(bag))[2*limbnumber+1] = (UInt2)(value >>16);
-#endif
 #endif  
 }
 
@@ -398,8 +396,7 @@ static inline void C_SET_LIMB4(Obj bag, UInt limbnumber, UInt4 value)  {
 static inline void C_SET_LIMB8(Obj bag, UInt limbnumber, UInt8 value)  { 
 #if INTEGER_UNIT_SIZE == 8
   ((UInt8 *)ADDR_OBJ(bag))[limbnumber] = value;
-#else
-#if INTEGER_UNIT_SIZE == 4
+#elif INTEGER_UNIT_SIZE == 4
   ((UInt4 *)ADDR_OBJ(bag))[2*limbnumber] = (UInt4)(value & 0xFFFFFFFFUL);
   ((UInt4 *)ADDR_OBJ(bag))[2*limbnumber+1] = (UInt4)(value >>32);
 #else
@@ -407,7 +404,6 @@ static inline void C_SET_LIMB8(Obj bag, UInt limbnumber, UInt8 value)  {
   ((UInt2 *)ADDR_OBJ(bag))[4*limbnumber+1] = (UInt2)((value & 0xFFFF0000ULL) >>16);
   ((UInt2 *)ADDR_OBJ(bag))[4*limbnumber+2] = (UInt2)((value & 0xFFFF00000000ULL) >>32);
   ((UInt2 *)ADDR_OBJ(bag))[4*limbnumber+3] = (UInt2)(value >>48);
-#endif
 #endif
 }
 

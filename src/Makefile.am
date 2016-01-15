@@ -14,7 +14,8 @@ libgap_la_SOURCES = \
   compstat.c  gap.c       listoper.c  plist.c     streams.c   \
   c_oper1.c   lists.c     precord.c   string.c    \
   costab.c    gasman.c    macfloat.c  range.c     sysfiles.c \
-  pperm.c     trans.c
+  pperm.c     trans.c \
+  profile.c
 
 if NEED_ITANIUMOBJ
   libgap_la_SOURCES += itanium.s
@@ -33,7 +34,10 @@ libgapinclude_HEADERS = \
   config.h    gmpints.h   macfloat.h  precord.h   streams.h   weakptr.h  \
   costab.h    gvars.h     objccoll.h  range.h     string.h               \
   pperm.h     trans.h \
-  libgap.h    libgap_internal.h    
+  libgap.h    libgap_internal.h \
+  aobjects.h  atomic.h    ffdata.h    objccoll-impl.h \
+  objscoll-impl.h profile.h thread.h tls.h
+
 
 libgap_la_CFLAGS = $(AM_CFLAGS) \
   -DCONFIG_H @GMP_CFLAGS@ @SAGE_CFLAGS@

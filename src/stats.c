@@ -37,7 +37,6 @@
 #include        "bool.h"                /* booleans                        */
 
 #include        "code.h"                /* coder                           */
-#include        "vars.h"                /* variables                       */
 #include        "exprs.h"               /* expressions                     */
 
 #include        "intrprtr.h"            /* interpreter                     */
@@ -46,7 +45,16 @@
 
 #include        "stats.h"               /* statements                      */
 
+#include        "profile.h"             /* installing methods              */
+
 #include        <assert.h>
+
+#include	"tls.h"
+#include	"thread.h"
+
+#include        "vars.h"                /* variables                       */
+
+#include        "profile.h"             /* visit statements for profiling  */
 
 /****************************************************************************
 **
@@ -69,7 +77,7 @@
 **
 **  'EXEC_STAT' is defined in the declaration part of this package as follows:
 **
-#define EXEC_STAT(stat) ( (*ExecStatFuncs[ TNUM_STAT(stat) ]) ( stat ) )
+#define EXEC_STAT(stat) ( (*TLS(CurrExecStatFuncs)[ TNUM_STAT(stat) ]) ( stat ) )
 */
 
 
@@ -125,6 +133,14 @@ UInt            ExecUnknownStat (
         (Int)TNUM_STAT(stat), 0L );
     return 0;
 }
+
+/****************************************************************************
+**
+*F  UInt HaveInterrupt() . . . . . . . . check for user interrupts
+**
+*/
+
+#define HaveInterrupt()   SyIsIntr()
 
 
 /****************************************************************************
@@ -409,6 +425,8 @@ Obj             IS_DONE_ITER;
 
 Obj             NEXT_ITER;
 
+Obj             STD_ITER;
+
 UInt            ExecFor (
     Stat                stat )
 {
@@ -419,6 +437,8 @@ UInt            ExecFor (
     Obj                 elm;            /* one element of the list         */
     Stat                body;           /* body of loop                    */
     UInt                i;              /* loop variable                   */
+    Obj                 nfun, dfun;     /* functions for NextIterator and
+                                           IsDoneIterator                  */  
 
     /* get the variable (initialize them first to please 'lint')           */
     if ( IS_REFLVAR( ADDR_STAT(stat)[0] ) ) {
@@ -463,7 +483,7 @@ UInt            ExecFor (
 
 #if ! HAVE_SIGNAL
             /* test for an interrupt                                       */
-            if ( SyIsIntr() ) {
+            if ( HaveInterrupt() ) {
                 ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
             }
 #endif
@@ -485,18 +505,27 @@ UInt            ExecFor (
         /* get the iterator                                                */
         list = CALL_1ARGS( ITERATOR, list );
 
+        if ( CALL_1ARGS( STD_ITER, list ) == True ) {
+            /* this can avoid method selection overhead on iterator        */
+            dfun = ElmPRec( list, RNamName("IsDoneIterator") );
+            nfun = ElmPRec( list, RNamName("NextIterator") );
+        } else {
+            dfun = IS_DONE_ITER;
+            nfun = NEXT_ITER;
+        }
+
         /* loop over the iterator                                          */
-        while ( CALL_1ARGS( IS_DONE_ITER, list ) == False ) {
+        while ( CALL_1ARGS( dfun, list ) == False ) {
 
             /* get the element and assign it to the variable               */
-            elm = CALL_1ARGS( NEXT_ITER, list );
+            elm = CALL_1ARGS( nfun, list );
             if      ( vart == 'l' )  ASS_LVAR( var, elm );
             else if ( vart == 'h' )  ASS_HVAR( var, elm );
             else if ( vart == 'g' )  AssGVar(  var, elm );
 
 #if ! HAVE_SIGNAL
             /* test for an interrupt                                       */
-            if ( SyIsIntr() ) {
+            if ( HaveInterrupt() ) {
                 ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
             }
 #endif
@@ -527,6 +556,8 @@ UInt            ExecFor2 (
     Stat                body1;          /* first  stat. of body of loop    */
     Stat                body2;          /* second stat. of body of loop    */
     UInt                i;              /* loop variable                   */
+    Obj                 nfun, dfun;     /* functions for NextIterator and
+                                           IsDoneIterator                  */  
 
     /* get the variable (initialize them first to please 'lint')           */
     if ( IS_REFLVAR( ADDR_STAT(stat)[0] ) ) {
@@ -572,7 +603,7 @@ UInt            ExecFor2 (
 
 #if ! HAVE_SIGNAL
             /* test for an interrupt                                       */
-            if ( SyIsIntr() ) {
+            if ( HaveInterrupt() ) {
                 ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
             }
 #endif
@@ -599,18 +630,27 @@ UInt            ExecFor2 (
         /* get the iterator                                                */
         list = CALL_1ARGS( ITERATOR, list );
 
+        if ( CALL_1ARGS( STD_ITER, list ) == True ) {
+            /* this can avoid method selection overhead on iterator        */
+            dfun = ElmPRec( list, RNamName("IsDoneIterator") );
+            nfun = ElmPRec( list, RNamName("NextIterator") );
+        } else {
+            dfun = IS_DONE_ITER;
+            nfun = NEXT_ITER;
+        }
+
         /* loop over the iterator                                          */
-        while ( CALL_1ARGS( IS_DONE_ITER, list ) == False ) {
+        while ( CALL_1ARGS( dfun, list ) == False ) {
 
             /* get the element and assign it to the variable               */
-            elm = CALL_1ARGS( NEXT_ITER, list );
+            elm = CALL_1ARGS( nfun, list );
             if      ( vart == 'l' )  ASS_LVAR( var, elm );
             else if ( vart == 'h' )  ASS_HVAR( var, elm );
             else if ( vart == 'g' )  AssGVar(  var, elm );
 
 #if ! HAVE_SIGNAL
             /* test for an interrupt                                       */
-            if ( SyIsIntr() ) {
+            if ( HaveInterrupt() ) {
                 ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
             }
 #endif
@@ -647,6 +687,8 @@ UInt            ExecFor3 (
     Stat                body2;          /* second stat. of body of loop    */
     Stat                body3;          /* third  stat. of body of loop    */
     UInt                i;              /* loop variable                   */
+    Obj                 nfun, dfun;     /* functions for NextIterator and
+                                           IsDoneIterator                  */  
 
     /* get the variable (initialize them first to please 'lint')           */
     if ( IS_REFLVAR( ADDR_STAT(stat)[0] ) ) {
@@ -693,7 +735,7 @@ UInt            ExecFor3 (
 
 #if ! HAVE_SIGNAL
             /* test for an interrupt                                       */
-            if ( SyIsIntr() ) {
+            if ( HaveInterrupt() ) {
                 ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
             }
 #endif
@@ -726,18 +768,27 @@ UInt            ExecFor3 (
         /* get the iterator                                                */
         list = CALL_1ARGS( ITERATOR, list );
 
+        if ( CALL_1ARGS( STD_ITER, list ) == True ) {
+            /* this can avoid method selection overhead on iterator        */
+            dfun = ElmPRec( list, RNamName("IsDoneIterator") );
+            nfun = ElmPRec( list, RNamName("NextIterator") );
+        } else {
+            dfun = IS_DONE_ITER;
+            nfun = NEXT_ITER;
+        }
+
         /* loop over the iterator                                          */
-        while ( CALL_1ARGS( IS_DONE_ITER, list ) == False ) {
+        while ( CALL_1ARGS( dfun, list ) == False ) {
 
             /* get the element and assign it to the variable               */
-            elm = CALL_1ARGS( NEXT_ITER, list );
+            elm = CALL_1ARGS( nfun, list );
             if      ( vart == 'l' )  ASS_LVAR( var, elm );
             else if ( vart == 'h' )  ASS_HVAR( var, elm );
             else if ( vart == 'g' )  AssGVar(  var, elm );
 
 #if ! HAVE_SIGNAL
             /* test for an interrupt                                       */
-            if ( SyIsIntr() ) {
+            if ( HaveInterrupt() ) {
                 ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
             }
 #endif
@@ -808,6 +859,7 @@ UInt            ExecForRange (
 
     /* evaluate the range                                                  */
     SET_BRK_CURR_STAT( stat );
+    VisitStatIfProfiling(ADDR_STAT(stat)[1]);
     elm = EVAL_EXPR( ADDR_EXPR( ADDR_STAT(stat)[1] )[0] );
     while ( ! IS_INTOBJ(elm) ) {
         elm = ErrorReturnObj(
@@ -837,7 +889,7 @@ UInt            ExecForRange (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -872,6 +924,7 @@ UInt            ExecForRange2 (
 
     /* evaluate the range                                                  */
     SET_BRK_CURR_STAT( stat );
+    VisitStatIfProfiling(ADDR_STAT(stat)[1]);
     elm = EVAL_EXPR( ADDR_EXPR( ADDR_STAT(stat)[1] )[0] );
     while ( ! IS_INTOBJ(elm) ) {
         elm = ErrorReturnObj(
@@ -902,7 +955,7 @@ UInt            ExecForRange2 (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -943,6 +996,7 @@ UInt            ExecForRange3 (
 
     /* evaluate the range                                                  */
     SET_BRK_CURR_STAT( stat );
+    VisitStatIfProfiling(ADDR_STAT(stat)[1]);
     elm = EVAL_EXPR( ADDR_EXPR( ADDR_STAT(stat)[1] )[0] );
     while ( ! IS_INTOBJ(elm) ) {
         elm = ErrorReturnObj(
@@ -974,7 +1028,7 @@ UInt            ExecForRange3 (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -1000,6 +1054,18 @@ UInt            ExecForRange3 (
 
     /* return 0 (to indicate that no leave-statement was executed)         */
     return 0;
+}
+
+/****************************************************************************
+**
+*F  ExecAtomic(<stat>)
+*/
+
+UInt ExecAtomic(
+		Stat stat)
+{
+    // In non-HPC GAP, we completely ignore all the 'atomic' terms
+    return EXEC_STAT(ADDR_STAT(stat)[0]);
 }
 
 
@@ -1039,7 +1105,7 @@ UInt ExecWhile (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -1077,7 +1143,7 @@ UInt ExecWhile2 (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -1122,7 +1188,7 @@ UInt ExecWhile3 (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -1188,7 +1254,7 @@ UInt ExecRepeat (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -1226,7 +1292,7 @@ UInt ExecRepeat2 (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -1271,7 +1337,7 @@ UInt ExecRepeat3 (
 
 #if ! HAVE_SIGNAL
         /* test for an interrupt                                           */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
             ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
         }
 #endif
@@ -1377,6 +1443,10 @@ UInt ExecInfo (
 
     selectors = EVAL_EXPR( ARGI_INFO( stat, 1 ) );
     level = EVAL_EXPR( ARGI_INFO( stat, 2) );
+
+    SET_BRK_CALL_TO( stat );
+    SET_BRK_CURR_STAT( stat );
+
     selected = CALL_2ARGS(InfoDecision, selectors, level);
     if (selected == True) {
 
@@ -1421,6 +1491,9 @@ UInt ExecAssert2Args (
     Obj             level;
     Obj             decision;
 
+    SET_BRK_CURR_STAT( stat );
+    SET_BRK_CALL_TO( stat );
+
     level = EVAL_EXPR( ADDR_STAT( stat )[0] );
     if ( ! LT(CurrentAssertionLevel, level) )  {
         decision = EVAL_EXPR( ADDR_STAT( stat )[1]);
@@ -1459,6 +1532,9 @@ UInt ExecAssert3Args (
     Obj             decision;
     Obj             message;
 
+    SET_BRK_CURR_STAT( stat );
+    SET_BRK_CALL_TO( stat );
+    
     level = EVAL_EXPR( ADDR_STAT( stat )[0] );
     if ( ! LT(CurrentAssertionLevel, level) ) {
         decision = EVAL_EXPR( ADDR_STAT( stat )[1]);
@@ -1502,14 +1578,14 @@ UInt            ExecReturnObj (
 {
 #if ! HAVE_SIGNAL
     /* test for an interrupt                                               */
-    if ( SyIsIntr() ) {
+    if ( HaveInterrupt() ) {
         ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
     }
 #endif
 
     /* evaluate the expression                                             */
     SET_BRK_CURR_STAT( stat );
-    ReturnObjStat = EVAL_EXPR( ADDR_STAT(stat)[0] );
+    TLS(ReturnObjStat) = EVAL_EXPR( ADDR_STAT(stat)[0] );
 
     /* return up to function interpreter                                   */
     return 1;
@@ -1534,21 +1610,38 @@ UInt            ExecReturnVoid (
 {
 #if ! HAVE_SIGNAL
     /* test for an interrupt                                               */
-    if ( SyIsIntr() ) {
+    if ( HaveInterrupt() ) {
         ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
     }
 #endif
 
-    /* set 'ReturnObjStat' to void                                         */
-    ReturnObjStat = 0;
+    /* set 'TLS(ReturnObjStat)' to void                                         */
+    TLS(ReturnObjStat) = 0;
 
     /* return up to function interpreter                                   */
     return 2;
 }
 
 UInt (* RealExecStatFuncs[256]) ( Stat stat );
-UInt RealExecStatCopied;
 
+#ifdef HAVE_SIG_ATOMIC_T
+sig_atomic_t volatile RealExecStatCopied;
+#else
+int volatile RealExecStatCopied;
+#endif
+
+/****************************************************************************
+**
+*F  void CheckAndRespondToAlarm()
+**
+*/
+
+static void CheckAndRespondToAlarm(void) {
+  if ( SyAlarmHasGoneOff ) {
+    assert(NumAlarmJumpBuffers);
+    syLongjmp(AlarmJumpBuffers[--NumAlarmJumpBuffers],1);
+  }
+}
 
 /****************************************************************************
 **
@@ -1565,17 +1658,31 @@ UInt RealExecStatCopied;
 */
 
 UInt TakeInterrupt( void ) {
-  UInt i;
-  if (SyIsIntr()) {
-      assert(RealExecStatCopied);
-      for ( i=0; i<sizeof(ExecStatFuncs)/sizeof(ExecStatFuncs[0]); i++ ) {
-          ExecStatFuncs[i] = RealExecStatFuncs[i];
-      }
-      RealExecStatCopied = 0;
-      ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
-      return 1;
+  if (HaveInterrupt()) {
+    UnInterruptExecStat();
+    CheckAndRespondToAlarm();
+    
+    ErrorReturnVoid( "user interrupt", 0L, 0L, "you can 'return;'" );
+    return 1;
   }
   return 0;
+}
+
+
+/****************************************************************************
+**
+*F  UnInterruptExecStat()  . . . . .revert the Statement execution jump table 
+**                                   to normal 
+*/
+
+void UnInterruptExecStat() {
+  UInt i;
+  assert(RealExecStatCopied);
+  for ( i=0; i<sizeof(ExecStatFuncs)/sizeof(ExecStatFuncs[0]); i++ ) {
+    ExecStatFuncs[i] = RealExecStatFuncs[i];
+  }
+  RealExecStatCopied = 0;
+  return;
 }
 
 
@@ -1592,24 +1699,24 @@ UInt TakeInterrupt( void ) {
 UInt ExecIntrStat (
     Stat                stat )
 {
-    UInt                i;              /* loop variable                   */
 
     /* change the entries in 'ExecStatFuncs' back to the original          */
     if ( RealExecStatCopied ) {
-        for ( i=0; i<sizeof(ExecStatFuncs)/sizeof(ExecStatFuncs[0]); i++ ) {
-            ExecStatFuncs[i] = RealExecStatFuncs[i];
-        }
-        RealExecStatCopied = 0;
+      UnInterruptExecStat();
     }
-    SyIsIntr();
+    HaveInterrupt();
 
+
+    /* One reason we might be here is a timeout. If so longjump out to the 
+       CallWithTimeLimit where we started */
+    CheckAndRespondToAlarm();
+      
     /* and now for something completely different                          */
     SET_BRK_CURR_STAT( stat );
-
     if ( SyStorOverrun != 0 ) {
       SyStorOverrun = 0; /* reset */
       ErrorReturnVoid(
-        "exceeded the permitted memory (`-o' command line option)",
+  "reached the pre-set memory limit\n(change it with the -o command line option)",
         0L, 0L, "you can 'return;'" );
     }
     else {
@@ -1672,16 +1779,13 @@ Int BreakLoopPending( void ) {
 
 void ClearError ( void )
 {
-    UInt        i;
 
     /* change the entries in 'ExecStatFuncs' back to the original          */
+    
     if ( RealExecStatCopied ) {
-        for ( i=0; i<sizeof(ExecStatFuncs)/sizeof(ExecStatFuncs[0]); i++ ) {
-            ExecStatFuncs[i] = RealExecStatFuncs[i];
-        }
-        RealExecStatCopied = 0;
+      UnInterruptExecStat();
         /* check for user interrupt */
-        if ( SyIsIntr() ) {
+        if ( HaveInterrupt() ) {
           Pr("Noticed user interrupt, but you are back in main loop anyway.\n",
               0L, 0L);
         }
@@ -1693,10 +1797,9 @@ void ClearError ( void )
         }
     }
 
-    /* reset <NrError>                                                     */
-    NrError = 0;
+    /* reset <TLS(NrError)>                                                     */
+    TLS(NrError) = 0;
 }
-
 
 /****************************************************************************
 **
@@ -1860,6 +1963,40 @@ void            PrintWhile (
         PrintStat( ADDR_STAT(stat)[i] );
         if ( i < SIZE_STAT(stat)/sizeof(Stat)-1 )  Pr( "\n", 0L, 0L );
     }
+    Pr( "%4<\nod;", 0L, 0L );
+}
+
+/****************************************************************************
+**
+*F  PrintAtomic(<stat>)  . . . . . . . . . . . . . . . . .  print a atomic loop
+**
+**  'PrintAtomic' prints the atomic-loop <stat>.
+**
+**  Linebreaks are printed after the 'do' and the statments  in the body.  If
+**  necessary one is preferred immediately before the 'do'.
+*/
+void            PrintAtomic (
+    Stat                stat )
+{
+  UInt nrexprs;
+    UInt                i;              /* loop variable                   */
+
+    Pr( "atomic%4> ", 0L, 0L );
+    nrexprs = ((SIZE_STAT(stat)/sizeof(Stat))-1)/2;
+    for (i = 1; i <=  nrexprs; i++) {
+      if (i != 1)
+	Pr(", ",0L,0L);
+      switch (INT_INTEXPR(ADDR_STAT(stat)[2*i-1])) {
+      case 0: break;
+      case 1: Pr("readonly ",0L,0L);
+	break;
+      case 2: Pr("readwrite ",0L,0L);
+	break;
+      }
+      PrintExpr(ADDR_STAT(stat)[2*i]);
+    }
+    Pr( "%2<  do%2>\n", 0L, 0L );
+    PrintStat( ADDR_STAT(stat)[0]);
     Pr( "%4<\nod;", 0L, 0L );
 }
 
@@ -2044,9 +2181,21 @@ void            PrintReturnVoid (
 */
 
 
+
 /****************************************************************************
 **
+*F  InitLibrary( <module> ) . . . . . . .  initialise library data structures
+*/
+static Int InitLibrary (
+    StructInitInfo *    module )
+{
 
+    /* return success                                                      */
+    return 0;
+}
+
+/****************************************************************************
+**
 *F  InitKernel( <module> )  . . . . . . . . initialise kernel data structures
 */
 static Int InitKernel (
@@ -2068,81 +2217,84 @@ static Int InitKernel (
     ImportFuncFromLibrary( "Iterator",       &ITERATOR );
     ImportFuncFromLibrary( "IsDoneIterator", &IS_DONE_ITER );
     ImportFuncFromLibrary( "NextIterator",   &NEXT_ITER );
+    ImportFuncFromLibrary( "IsStandardIterator",   &STD_ITER );
 
     /* install executors for non-statements                                */
     for ( i = 0; i < sizeof(ExecStatFuncs)/sizeof(ExecStatFuncs[0]); i++ ) {
-        ExecStatFuncs[i] = ExecUnknownStat;
+        InstallExecStatFunc(i, ExecUnknownStat);
     }
 
     /* install executors for compound statements                           */
-    ExecStatFuncs [ T_SEQ_STAT       ] = ExecSeqStat;
-    ExecStatFuncs [ T_SEQ_STAT2      ] = ExecSeqStat2;
-    ExecStatFuncs [ T_SEQ_STAT3      ] = ExecSeqStat3;
-    ExecStatFuncs [ T_SEQ_STAT4      ] = ExecSeqStat4;
-    ExecStatFuncs [ T_SEQ_STAT5      ] = ExecSeqStat5;
-    ExecStatFuncs [ T_SEQ_STAT6      ] = ExecSeqStat6;
-    ExecStatFuncs [ T_SEQ_STAT7      ] = ExecSeqStat7;
-    ExecStatFuncs [ T_IF             ] = ExecIf;
-    ExecStatFuncs [ T_IF_ELSE        ] = ExecIfElse;
-    ExecStatFuncs [ T_IF_ELIF        ] = ExecIfElif;
-    ExecStatFuncs [ T_IF_ELIF_ELSE   ] = ExecIfElifElse;
-    ExecStatFuncs [ T_FOR            ] = ExecFor;
-    ExecStatFuncs [ T_FOR2           ] = ExecFor2;
-    ExecStatFuncs [ T_FOR3           ] = ExecFor3;
-    ExecStatFuncs [ T_FOR_RANGE      ] = ExecForRange;
-    ExecStatFuncs [ T_FOR_RANGE2     ] = ExecForRange2;
-    ExecStatFuncs [ T_FOR_RANGE3     ] = ExecForRange3;
-    ExecStatFuncs [ T_WHILE          ] = ExecWhile;
-    ExecStatFuncs [ T_WHILE2         ] = ExecWhile2;
-    ExecStatFuncs [ T_WHILE3         ] = ExecWhile3;
-    ExecStatFuncs [ T_REPEAT         ] = ExecRepeat;
-    ExecStatFuncs [ T_REPEAT2        ] = ExecRepeat2;
-    ExecStatFuncs [ T_REPEAT3        ] = ExecRepeat3;
-    ExecStatFuncs [ T_BREAK          ] = ExecBreak;
-    ExecStatFuncs [ T_CONTINUE       ] = ExecContinue;
-    ExecStatFuncs [ T_INFO           ] = ExecInfo;
-    ExecStatFuncs [ T_ASSERT_2ARGS   ] = ExecAssert2Args;
-    ExecStatFuncs [ T_ASSERT_3ARGS   ] = ExecAssert3Args;
-    ExecStatFuncs [ T_RETURN_OBJ     ] = ExecReturnObj;
-    ExecStatFuncs [ T_RETURN_VOID    ] = ExecReturnVoid;
-    ExecStatFuncs [ T_EMPTY          ] = ExecEmpty;
+    InstallExecStatFunc( T_SEQ_STAT       , ExecSeqStat);
+    InstallExecStatFunc( T_SEQ_STAT2      , ExecSeqStat2);
+    InstallExecStatFunc( T_SEQ_STAT3      , ExecSeqStat3);
+    InstallExecStatFunc( T_SEQ_STAT4      , ExecSeqStat4);
+    InstallExecStatFunc( T_SEQ_STAT5      , ExecSeqStat5);
+    InstallExecStatFunc( T_SEQ_STAT6      , ExecSeqStat6);
+    InstallExecStatFunc( T_SEQ_STAT7      , ExecSeqStat7);
+    InstallExecStatFunc( T_IF             , ExecIf);
+    InstallExecStatFunc( T_IF_ELSE        , ExecIfElse);
+    InstallExecStatFunc( T_IF_ELIF        , ExecIfElif);
+    InstallExecStatFunc( T_IF_ELIF_ELSE   , ExecIfElifElse);
+    InstallExecStatFunc( T_FOR            , ExecFor);
+    InstallExecStatFunc( T_FOR2           , ExecFor2);
+    InstallExecStatFunc( T_FOR3           , ExecFor3);
+    InstallExecStatFunc( T_FOR_RANGE      , ExecForRange);
+    InstallExecStatFunc( T_FOR_RANGE2     , ExecForRange2);
+    InstallExecStatFunc( T_FOR_RANGE3     , ExecForRange3);
+    InstallExecStatFunc( T_WHILE          , ExecWhile);
+    InstallExecStatFunc( T_WHILE2         , ExecWhile2);
+    InstallExecStatFunc( T_WHILE3         , ExecWhile3);
+    InstallExecStatFunc( T_REPEAT         , ExecRepeat);
+    InstallExecStatFunc( T_REPEAT2        , ExecRepeat2);
+    InstallExecStatFunc( T_REPEAT3        , ExecRepeat3);
+    InstallExecStatFunc( T_BREAK          , ExecBreak);
+    InstallExecStatFunc( T_CONTINUE       , ExecContinue);
+    InstallExecStatFunc( T_INFO           , ExecInfo);
+    InstallExecStatFunc( T_ASSERT_2ARGS   , ExecAssert2Args);
+    InstallExecStatFunc( T_ASSERT_3ARGS   , ExecAssert3Args);
+    InstallExecStatFunc( T_RETURN_OBJ     , ExecReturnObj);
+    InstallExecStatFunc( T_RETURN_VOID    , ExecReturnVoid);
+    InstallExecStatFunc( T_EMPTY          , ExecEmpty);
+    InstallExecStatFunc( T_ATOMIC         , ExecAtomic);
 
     /* install printers for non-statements                                */
     for ( i = 0; i < sizeof(PrintStatFuncs)/sizeof(PrintStatFuncs[0]); i++ ) {
-        PrintStatFuncs[i] = PrintUnknownStat;
+        InstallPrintStatFunc(i, PrintUnknownStat);
     }
     /* install printing functions for compound statements                  */
-    PrintStatFuncs[ T_SEQ_STAT       ] = PrintSeqStat;
-    PrintStatFuncs[ T_SEQ_STAT2      ] = PrintSeqStat;
-    PrintStatFuncs[ T_SEQ_STAT3      ] = PrintSeqStat;
-    PrintStatFuncs[ T_SEQ_STAT4      ] = PrintSeqStat;
-    PrintStatFuncs[ T_SEQ_STAT5      ] = PrintSeqStat;
-    PrintStatFuncs[ T_SEQ_STAT6      ] = PrintSeqStat;
-    PrintStatFuncs[ T_SEQ_STAT7      ] = PrintSeqStat;
-    PrintStatFuncs[ T_IF             ] = PrintIf;
-    PrintStatFuncs[ T_IF_ELSE        ] = PrintIf;
-    PrintStatFuncs[ T_IF_ELIF        ] = PrintIf;
-    PrintStatFuncs[ T_IF_ELIF_ELSE   ] = PrintIf;
-    PrintStatFuncs[ T_FOR            ] = PrintFor;
-    PrintStatFuncs[ T_FOR2           ] = PrintFor;
-    PrintStatFuncs[ T_FOR3           ] = PrintFor;
-    PrintStatFuncs[ T_FOR_RANGE      ] = PrintFor;
-    PrintStatFuncs[ T_FOR_RANGE2     ] = PrintFor;
-    PrintStatFuncs[ T_FOR_RANGE3     ] = PrintFor;
-    PrintStatFuncs[ T_WHILE          ] = PrintWhile;
-    PrintStatFuncs[ T_WHILE2         ] = PrintWhile;
-    PrintStatFuncs[ T_WHILE3         ] = PrintWhile;
-    PrintStatFuncs[ T_REPEAT         ] = PrintRepeat;
-    PrintStatFuncs[ T_REPEAT2        ] = PrintRepeat;
-    PrintStatFuncs[ T_REPEAT3        ] = PrintRepeat;
-    PrintStatFuncs[ T_BREAK          ] = PrintBreak;
-    PrintStatFuncs[ T_CONTINUE       ] = PrintContinue;
-    PrintStatFuncs[ T_INFO           ] = PrintInfo;
-    PrintStatFuncs[ T_ASSERT_2ARGS   ] = PrintAssert2Args;
-    PrintStatFuncs[ T_ASSERT_3ARGS   ] = PrintAssert3Args;
-    PrintStatFuncs[ T_RETURN_OBJ     ] = PrintReturnObj;
-    PrintStatFuncs[ T_RETURN_VOID    ] = PrintReturnVoid;
-    PrintStatFuncs[ T_EMPTY          ] = PrintEmpty;
+    InstallPrintStatFunc( T_SEQ_STAT       , PrintSeqStat);
+    InstallPrintStatFunc( T_SEQ_STAT2      , PrintSeqStat);
+    InstallPrintStatFunc( T_SEQ_STAT3      , PrintSeqStat);
+    InstallPrintStatFunc( T_SEQ_STAT4      , PrintSeqStat);
+    InstallPrintStatFunc( T_SEQ_STAT5      , PrintSeqStat);
+    InstallPrintStatFunc( T_SEQ_STAT6      , PrintSeqStat);
+    InstallPrintStatFunc( T_SEQ_STAT7      , PrintSeqStat);
+    InstallPrintStatFunc( T_IF             , PrintIf);
+    InstallPrintStatFunc( T_IF_ELSE        , PrintIf);
+    InstallPrintStatFunc( T_IF_ELIF        , PrintIf);
+    InstallPrintStatFunc( T_IF_ELIF_ELSE   , PrintIf);
+    InstallPrintStatFunc( T_FOR            , PrintFor);
+    InstallPrintStatFunc( T_FOR2           , PrintFor);
+    InstallPrintStatFunc( T_FOR3           , PrintFor);
+    InstallPrintStatFunc( T_FOR_RANGE      , PrintFor);
+    InstallPrintStatFunc( T_FOR_RANGE2     , PrintFor);
+    InstallPrintStatFunc( T_FOR_RANGE3     , PrintFor);
+    InstallPrintStatFunc( T_WHILE          , PrintWhile);
+    InstallPrintStatFunc( T_WHILE2         , PrintWhile);
+    InstallPrintStatFunc( T_WHILE3         , PrintWhile);
+    InstallPrintStatFunc( T_REPEAT         , PrintRepeat);
+    InstallPrintStatFunc( T_REPEAT2        , PrintRepeat);
+    InstallPrintStatFunc( T_REPEAT3        , PrintRepeat);
+    InstallPrintStatFunc( T_BREAK          , PrintBreak);
+    InstallPrintStatFunc( T_CONTINUE       , PrintContinue);
+    InstallPrintStatFunc( T_INFO           , PrintInfo);
+    InstallPrintStatFunc( T_ASSERT_2ARGS   , PrintAssert2Args);
+    InstallPrintStatFunc( T_ASSERT_3ARGS   , PrintAssert3Args);
+    InstallPrintStatFunc( T_RETURN_OBJ     , PrintReturnObj);
+    InstallPrintStatFunc( T_RETURN_VOID    , PrintReturnVoid);
+    InstallPrintStatFunc( T_EMPTY          , PrintEmpty);
+    InstallPrintStatFunc( T_ATOMIC         , PrintAtomic);
 
     /* return success                                                      */
     return 0;
@@ -2161,7 +2313,7 @@ static StructInitInfo module = {
     0,                                  /* version                        */
     0,                                  /* crc                            */
     InitKernel,                         /* initKernel                     */
-    0,                                  /* initLibrary                    */
+    InitLibrary,                        /* initLibrary                    */
     0,                                  /* checkInit                      */
     0,                                  /* preSave                        */
     0,                                  /* postSave                       */
@@ -2170,7 +2322,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoStats ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

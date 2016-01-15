@@ -33,6 +33,10 @@
 
 #include        "set.h"                 /* sets                            */
 
+#include	"code.h"		/* coder                           */
+#include        "thread.h"              /* threads                         */
+#include        "tls.h"                 /* thread-local storage            */
+
 #ifndef GAP_TRANS_H
 #define GAP_TRANS_H
 
@@ -82,6 +86,28 @@ extern Obj OnSetsTrans ( Obj set, Obj f );
 **  'IdentityTrans' is an identity transformation.
 */
 extern  Obj             IdentityTrans;
+
+/****************************************************************************
+**
+*V  EqPermTrans22 . . . . . . . . . . . . . . . . .  
+**
+**  The actual equality checking function for Perm2 and Trans2.
+*/
+Int EqPermTrans22 (UInt                degL,
+                   UInt                degR, 
+                   UInt2 *             ptLstart,       
+                   UInt2 *             ptRstart);
+
+/****************************************************************************
+**
+*V  EqPermTrans44 . . . . . . . . . . . . . . . . .  
+**
+**  The actual equality checking function for Perm4 and Trans4.
+*/
+Int EqPermTrans44 (UInt                degL,
+                   UInt                degR, 
+                   UInt4 *             ptLstart,       
+                   UInt4 *             ptRstart);
 
 /****************************************************************************
 

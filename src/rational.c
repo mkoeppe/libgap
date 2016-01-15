@@ -70,16 +70,10 @@
 #include        "string.h"              /* strings                         */
 
 #include        "saveload.h"            /* saving and loading              */
+#include	"code.h"
+#include	"thread.h"
+#include	"tls.h"
 
-
-/****************************************************************************
-**
-
-*F  NUM_RAT(<rat>)  . . . . . . . . . . . . . . . . . numerator of a rational
-*F  DEN_RAT(<rat>)  . . . . . . . . . . . . . . . . denominator of a rational
-*/
-#define NUM_RAT(rat)    ADDR_OBJ(rat)[0]
-#define DEN_RAT(rat)    ADDR_OBJ(rat)[1]
 
 #if 0
 #define CHECK_RAT(rat) if (TNUM_OBJ(rat) == T_RAT && \
@@ -92,9 +86,9 @@
 
 /****************************************************************************
 **
-*F  TypeRat( <rat> )  . . . . . . . . . . . . . . . . . .  kind of a rational
+*F  TypeRat( <rat> )  . . . . . . . . . . . . . . . . . .  type of a rational
 **
-**  'TypeRat' returns the kind of the rational <rat>.
+**  'TypeRat' returns the type of the rational <rat>.
 **
 **  'TypeRat' is the function in 'TypeObjFuncs' for rationals.
 */
@@ -678,9 +672,6 @@ Obj             PowRat (
     Obj                 pow;            /* power                           */
 
     CHECK_RAT(opL);
-    /* raise numerator and denominator separately                          */
-    numP = PowInt( NUM_RAT(opL), opR );
-    denP = PowInt( DEN_RAT(opL), opR );
 
     /* if <opR> == 0 return 1                                              */
     if ( opR == INTOBJ_INT( 0L ) ) {
@@ -710,8 +701,9 @@ Obj             PowRat (
 
     /* if <opR> is negative and numerator is -1 return (-1)^r * num(l)     */
     else if ( NUM_RAT(opL) == INTOBJ_INT( -1L ) ) {
-        pow = ProdInt(PowInt(NUM_RAT(opL),ProdInt(INTOBJ_INT(-1L),opR)),
-                      PowInt(DEN_RAT(opL),ProdInt(INTOBJ_INT(-1L),opR)));
+        numP = PowInt( NUM_RAT(opL), ProdInt( INTOBJ_INT( -1L ), opR ) );
+        denP = PowInt( DEN_RAT(opL), ProdInt( INTOBJ_INT( -1L ), opR ) );
+        pow = ProdInt(numP, denP);
     }
 
     /* if <opR> is negative do both powers, take care of the sign          */
@@ -905,9 +897,17 @@ static Int InitKernel (
 {
     /* install the marking function                                        */
     InfoBags[         T_RAT ].name = "rational";
+    /* MarkTwoSubBags() is faster for Gasman, but MarkAllSubBags() is
+     * more space-efficient for the Boehm GC and does not incur a
+     * speed penalty.
+     */
+#ifndef BOEHM_GC
     InitMarkFuncBags( T_RAT, MarkTwoSubBags );
+#else
+    InitMarkFuncBags( T_RAT, MarkAllSubBags );
+#endif
 
-    /* install the kind function                                           */
+    /* install the type functions                                          */
     ImportGVarFromLibrary( "TYPE_RAT_POS", &TYPE_RAT_POS );
     ImportGVarFromLibrary( "TYPE_RAT_NEG", &TYPE_RAT_NEG );
 
@@ -917,7 +917,7 @@ static Int InitKernel (
     InitHdlrFiltsFromTable( GVarFilts );
     InitHdlrFuncsFromTable( GVarFuncs );
 
-    /* install a saving function */
+    /* install a saving functions */
     SaveObjFuncs[ T_RAT ] = SaveRat;
     LoadObjFuncs[ T_RAT ] = LoadRat;
 
@@ -1000,6 +1000,8 @@ static Int InitKernel (
     PowFuncs [ T_RAT    ][ T_INTPOS ] = PowRat;
     PowFuncs [ T_RAT    ][ T_INTNEG ] = PowRat;
 
+    MakeBagTypePublic(T_RAT);
+
     /* return success                                                      */
     return 0;
 }
@@ -1042,7 +1044,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoRat ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

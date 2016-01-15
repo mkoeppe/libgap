@@ -302,15 +302,13 @@ Obj FuncDegreeOfTransformation(Obj self, Obj f){
   UInt    n, i, deg;
   UInt2   *ptf2;
   UInt4   *ptf4;
-  Obj     ext;
 
   if(TNUM_OBJ(f)==T_TRANS2){ 
-    ext=EXT_TRANS(f);
-    if(ext == NULL){ 
+    if (EXT_TRANS(f) == NULL) {
       n=DEG_TRANS2(f);
       ptf2=ADDR_TRANS2(f);
       if(ptf2[n-1]!=n-1){
-        ext=INTOBJ_INT(n);
+        EXT_TRANS(f) = INTOBJ_INT(n);
       } else {
         deg=0;
         for(i=0;i<n;i++){ 
@@ -319,18 +317,17 @@ Obj FuncDegreeOfTransformation(Obj self, Obj f){
           } else if(ptf2[i]<i&&i+1>deg){
             deg=i+1;
           }
-        }  
-        ext=INTOBJ_INT(deg);
+        }
+        EXT_TRANS(f) = INTOBJ_INT(deg);
       }
     }
-    return ext;
+    return EXT_TRANS(f);
   } else if (TNUM_OBJ(f)==T_TRANS4){
-    ext=EXT_TRANS(f);
-    if(ext == NULL){ 
+    if (EXT_TRANS(f) == NULL) {
       n=DEG_TRANS4(f);
       ptf4=ADDR_TRANS4(f);
       if(ptf4[n-1]!=n-1){
-        ext=INTOBJ_INT(n);
+        EXT_TRANS(f) = INTOBJ_INT(n);
       } else {
         deg=0;
         for(i=0;i<n;i++){ 
@@ -340,10 +337,10 @@ Obj FuncDegreeOfTransformation(Obj self, Obj f){
             deg=i+1;
           }
         }  
-        ext=INTOBJ_INT(deg);
+        EXT_TRANS(f) = INTOBJ_INT(deg);
       }
     }
-    return ext;
+    return EXT_TRANS(f);
   }
   ErrorQuit("usage: the argument should be a transformation,", 0L, 0L);
   return 0L;
@@ -699,8 +696,10 @@ Obj FuncFLAT_KERNEL_TRANS_INT (Obj self, Obj f, Obj n){
         for(i=0;i<m;i++)      *ptnew++=*ptker++;
       } else { //m>deg
         for(i=0;i<deg;i++)    *ptnew++=*ptker++;
-        //add new points
-        for(i=RANK_TRANS2(f)+1;i<=m;i++) *ptnew++=INTOBJ_INT(i);
+        //we must now add another (m-deg) points,
+        //starting with the class number (rank+1)
+        for(i=1; i<=m-deg; i++)
+          *ptnew++=INTOBJ_INT(i+RANK_TRANS2(f));
       }
       return new;
     }
@@ -725,8 +724,10 @@ Obj FuncFLAT_KERNEL_TRANS_INT (Obj self, Obj f, Obj n){
         for(i=0;i<m;i++)      *ptnew++=*ptker++;
       } else { //m>deg
         for(i=0;i<deg;i++)    *ptnew++=*ptker++;
-        //add new points
-        for(i=RANK_TRANS4(f)+1;i<=m;i++) *ptnew++=INTOBJ_INT(i);
+        //we must now add another (m-deg) points,
+        //starting with the class number (rank+1)
+        for(i=1; i<=m-deg; i++)
+          *ptnew++=INTOBJ_INT(i+RANK_TRANS4(f));
       }
       return new;
     }
@@ -1282,7 +1283,7 @@ Obj FuncHASH_FUNC_FOR_TRANS(Obj self, Obj f, Obj data){
   
   if(TNUM_OBJ(f)==T_TRANS4){
     if(deg<=65536){
-      FuncTRIM_TRANS(self, f, EXT_TRANS(f));
+      FuncTRIM_TRANS(self, f, INTOBJ_INT(deg));
     } else {
       return INTOBJ_INT((HASHKEY_BAG_NC(f, (UInt4) 255, 3*sizeof(Obj), 
               (int) 4*deg) % (INT_INTOBJ(data)))+1);
@@ -2008,17 +2009,16 @@ Obj FuncON_KERNEL_ANTI_ACTION(Obj self, Obj ker, Obj f, Obj n){
   }
 
   len=LEN_LIST(ker);
-  out=NEW_PLIST(T_PLIST_CYC+IMMUTABLE, len);
-  SET_LEN_PLIST(out, len);
   
   rank=1;
   
   if(TNUM_OBJ(f)==T_TRANS2){
-    deg=DEG_TRANS2(f);
+    deg=INT_INTOBJ(FuncDegreeOfTransformation(self,f));
     if(len>=deg){
+      out=NEW_PLIST(T_PLIST_CYC+IMMUTABLE, len);
+      SET_LEN_PLIST(out, len);
       pttmp=ResizeInitTmpTrans(len);
       ptf2=ADDR_TRANS2(f);
-    
       for(i=0;i<deg;i++){ //<f> then <g> with ker(<g>)=<ker>
         j=INT_INTOBJ(ELM_LIST(ker, ptf2[i]+1))-1; // f first!
         if(pttmp[j]==0) pttmp[j]=rank++;
@@ -2031,6 +2031,8 @@ Obj FuncON_KERNEL_ANTI_ACTION(Obj self, Obj ker, Obj f, Obj n){
         SET_ELM_PLIST(out, i, INTOBJ_INT(pttmp[j]));
       }
     } else {//len<deg
+      out=NEW_PLIST(T_PLIST_CYC+IMMUTABLE, deg);
+      SET_LEN_PLIST(out, deg);
       pttmp=ResizeInitTmpTrans(deg);
       ptf2=ADDR_TRANS2(f);
       for(i=0;i<len;i++){  //<f> then <g> with ker(<g>)=<ker>
@@ -2038,17 +2040,24 @@ Obj FuncON_KERNEL_ANTI_ACTION(Obj self, Obj ker, Obj f, Obj n){
         if(pttmp[j]==0) pttmp[j]=rank++;
         SET_ELM_PLIST(out, i+1, INTOBJ_INT(pttmp[j]));
       }
-      for(;i<deg;i++){     //just <f>
-        if(pttmp[ptf2[i]]==0) pttmp[ptf2[i]]=rank++;
-        SET_ELM_PLIST(out, i+1, INTOBJ_INT(pttmp[ptf2[i]]));
+      for(;i<deg;i++){//assume g acts as identity on i
+	if(ptf2[i]+1<=len) {  //refers to a class in ker
+	  j=INT_INTOBJ(ELM_LIST(ker, ptf2[i]+1))-1;
+	  if(pttmp[j]==0) pttmp[j]=rank++;
+	  SET_ELM_PLIST(out, i+1, INTOBJ_INT(pttmp[j]));
+	} else {  //refers to a class outside ker
+	  if(pttmp[ptf2[i]]==0) pttmp[ptf2[i]]=rank++;
+	  SET_ELM_PLIST(out, i+1, INTOBJ_INT(pttmp[ptf2[i]]));
+	}
       }
     }
   } else { 
-    deg=DEG_TRANS4(f);
+    deg=INT_INTOBJ(FuncDegreeOfTransformation(self,f));
     if(len>=deg){
+      out=NEW_PLIST(T_PLIST_CYC+IMMUTABLE, len);
+      SET_LEN_PLIST(out, len);
       pttmp=ResizeInitTmpTrans(len);
       ptf4=ADDR_TRANS4(f);
-    
       for(i=0;i<deg;i++){ //<f> then <g> with ker(<g>)=<ker>
         j=INT_INTOBJ(ELM_LIST(ker, ptf4[i]+1))-1; // f first!
         if(pttmp[j]==0) pttmp[j]=rank++;
@@ -2061,6 +2070,8 @@ Obj FuncON_KERNEL_ANTI_ACTION(Obj self, Obj ker, Obj f, Obj n){
         SET_ELM_PLIST(out, i, INTOBJ_INT(pttmp[j]));
       }
     } else {//len<deg
+      out=NEW_PLIST(T_PLIST_CYC+IMMUTABLE, deg);
+      SET_LEN_PLIST(out, deg);
       pttmp=ResizeInitTmpTrans(deg);
       ptf4=ADDR_TRANS4(f);
       for(i=0;i<len;i++){  //<f> then <g> with ker(<g>)=<ker>
@@ -2069,8 +2080,14 @@ Obj FuncON_KERNEL_ANTI_ACTION(Obj self, Obj ker, Obj f, Obj n){
         SET_ELM_PLIST(out, i+1, INTOBJ_INT(pttmp[j]));
       }
       for(;i<deg;i++){     //just <f>
-        if(pttmp[ptf4[i]]==0) pttmp[ptf4[i]]=rank++;
-        SET_ELM_PLIST(out, i+1, INTOBJ_INT(pttmp[ptf4[i]]));
+	if(ptf4[i]+1<=len) {
+	  j=INT_INTOBJ(ELM_LIST(ker, ptf4[i]+1))-1;
+	  if(pttmp[j]==0) pttmp[j]=rank++;
+	  SET_ELM_PLIST(out, i+1, INTOBJ_INT(pttmp[j]));
+	} else {
+	  if(pttmp[ptf4[i]]==0) pttmp[ptf4[i]]=rank++;
+	  SET_ELM_PLIST(out, i+1, INTOBJ_INT(pttmp[ptf4[i]]));
+	}
       }
     }
   }
@@ -2805,25 +2822,116 @@ Obj OneTrans( Obj f ){
 
 /* equality for transformations */
 
-Int EqTrans22 (Obj f, Obj g){
-  UInt    i, def, deg;
-  UInt2   *ptf, *ptg;
+// the following function is used to check equality of both permutations and
+// transformations, it is written by Chris Jefferson in pull request #280
 
-  ptf=ADDR_TRANS2(f);   ptg=ADDR_TRANS2(g);
-  def=DEG_TRANS2(f);    deg=DEG_TRANS2(g);
+Int             EqPermTrans22 (UInt                degL,
+                               UInt                degR, 
+                               UInt2 *             ptLstart,       
+                               UInt2 *             ptRstart) {
+    
+    UInt2 *             ptL;            /* pointer to the left operand     */
+    UInt2 *             ptR;            /* pointer to the right operand    */
+    UInt                p;              /* loop variable                   */
 
-  if(def<=deg){
-    for(i=0;i<def;i++) if(*(ptf++)!=*(ptg++)) return 0L;
-    for(;i<deg;i++)    if(*(ptg++)!=i) return 0L;
-  } else {
-    for(i=0;i<deg;i++) if(*(ptf++)!=*(ptg++)) return 0L;
-    for(;i<def;i++)    if(*(ptf++)!=i) return 0L;
-  }
-  
-  /* otherwise they must be equal */
-  return 1L;
+    /* if permutations are different sizes, check final element as
+     * early check                                                         */
+
+    if ( degL != degR ) {
+      if ( degL < degR ) {
+        if ( *(ptRstart + degR - 1) != (degR - 1) )
+          return 0L;
+      }
+      else {
+        if ( *(ptLstart + degL - 1) != (degL - 1) )
+          return 0L;
+      }
+    }
+
+    /* search for a difference and return False if you find one          */
+    if ( degL <= degR ) {
+      ptR = ptRstart + degL;
+      for ( p = degL; p < degR; p++ )
+          if ( *(ptR++) !=        p )
+              return 0L;
+
+        if(memcmp(ptLstart, ptRstart, degL * sizeof(UInt2)) != 0)
+            return 0L;
+    }
+    else {
+        ptL = ptLstart + degR;
+        for ( p = degR; p < degL; p++ )
+            if ( *(ptL++) !=        p )
+                return 0L;
+        if(memcmp(ptLstart, ptRstart, degR * sizeof(UInt2)) != 0)
+          return 0L;
+    }
+
+    /* otherwise they must be equal                                        */
+    return 1L;
 }
 
+Int             EqPermTrans44 (UInt                degL,
+                               UInt                degR, 
+                               UInt4 *             ptLstart,       
+                               UInt4 *             ptRstart) {
+    UInt4 *             ptL;            /* pointer to the left operand     */
+    UInt4 *             ptR;            /* pointer to the right operand    */
+    UInt                p;              /* loop variable                   */
+
+    /* if permutations/transformation are different sizes, check final element
+     * as early check */
+
+    if ( degL != degR ) {
+      if ( degL < degR ) {
+        if ( *(ptRstart + degR - 1) != (degR - 1) )
+          return 0L;
+      }
+      else {
+        if ( *(ptLstart + degL - 1) != (degL - 1) )
+          return 0L;
+      }
+    }
+    
+    /* search for a difference and return False if you find one          */
+    if ( degL <= degR ) {
+      ptR = ptRstart + degL;
+      for ( p = degL; p < degR; p++ )
+          if ( *(ptR++) !=        p )
+              return 0L;
+        
+        if(memcmp(ptLstart, ptRstart, degL * sizeof(UInt4)) != 0)
+            return 0L;
+    }
+    else {
+        ptL = ptLstart + degR;
+        for ( p = degR; p < degL; p++ )
+            if ( *(ptL++) !=        p )
+                return 0L;
+        if(memcmp(ptLstart, ptRstart, degR * sizeof(UInt4)) != 0)
+          return 0L;
+    }
+
+    /* otherwise they must be equal                                        */
+    return 1L;
+}
+
+Int             EqTrans22 (Obj opL,
+                           Obj opR ) {
+  return EqPermTrans22(DEG_TRANS2(opL), 
+                       DEG_TRANS2(opR), 
+                       ADDR_TRANS2(opL),
+                       ADDR_TRANS2(opR));
+}
+
+Int             EqTrans44 (
+    Obj                 opL,
+    Obj                 opR ) {
+  return EqPermTrans44(DEG_TRANS4(opL), 
+                       DEG_TRANS4(opR), 
+                       ADDR_TRANS4(opL),
+                       ADDR_TRANS4(opR));
+}
 
 Int EqTrans24 (Obj f, Obj g){
   UInt   i, def, deg;
@@ -2845,7 +2953,6 @@ Int EqTrans24 (Obj f, Obj g){
   return 1L;
 }
 
-
 Int EqTrans42 (Obj f, Obj g){
   UInt   i, def, deg;
   UInt4  *ptf;
@@ -2860,26 +2967,6 @@ Int EqTrans42 (Obj f, Obj g){
   } else {
     for(i=0;i<deg;i++) if(*(ptf++)!=*(ptg++)) return 0L;
     for(;i<def;i++)    if(*(ptf++)!=i)        return 0L;
-  }
-  
-  /* otherwise they must be equal */
-  return 1L;
-}
-
-
-Int EqTrans44 (Obj f, Obj g){
-  UInt   i, def, deg;
-  UInt4  *ptf, *ptg;
-
-  ptf=ADDR_TRANS4(f);   ptg=ADDR_TRANS4(g);
-  def=DEG_TRANS4(f);    deg=DEG_TRANS4(g);
-
-  if(def<=deg){
-    for(i=0;i<def;i++) if(*(ptf++)!=*(ptg++)) return 0L;
-    for(;i<deg;i++)    if(*(ptg++)!=i) return 0L;
-  } else {
-    for(i=0;i<deg;i++) if(*(ptf++)!=*(ptg++)) return 0L;
-    for(;i<def;i++)    if(*(ptf++)!=i) return 0L;
   }
   
   /* otherwise they must be equal */
@@ -3995,19 +4082,14 @@ Obj IsTransHandler (
     Obj                 val )
 {
     /* return 'true' if <val> is a transformation and 'false' otherwise       */
-    switch ( TNUM_OBJ(val) ) {
-
-        case T_TRANS2:
-        case T_TRANS4:
-            return True;
-
-        case T_COMOBJ:
-        case T_POSOBJ:
-        case T_DATOBJ:
-            return DoFilter( self, val );
-
-        default:
-            return False;
+    if ( TNUM_OBJ(val) == T_TRANS2 || TNUM_OBJ(val) == T_TRANS4 ) {
+        return True;
+    }
+    else if ( TNUM_OBJ(val) < FIRST_EXTERNAL_TNUM ) {
+        return False;
+    }
+    else {
+        return DoFilter( self, val );
     }
 }
 
@@ -4265,13 +4347,16 @@ static StructGVarFunc GVarFuncs [] = {
 static Int InitKernel ( StructInitInfo *module )
 {
 
-    /* install the marking function                                        */
+    /* install the marking functions                                       */
     InfoBags[ T_TRANS2 ].name = "transformation (small)";
     InfoBags[ T_TRANS4 ].name = "transformation (large)";
     InitMarkFuncBags( T_TRANS2, MarkTransSubBags );
     InitMarkFuncBags( T_TRANS4, MarkTransSubBags );
     
-    /* install the kind function                                           */
+    MakeBagTypePublic( T_TRANS2);
+    MakeBagTypePublic( T_TRANS4);
+
+    /* install the type functions                                          */
     ImportGVarFromLibrary( "TYPE_TRANS2", &TYPE_TRANS2 );
     ImportGVarFromLibrary( "TYPE_TRANS4", &TYPE_TRANS4 );
 
@@ -4380,7 +4465,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoTrans ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

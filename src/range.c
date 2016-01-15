@@ -77,6 +77,10 @@
 
 #include        "saveload.h"            /* saving and loading              */
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
 
 /****************************************************************************
 **
@@ -233,7 +237,7 @@
 /****************************************************************************
 **
 
-*F  TypeRangeNSortImmutable( <range> )  . . . . . . . . . . . kind of a range
+*F  TypeRangeNSortImmutable( <range> )  . . . . . . . . . . . type of a range
 **
 **  'TypeRangeNSortMutable' is the   function in 'TypeObjFuncs' for immutable
 **  ranges which are not strictly sorted.
@@ -248,7 +252,7 @@ Obj TypeRangeNSortImmutable (
     
 /****************************************************************************
 **
-*F  TypeRangeNSortMutable( <range> )  . . . . . . . . . . . . kind of a range
+*F  TypeRangeNSortMutable( <range> )  . . . . . . . . . . . . type of a range
 **
 **  'TypeRangeNSortMutable' is the   function in 'TypeObjFuncs' for   mutable
 **  ranges which are not strictly sorted.
@@ -263,7 +267,7 @@ Obj TypeRangeNSortMutable (
     
 /****************************************************************************
 **
-*F  TypeRangeSSortImmutable( <range> )  . . . . . . . . . . . kind of a range
+*F  TypeRangeSSortImmutable( <range> )  . . . . . . . . . . . type of a range
 **
 **  'TypeRangeNSortMutable' is the   function in 'TypeObjFuncs' for immutable
 **  ranges which are strictly sorted.
@@ -279,7 +283,7 @@ Obj TypeRangeSSortImmutable (
 
 /****************************************************************************
 **
-*F  TypeRangeSSortMutable( <range> )  . . . . . . . . . . . . kind of a range
+*F  TypeRangeSSortMutable( <range> )  . . . . . . . . . . . . type of a range
 **
 **  'TypeRangeNSortMutable' is the   function in 'TypeObjFuncs' for   mutable
 **  ranges which are strictly sorted.
@@ -1595,7 +1599,11 @@ static Int InitKernel (
     InitMarkFuncBags(   T_RANGE_SSORT            +COPYING , MarkAllSubBags );
     InitMarkFuncBags(   T_RANGE_SSORT +IMMUTABLE +COPYING , MarkAllSubBags );
 
-    /* install the kind function                                           */
+    /* Make immutable bags public                                          */
+    MakeBagTypePublic( T_RANGE_NSORT + IMMUTABLE );
+    MakeBagTypePublic( T_RANGE_SSORT + IMMUTABLE );
+
+    /* install the type function                                           */
     ImportGVarFromLibrary( "TYPE_RANGE_NSORT_MUTABLE",
                            &TYPE_RANGE_NSORT_MUTABLE );
 
@@ -1789,7 +1797,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoRange ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

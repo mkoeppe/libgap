@@ -14,31 +14,22 @@
 
 /****************************************************************************
 **
-
 *D  SCP_SOMETHING
 **
-**  WARNING: 'cwVector' and 'cw2Vector' must be cleaned after using them.
 */
 #define SCP_UNDERLYING_FAMILY       1   /* the family of our free grp elms */
 #define SCP_RWS_GENERATORS          2   /* the free grp generators used    */
 #define SCP_NUMBER_RWS_GENERATORS   3   /* number of generators            */
-#define SCP_DEFAULT_TYPE            4   /* default kind of the result      */
-#define SCP_IS_DEFAULT_TYPE         5   /* tester for default kind         */
+#define SCP_DEFAULT_TYPE            4   /* default type of the result      */
+#define SCP_IS_DEFAULT_TYPE         5   /* tester for default type         */
 #define SCP_RELATIVE_ORDERS         6   /* list of relative orders         */
 #define SCP_POWERS                  7   /* list of power rhs               */
 #define SCP_CONJUGATES              8   /* list of list of conjugates rhs  */
 #define SCP_INVERSES                9   /* list of inverses of the gens    */
-#define SCP_NW_STACK               10   /* word stack                      */
-#define SCP_LW_STACK               11   /* end marker stack                */
-#define SCP_PW_STACK               12   /* position stack                  */
-#define SCP_EW_STACK               13   /* exponent stack                  */
-#define SCP_GE_STACK               14   /* global exponent stack           */
-#define SCP_CW_VECTOR              15   /* temporary collect vector        */
-#define SCP_CW2_VECTOR             16   /* temporary collect vector        */
-#define SCP_MAX_STACK_SIZE         17   /* maximal stack size              */
-#define SCP_COLLECTOR              18   /* collector to use                */
-#define SCP_AVECTOR                19   /* avector                         */
+#define SCP_COLLECTOR              10   /* collector to use                */
+#define SCP_AVECTOR                11   /* avector                         */
 #define SCP_LAST          SCP_AVECTOR   /* last entry in a single coll.    */
+
 
 /****************************************************************************
 **
@@ -55,44 +46,17 @@
 #define SC_CONJUGATES(sc) \
     (ADDR_OBJ(sc)[SCP_CONJUGATES])
 
-#define SC_CW_VECTOR(sc) \
-    (ADDR_OBJ(sc)[SCP_CW_VECTOR])
-
-#define SC_CW2_VECTOR(sc) \
-    (ADDR_OBJ(sc)[SCP_CW2_VECTOR])
-
 #define SC_DEFAULT_TYPE(sc) \
     (ADDR_OBJ(sc)[SCP_DEFAULT_TYPE])
-
-#define SC_EW_STACK(sc) \
-    (ADDR_OBJ(sc)[SCP_EW_STACK])
-
-#define SC_GE_STACK(sc) \
-    (ADDR_OBJ(sc)[SCP_GE_STACK])
 
 #define SC_INVERSES(sc) \
     (ADDR_OBJ(sc)[SCP_INVERSES])
 
-#define SC_LW_STACK(sc) \
-    (ADDR_OBJ(sc)[SCP_LW_STACK])
-
-#define SC_MAX_STACK_SIZE(sc) \
-    (INT_INTOBJ((ADDR_OBJ(sc)[SCP_MAX_STACK_SIZE])))
-
-#define SC_SET_MAX_STACK_SIZE(sc,obj) \
-    ((ADDR_OBJ(sc)[SCP_MAX_STACK_SIZE]) = INTOBJ_INT(obj))
-
 #define SC_NUMBER_RWS_GENERATORS(sc) \
     (INT_INTOBJ((ADDR_OBJ(sc)[SCP_NUMBER_RWS_GENERATORS])))
 
-#define SC_NW_STACK(sc) \
-    (ADDR_OBJ(sc)[SCP_NW_STACK])
-
 #define SC_POWERS(sc) \
     (ADDR_OBJ(sc)[SCP_POWERS])
-
-#define SC_PW_STACK(sc) \
-    (ADDR_OBJ(sc)[SCP_PW_STACK])
 
 #define SC_RELATIVE_ORDERS(sc) \
     (ADDR_OBJ(sc)[SCP_RELATIVE_ORDERS])
@@ -100,6 +64,14 @@
 #define SC_RWS_GENERATORS(sc) \
     (ADDR_OBJ(sc)[SCP_RWS_GENERATORS])
 
+extern Obj SC_NW_STACK;
+extern Obj SC_LW_STACK;
+extern Obj SC_PW_STACK;
+extern Obj SC_EW_STACK;
+extern Obj SC_GE_STACK;
+extern Obj SC_CW_VECTOR;
+extern Obj SC_CW2_VECTOR;
+extern UInt SC_MAX_STACK_SIZE;
 
 /****************************************************************************
 **

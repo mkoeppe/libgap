@@ -33,6 +33,10 @@
 
 #include        "saveload.h"            /* saving and loading              */
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
 
 /***************************************************************************
 **
@@ -526,7 +530,7 @@ static FILE *file;
 
 static void report( Bag bag)
 {
-  fprintf(file,"%li %li\n", (Int) TNUM_BAG(bag), (Int) SIZE_BAG(bag));
+  fprintf(file,"%li %li\n", (long) TNUM_BAG(bag), (long) SIZE_BAG(bag));
 }
 
 Obj BagStats(Obj self, Obj filename)
@@ -1073,7 +1077,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoSaveLoad ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

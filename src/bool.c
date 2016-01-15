@@ -36,6 +36,10 @@
 #include        "lists.h"               /* generic lists                   */
 #include        "string.h"              /* strings                         */
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
 
 /****************************************************************************
 **
@@ -78,9 +82,9 @@ Obj SFail;
 /****************************************************************************
 **
 
-*F  TypeBool( <bool> )  . . . . . . . . . . . . . . . kind of a boolean value
+*F  TypeBool( <bool> )  . . . . . . . . . . . . . . . type of a boolean value
 **
-**  'TypeBool' returns the kind of boolean values.
+**  'TypeBool' returns the type of boolean values.
 **
 **  'TypeBool' is the function in 'TypeObjFuncs' for boolean values.
 */
@@ -390,7 +394,7 @@ static Int InitKernel (
     InitHandlerFunc( ReturnFail2, "src/bool.c:ReturnFail2" );
     InitHandlerFunc( ReturnFail3, "src/bool.c:ReturnFail3" );
 
-    /* install the kind function                                           */
+    /* install the type function                                           */
     ImportGVarFromLibrary( "TYPE_BOOL", &TYPE_BOOL );
     TypeObjFuncs[ T_BOOL ] = TypeBool;
 
@@ -448,21 +452,21 @@ static Int InitLibrary (
     MakeReadOnlyGVar(gvar);
 
     /* make and install the 'RETURN_TRUE' function                         */
-    tmp = NewFunctionC( "RETURN_TRUE", -1L, "args", ReturnTrue1 );
+    tmp = NewFunctionC( "RETURN_TRUE", -1L, "arg", ReturnTrue1 );
     HDLR_FUNC( tmp, 1 ) = ReturnTrue1;
     HDLR_FUNC( tmp, 2 ) = ReturnTrue2;
     HDLR_FUNC( tmp, 3 ) = ReturnTrue3;
     AssGVar( GVarName("RETURN_TRUE"), tmp );
 
     /* make and install the 'RETURN_FALSE' function                        */
-    tmp = NewFunctionC("RETURN_FALSE",-1L,"args",ReturnFalse1);
+    tmp = NewFunctionC("RETURN_FALSE",-1L,"arg",ReturnFalse1);
     HDLR_FUNC( tmp, 1 ) = ReturnFalse1;
     HDLR_FUNC( tmp, 2 ) = ReturnFalse2;
     HDLR_FUNC( tmp, 3 ) = ReturnFalse3;
     AssGVar( GVarName( "RETURN_FALSE" ), tmp );
 
     /* make and install the 'RETURN_FAIL' function                        */
-    tmp = NewFunctionC("RETURN_FAIL", -1L, "args", ReturnFail1);
+    tmp = NewFunctionC("RETURN_FAIL", -1L, "arg", ReturnFail1);
     HDLR_FUNC( tmp, 1 ) = ReturnFail1;
     HDLR_FUNC( tmp, 2 ) = ReturnFail2;
     HDLR_FUNC( tmp, 3 ) = ReturnFail3;
@@ -494,7 +498,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoBool ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

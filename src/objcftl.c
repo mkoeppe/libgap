@@ -30,6 +30,10 @@
 
 #include        "objcftl.h"             /* from the left collect           */
 
+#include	"code.h"
+#include	"thread.h"
+#include	"tls.h"
+
 
 #define IS_INT_ZERO( n )  (IS_INTOBJ(n) && ((n) == INTOBJ_INT(0))) 
 
@@ -446,7 +450,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoPcc ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

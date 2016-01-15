@@ -47,6 +47,7 @@
 */
 #include "config.h"
 
+#include "atomic.h"
 
 /* on 64 bit systems use only two words for bag header */
 
@@ -102,7 +103,7 @@ typedef UInt * *        Bag;
 **
 **  'TNUM_BAG( <bag> )'
 **
-**  'TNUM_BAG' returns the type of the the bag with the identifier <bag>.
+**  'TNUM_BAG' returns the type of the bag with the identifier <bag>.
 **
 **  Each bag has a certain type that identifies its structure.  The type is a
 **  integer between 0  and  253.  The types 254   and  255 are  reserved  for
@@ -350,6 +351,7 @@ extern  void            RetypeBag (
             Bag                 bag,
             UInt                new_type );
 
+#define RetypeBagIfWritable(x,y)     RetypeBag(x,y)
 
 /****************************************************************************
 **
@@ -539,6 +541,10 @@ typedef struct  {
 
 extern  TNumInfoBags            InfoBags [ 256 ];
 
+#define MakeBagTypePublic(type)     do { } while(0)
+#define MakeBagTypeProtected(type)  do { } while(0)
+#define MakeBagPublic(bag)          do { } while(0)
+#define MakeBagReadOnly(bag)        do { } while(0)
 
 /****************************************************************************
 **
@@ -792,7 +798,7 @@ extern void MarkAllSubBagsDefault ( Bag );
 **  new  position. The  intended  use is  for  weak  pointer bags, which must
 **  remove references to identifiers of  any half-dead objects. 
 **
-**  If no function  is installed for a Tnum,  then the data is  simply copied
+**  If no function  is installed for a TNum,  then the data is  simply copied
 **  unchanged and this is done particularly quickly 
 */
 

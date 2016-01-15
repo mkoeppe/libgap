@@ -78,6 +78,13 @@
 #include        "plist.h"               /* plain lists                     */
 #include        "string.h"              /* strings                         */
 
+#include	"code.h"		/* coder                           */
+#include	"aobjects.h"		/* atomic access to plists	   */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
+#include	"ffdata.h"		/* pre-computed finite field data  */
+
 
 /****************************************************************************
 **
@@ -163,9 +170,9 @@ Obj             SuccFF;
 
 /****************************************************************************
 **
-*F  TYPE_FF(<ff>) . . . . . . . . . . . . . . .  kind of a small finite field
+*F  TYPE_FF(<ff>) . . . . . . . . . . . . . . .  type of a small finite field
 **
-**  'TYPE_FF' returns the kind of elements of the small finite field <ff>.
+**  'TYPE_FF' returns the type of elements of the small finite field <ff>.
 **
 **  Note that  'TYPE_FF' is a macro, so  do not call  it  with arguments that
 **  have side effects.
@@ -724,9 +731,9 @@ Obj FunDEGREE_FFE_DEFAULT (
 
 /****************************************************************************
 **
-*F  TypeFFE(<ffe>)  . . . . . . . . . . kind of element of small finite field
+*F  TypeFFE(<ffe>)  . . . . . . . . . . type of element of small finite field
 **
-**  'TypeFFE' returns the kind of the element <ffe> of a small finite field.
+**  'TypeFFE' returns the type of the element <ffe> of a small finite field.
 **
 **  'TypeFFE' is the function in 'TypeObjFuncs' for  elements in small finite
 **  fields.
@@ -1637,7 +1644,7 @@ Obj FuncIS_FFE (
     if ( TNUM_OBJ(obj) == T_FFE ) {
         return True;
     }
-    else if ( TNUM_OBJ(obj) <= FIRST_EXTERNAL_TNUM ) {
+    else if ( TNUM_OBJ(obj) < FIRST_EXTERNAL_TNUM ) {
         return False;
     }
     else {
@@ -1987,7 +1994,7 @@ static Int InitKernel (
     InfoBags[ T_FFE ].name = "ffe";
     /* InitMarkFuncBags( T_FFE, MarkNoSubBags ); */
 
-    /* install the kind function                                           */
+    /* install the type functions                                          */
     ImportFuncFromLibrary( "TYPE_FFE", &TYPE_FFE );
     ImportFuncFromLibrary( "TYPE_FFE0", &TYPE_FFE0 );
     ImportFuncFromLibrary( "ZOp", &ZOp );
@@ -2107,7 +2114,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoFinfield ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

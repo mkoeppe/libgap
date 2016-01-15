@@ -49,6 +49,16 @@ extern UInt Last3;
 */
 extern UInt Time;
 
+/****************************************************************************
+**
+*V  AlarmJumpBuffer . . . . . .long jump buffer used for timeouts 
+**
+**  Needs to be visible to code in read.c that stores away execution state 
+*/
+
+
+extern syJmp_buf AlarmJumpBuffers[];
+extern UInt NumAlarmJumpBuffers;
 
 
 /****************************************************************************
@@ -229,7 +239,7 @@ typedef UInt ExecStatus;
 
 extern UInt UserHasQuit;
 extern UInt UserHasQUIT;
-extern UInt UserHasQUITReturnValue;
+extern UInt SystemErrorCode;
 
 #if 0
 /****************************************************************************

@@ -42,11 +42,17 @@
 
 #include        "code.h"                /* coder                           */
 
-#include        "vars.h"                /* variables                       */
-
 #include        "saveload.h"            /* saving and loading              */
 #include        "read.h"                /* to access stack of for loop globals */
 #include        "gvars.h"
+#include        "thread.h"              /* threads                         */
+#include        "tls.h"                 /* thread-local storage            */
+#include	"aobjects.h"		/* atomic objects		   */
+
+#include        "vars.h"                /* variables                       */
+
+
+#include        "profile.h"             /* access to stat register function*/
 
 /****************************************************************************
 **
@@ -57,6 +63,14 @@
 */
 Stat * PtrBody;
 
+/****************************************************************************
+**
+
+*V  FilenameCache . . . . . . . . . . . . . . . . . . list of filenames
+**
+**  'FilenameCache' is a list of previously opened filenames.
+*/
+Obj FilenameCache;
 
 /****************************************************************************
 **
@@ -65,55 +79,112 @@ Stat * PtrBody;
 **  'OffsBody' is the  offset in the current   body.  It is  only valid while
 **  coding.
 */
+#define MAX_FUNC_EXPR_NESTING 1024
+
+
 Stat OffsBody;
 
-Stat OffsBodyStack[1024];
+Stat OffsBodyStack[MAX_FUNC_EXPR_NESTING];
 UInt OffsBodyCount = 0;
 
+UInt LoopNesting = 0;
+UInt LoopStack[MAX_FUNC_EXPR_NESTING];
+UInt LoopStackCount = 0;
+
 static inline void PushOffsBody( void ) {
-  assert(OffsBodyCount <= 1023);
-  OffsBodyStack[OffsBodyCount++] = OffsBody;
+  assert(TLS(OffsBodyCount) <= MAX_FUNC_EXPR_NESTING-1);
+  TLS(OffsBodyStack)[TLS(OffsBodyCount)++] = TLS(OffsBody);
 }
 
 static inline void PopOffsBody( void ) {
-  assert(OffsBodyCount);
-  OffsBody = OffsBodyStack[--OffsBodyCount];
+  assert(TLS(OffsBodyCount));
+  TLS(OffsBody) = TLS(OffsBodyStack)[--TLS(OffsBodyCount)];
 }
 
+static inline void PushLoopNesting( void ) {
+  assert(TLS(LoopStackCount) <= MAX_FUNC_EXPR_NESTING-1);
+  TLS(LoopStack)[TLS(LoopStackCount)++] = TLS(LoopNesting);
+}
+
+static inline void PopLoopNesting( void ) {
+  assert(TLS(LoopStackCount));
+  TLS(LoopNesting) = TLS(LoopStack)[--TLS(LoopStackCount)];
+}
+
+static inline void setup_gapname(TypInputFile* i)
+{
+  UInt len;
+  if(!i->gapname) {
+    C_NEW_STRING_DYN(i->gapname, i->name);
+    len = LEN_PLIST( FilenameCache );
+    GROW_PLIST(      FilenameCache, len+1 );
+    SET_LEN_PLIST(   FilenameCache, len+1 );
+    SET_ELM_PLIST(   FilenameCache, len+1, i->gapname );
+    CHANGED_BAG(     FilenameCache );
+    i->gapnameid = len+1;
+  }
+}
+
+Obj FILENAME_STAT(Stat stat)
+{
+  Obj filename;
+  UInt filenameid = FILENAMEID_STAT(stat);
+  if (filenameid == 0)
+      filename = NEW_STRING(0);
+  else
+      filename = ELM_PLIST(FilenameCache, filenameid);
+  return filename;
+}
+    
+    
 /****************************************************************************
 **
 *F  NewStat( <type>, <size> ) . . . . . . . . . . .  allocate a new statement
 **
 **  'NewStat'   allocates a new   statement memory block  of  type <type> and
 **  <size> bytes.  'NewStat' returns the identifier of the new statement.
+**
+**  NewStat( <type>, <size>, <line> ) allows the line number of the statement
+**  to also be specified (else the current line when NewStat is called is
+**  used).
 */
-Stat NewStat (
+Stat NewStatWithLine (
     UInt                type,
-    UInt                size )
+    UInt                size,
+    UInt                line)
 {
     Stat                stat;           /* result                          */
 
     /* this is where the new statement goes                                */
-    stat = OffsBody + FIRST_STAT_CURR_FUNC;
+    stat = TLS(OffsBody) + FIRST_STAT_CURR_FUNC;
 
     /* increase the offset                                                 */
-    OffsBody = stat + ((size+sizeof(Stat)-1) / sizeof(Stat)) * sizeof(Stat);
+    TLS(OffsBody) = stat + ((size+sizeof(Stat)-1) / sizeof(Stat)) * sizeof(Stat);
 
     /* make certain that the current body bag is large enough              */
     if ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) == 0 ) {
-      ResizeBag( BODY_FUNC(CURR_FUNC), OffsBody + NUMBER_HEADER_ITEMS_BODY*sizeof(Obj) );
-        PtrBody = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
+      ResizeBag( BODY_FUNC(CURR_FUNC), TLS(OffsBody) + NUMBER_HEADER_ITEMS_BODY*sizeof(Obj) );
+        TLS(PtrBody) = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
     }
-    while ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) < OffsBody + NUMBER_HEADER_ITEMS_BODY*sizeof(Obj)  ) {
+    while ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) < TLS(OffsBody) + NUMBER_HEADER_ITEMS_BODY*sizeof(Obj)  ) {
         ResizeBag( BODY_FUNC(CURR_FUNC), 2*SIZE_BAG(BODY_FUNC(CURR_FUNC)) );
-        PtrBody = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
+        TLS(PtrBody) = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
     }
-
+    setup_gapname(TLS(Input));
+    
     /* enter type and size                                                 */
-    ADDR_STAT(stat)[-1] = (size << 8) + type;
-
+    ADDR_STAT(stat)[-1] = ((Stat)TLS(Input)->gapnameid << 48) + ((Stat)line << 32) +
+                          ((Stat)size << 8) + (Stat)type;
+    RegisterStatWithProfiling(stat);
     /* return the new statement                                            */
     return stat;
+}
+
+Stat NewStat (
+    UInt                type,
+    UInt                size)
+{
+    return NewStatWithLine(type, size, TLS(Input)->number);
 }
 
 
@@ -131,24 +202,26 @@ Expr            NewExpr (
     Expr                expr;           /* result                          */
 
     /* this is where the new expression goes                               */
-    expr = OffsBody + FIRST_STAT_CURR_FUNC;
+    expr = TLS(OffsBody) + FIRST_STAT_CURR_FUNC;
 
     /* increase the offset                                                 */
-    OffsBody = expr + ((size+sizeof(Expr)-1) / sizeof(Expr)) * sizeof(Expr);
+    TLS(OffsBody) = expr + ((size+sizeof(Expr)-1) / sizeof(Expr)) * sizeof(Expr);
 
     /* make certain that the current body bag is large enough              */
     if ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) == 0 ) {
-        ResizeBag( BODY_FUNC(CURR_FUNC), OffsBody );
-        PtrBody = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
+        ResizeBag( BODY_FUNC(CURR_FUNC), TLS(OffsBody) );
+        TLS(PtrBody) = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
     }
-    while ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) < OffsBody ) {
+    while ( SIZE_BAG(BODY_FUNC(CURR_FUNC)) < TLS(OffsBody) ) {
         ResizeBag( BODY_FUNC(CURR_FUNC), 2*SIZE_BAG(BODY_FUNC(CURR_FUNC)) );
-        PtrBody = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
+        TLS(PtrBody) = (Stat*)PTR_BAG( BODY_FUNC(CURR_FUNC) );
     }
 
     /* enter type and size                                                 */
-    ADDR_EXPR(expr)[-1] = (size << 8) + type;
-
+    ADDR_EXPR(expr)[-1] = ((Stat)TLS(Input)->gapnameid << 48) +
+                          ((Stat)TLS(Input)->number << 32) +
+                          ((Stat)size << 8) + type;
+    RegisterStatWithProfiling(expr);
     /* return the new expression                                           */
     return expr;
 }
@@ -190,17 +263,17 @@ void PushStat (
     Stat                stat )
 {
     /* there must be a stack, it must not be underfull or overfull         */
-    assert( StackStat != 0 );
-    assert( 0 <= CountStat );
-    assert( CountStat <= SIZE_BAG(StackStat)/sizeof(Stat) );
+    assert( TLS(StackStat) != 0 );
+    assert( 0 <= TLS(CountStat) );
+    assert( TLS(CountStat) <= SIZE_BAG(TLS(StackStat))/sizeof(Stat) );
     assert( stat != 0 );
 
     /* count up and put the statement onto the stack                       */
-    if ( CountStat == SIZE_BAG(StackStat)/sizeof(Stat) ) {
-        ResizeBag( StackStat, 2*CountStat*sizeof(Stat) );
+    if ( TLS(CountStat) == SIZE_BAG(TLS(StackStat))/sizeof(Stat) ) {
+        ResizeBag( TLS(StackStat), 2*TLS(CountStat)*sizeof(Stat) );
     }
-    ((Stat*)PTR_BAG(StackStat))[CountStat] = stat;
-    CountStat++;
+    ((Stat*)PTR_BAG(TLS(StackStat)))[TLS(CountStat)] = stat;
+    TLS(CountStat)++;
 }
 
 Stat PopStat ( void )
@@ -208,13 +281,13 @@ Stat PopStat ( void )
     Stat                stat;
 
     /* there must be a stack, it must not be underfull/empty or overfull   */
-    assert( StackStat != 0 );
-    assert( 1 <= CountStat );
-    assert( CountStat <= SIZE_BAG(StackStat)/sizeof(Stat) );
+    assert( TLS(StackStat) != 0 );
+    assert( 1 <= TLS(CountStat) );
+    assert( TLS(CountStat) <= SIZE_BAG(TLS(StackStat))/sizeof(Stat) );
 
     /* get the top statement from the stack, and count down                */
-    CountStat--;
-    stat = ((Stat*)PTR_BAG(StackStat))[CountStat];
+    TLS(CountStat)--;
+    stat = ((Stat*)PTR_BAG(TLS(StackStat)))[TLS(CountStat)];
 
     /* return the popped statement                                         */
     return stat;
@@ -284,17 +357,17 @@ void PushExpr (
     Expr                expr )
 {
     /* there must be a stack, it must not be underfull or overfull         */
-    assert( StackExpr != 0 );
-    assert( 0 <= CountExpr );
-    assert( CountExpr <= SIZE_BAG(StackExpr)/sizeof(Expr) );
+    assert( TLS(StackExpr) != 0 );
+    assert( 0 <= TLS(CountExpr) );
+    assert( TLS(CountExpr) <= SIZE_BAG(TLS(StackExpr))/sizeof(Expr) );
     assert( expr != 0 );
 
     /* count up and put the expression onto the stack                      */
-    if ( CountExpr == SIZE_BAG(StackExpr)/sizeof(Expr) ) {
-        ResizeBag( StackExpr, 2*CountExpr*sizeof(Expr) );
+    if ( TLS(CountExpr) == SIZE_BAG(TLS(StackExpr))/sizeof(Expr) ) {
+        ResizeBag( TLS(StackExpr), 2*TLS(CountExpr)*sizeof(Expr) );
     }
-    ((Expr*)PTR_BAG(StackExpr))[CountExpr] = expr;
-    CountExpr++;
+    ((Expr*)PTR_BAG(TLS(StackExpr)))[TLS(CountExpr)] = expr;
+    TLS(CountExpr)++;
 }
 
 Expr PopExpr ( void )
@@ -302,13 +375,13 @@ Expr PopExpr ( void )
     Expr                expr;
 
     /* there must be a stack, it must not be underfull/empty or overfull   */
-    assert( StackExpr != 0 );
-    assert( 1 <= CountExpr );
-    assert( CountExpr <= SIZE_BAG(StackExpr)/sizeof(Expr) );
+    assert( TLS(StackExpr) != 0 );
+    assert( 1 <= TLS(CountExpr) );
+    assert( TLS(CountExpr) <= SIZE_BAG(TLS(StackExpr))/sizeof(Expr) );
 
     /* get the top expression from the stack, and count down               */
-    CountExpr--;
-    expr = ((Expr*)PTR_BAG(StackExpr))[CountExpr];
+    TLS(CountExpr)--;
+    expr = ((Expr*)PTR_BAG(TLS(StackExpr)))[TLS(CountExpr)];
 
     /* return the popped expression                                        */
     return expr;
@@ -463,14 +536,14 @@ Bag CodeLVars;
 void CodeBegin ( void )
 {
     /* the stacks must be empty                                            */
-    assert( CountStat == 0 );
-    assert( CountExpr == 0 );
+    assert( TLS(CountStat) == 0 );
+    assert( TLS(CountExpr) == 0 );
 
     /* remember the current frame                                          */
-    CodeLVars = CurrLVars;
+    TLS(CodeLVars) = TLS(CurrLVars);
 
     /* clear the code result bag                                           */
-    CodeResult = 0;
+    TLS(CodeResult) = 0;
 }
 
 UInt CodeEnd (
@@ -480,24 +553,24 @@ UInt CodeEnd (
     if ( ! error ) {
 
         /* the stacks must be empty                                        */
-        assert( CountStat == 0 );
-        assert( CountExpr == 0 );
+        assert( TLS(CountStat) == 0 );
+        assert( TLS(CountExpr) == 0 );
 
-        /* we must be back to 'CurrLVars'                                  */
-        assert( CurrLVars == CodeLVars );
+        /* we must be back to 'TLS(CurrLVars)'                                  */
+        assert( TLS(CurrLVars) == TLS(CodeLVars) );
 
-        /* 'CodeFuncExprEnd' left the function already in 'CodeResult'     */
+        /* 'CodeFuncExprEnd' left the function already in 'TLS(CodeResult)'     */
     }
 
     /* otherwise clean up the mess                                         */
     else {
 
         /* empty the stacks                                                */
-        CountStat = 0;
-        CountExpr = 0;
+        TLS(CountStat) = 0;
+        TLS(CountExpr) = 0;
 
         /* go back to the correct frame                                    */
-        SWITCH_TO_OLD_LVARS( CodeLVars );
+        SWITCH_TO_OLD_LVARS( TLS(CodeLVars) );
     }
 
     /* return value is ignored                                             */
@@ -615,7 +688,9 @@ void CodeFuncExprBegin (
     /* remember the current offset                                         */
     PushOffsBody();
 
-
+    /* and the loop nesting depth */
+    PushLoopNesting();
+    
     /* create a function expression                                        */
     fexp = NewBag( T_FUNCTION, SIZE_FUNC );
     NARG_FUNC( fexp ) = narg;
@@ -635,21 +710,20 @@ void CodeFuncExprBegin (
     CHANGED_BAG( fexp );
 
     /* record where we are reading from */
-    if (!Input->gapname) {
-      C_NEW_STRING_DYN(Input->gapname, Input->name);
-    }
-    FILENAME_BODY(body) = Input->gapname;
+    setup_gapname(TLS(Input));
+    FILENAME_BODY(body) = TLS(Input)->gapname;
     STARTLINE_BODY(body) = INTOBJ_INT(startLine);
-    /*    Pr("Coding begin at %s:%d ",(Int)(Input->name),Input->number);
+    /*    Pr("Coding begin at %s:%d ",(Int)(TLS(Input)->name),TLS(Input)->number);
           Pr(" Body id %d\n",(Int)(body),0L); */
-    OffsBody = 0;
+    TLS(OffsBody) = 0;
+    TLS(LoopNesting) = 0;
 
     /* give it an environment                                              */
-    ENVI_FUNC( fexp ) = CurrLVars;
+    ENVI_FUNC( fexp ) = TLS(CurrLVars);
     CHANGED_BAG( fexp );
 
     /* switch to this function                                             */
-    SWITCH_TO_NEW_LVARS( fexp, (narg != -1 ? narg : 1), nloc, old );
+    SWITCH_TO_NEW_LVARS( fexp, (narg >0 ? narg : -narg), nloc, old );
     (void) old; /* please picky compilers. */
 
     /* allocate the top level statement sequence                           */
@@ -670,7 +744,8 @@ void CodeFuncExprEnd (
 
     /* get the function expression                                         */
     fexp = CURR_FUNC;
-
+    assert(!LoopNesting);
+    
     /* get the body of the function                                        */
     /* push an addition return-void-statement if neccessary                */
     /* the function interpreters depend on each function ``returning''     */
@@ -697,27 +772,33 @@ void CodeFuncExprEnd (
     }
 
     /* stuff the first statements into the first statement sequence       */
+    /* Making sure to preserve the line number and file name              */
     ADDR_STAT(FIRST_STAT_CURR_FUNC)[-1]
-        = ((nr*sizeof(Stat)) << 8) + T_SEQ_STAT+nr-1;
+        = ((Stat)FILENAMEID_STAT(FIRST_STAT_CURR_FUNC) << 48) +
+          ((Stat)LINE_STAT(FIRST_STAT_CURR_FUNC) << 32) +
+          ((nr*sizeof(Stat)) << 8) + T_SEQ_STAT+nr-1;
     for ( i = 1; i <= nr; i++ ) {
         stat1 = PopStat();
         ADDR_STAT(FIRST_STAT_CURR_FUNC)[nr-i] = stat1;
     }
 
     /* make the body smaller                                               */
-    ResizeBag( BODY_FUNC(fexp), OffsBody+NUMBER_HEADER_ITEMS_BODY*sizeof(Obj) );
-    ENDLINE_BODY(BODY_FUNC(fexp)) = INTOBJ_INT(Input->number);
-    /*    Pr("  finished coding %d at line %d\n",(Int)(BODY_FUNC(fexp)), Input->number); */
+    ResizeBag( BODY_FUNC(fexp), TLS(OffsBody)+NUMBER_HEADER_ITEMS_BODY*sizeof(Obj) );
+    ENDLINE_BODY(BODY_FUNC(fexp)) = INTOBJ_INT(TLS(Input)->number);
+    /*    Pr("  finished coding %d at line %d\n",(Int)(BODY_FUNC(fexp)), TLS(Input)->number); */
 
     /* switch back to the previous function                                */
     SWITCH_TO_OLD_LVARS( ENVI_FUNC(fexp) );
 
+    /* restore loop nesting info */
+    PopLoopNesting();
+    
     /* restore the remembered offset                                       */
     PopOffsBody();
 
     /* if this was inside another function definition, make the expression */
     /* and store it in the function expression list of the outer function  */
-    if ( CurrLVars != CodeLVars ) {
+    if ( TLS(CurrLVars) != TLS(CodeLVars) ) {
         fexs = FEXS_FUNC( CURR_FUNC );
         len = LEN_PLIST( fexs );
         GROW_PLIST(      fexs, len+1 );
@@ -729,9 +810,9 @@ void CodeFuncExprEnd (
         PushExpr( expr );
     }
 
-    /* otherwise, make the function and store it in 'CodeResult'           */
+    /* otherwise, make the function and store it in 'TLS(CodeResult)'           */
     else {
-        CodeResult = MakeFunction( fexp );
+        TLS(CodeResult) = MakeFunction( fexp );
     }
 
 }
@@ -877,6 +958,7 @@ void CodeForIn ( void )
 
 void CodeForBeginBody ( void )
 {
+  TLS(LoopNesting)++;
 }
 
 void CodeForEndBody (
@@ -936,11 +1018,120 @@ void CodeForEndBody (
 
     /* push the for-statement                                              */
     PushStat( stat );
+
+    /* decrement loop nesting count */
+    TLS(LoopNesting)--;
 }
 
 void CodeForEnd ( void )
 {
 }
+
+
+/****************************************************************************
+**
+*F  CodeAtomicBegin()  . . . . . . .  code atomic-statement, begin of statement
+*F  CodeAtomicBeginBody()  . . . . . . . . code atomic-statement, begin of body
+*F  CodeAtomicEndBody( <nr> )  . . . . . . . code atomic-statement, end of body
+*F  CodeAtomicEnd()  . . . . . . . . .  code atomic-statement, end of statement
+**
+**  'CodeAtomicBegin'  is an action to  code a atomic-statement.   It is called
+**  when the  reader encounters the 'atomic',  i.e., *before* the condition is
+**  read.
+**
+**  'CodeAtomicBeginBody'  is  an action   to code a  atomic-statement.   It is
+**  called when  the reader encounters  the beginning  of the statement body,
+**  i.e., *after* the condition is read.
+**
+**  'CodeAtomicEndBody' is an action to  code a atomic-statement.  It is called
+**  when the reader encounters  the end of  the statement body.  <nr> is  the
+**  number of statements in the body.
+**
+**  'CodeAtomicEnd' is an action to code a atomic-statement.  It is called when
+**  the reader encounters  the end  of the  statement, i.e., immediate  after
+**  'CodeAtomicEndBody'.
+**
+**  These functions are just placeholders for the future HPC-GAP code.
+*/
+
+void CodeAtomicBegin ( void )
+{
+}
+
+void CodeAtomicBeginBody ( UInt nrexprs )
+{
+  PushExpr(INTEXPR_INT(nrexprs)); 
+  return;
+}
+
+void CodeAtomicEndBody (
+    UInt                nrstats )
+{
+    Stat                stat;           /* atomic-statement, result         */
+    Stat                stat1;          /* single statement of body        */
+    UInt                i;              /* loop variable                   */
+    UInt nrexprs;
+    Expr  e,qual;
+
+
+    /* fix up the case of no statements */
+    if ( 0 == nrstats ) {
+       PushStat( NewStat( T_EMPTY, 0) );
+       nrstats = 1;
+    }
+    
+    /* collect the statements into a statement sequence   */
+    if ( 1 < nrstats ) {
+      stat1 = PopSeqStat( nrstats );
+    } else {
+      stat1 = PopStat();
+    }
+    nrexprs = INT_INTEXPR(PopExpr());
+    
+    /* allocate the atomic-statement                                        */
+    stat = NewStat( T_ATOMIC, sizeof(Stat) + nrexprs*2*sizeof(Stat) );
+    
+
+    /* enter the statement sequence */
+    ADDR_STAT(stat)[0] = stat1;
+
+    
+    /* enter the expressions                                                */
+    for ( i = 2*nrexprs; 1 <= i; i -= 2 ) {
+        e = PopExpr();
+        qual = PopExpr();
+        ADDR_STAT(stat)[i] = e;
+        ADDR_STAT(stat)[i-1] = qual;
+    }
+
+
+    /* push the atomic-statement                                            */
+    PushStat( stat );
+}
+
+void CodeAtomicEnd ( void )
+{
+}
+
+/****************************************************************************
+**
+*F  CodeQualifiedExprBegin()  . . . code readonly/readwrite expression start
+*F  CodeQualifiedExprEnd()  . . . . . code readonly/readwrite expression end
+**
+**  These functions code the beginning and end of the readonly/readwrite
+**  qualified expressions of an atomic statement.
+*/
+
+void CodeQualifiedExprBegin(UInt qual) 
+{
+  PushExpr(INTEXPR_INT(qual));
+}
+
+void CodeQualifiedExprEnd() 
+{
+}
+
+
 
 
 /****************************************************************************
@@ -972,6 +1163,7 @@ void CodeWhileBegin ( void )
 
 void CodeWhileBeginBody ( void )
 {
+  TLS(LoopNesting)++;
 }
 
 void CodeWhileEndBody (
@@ -1008,6 +1200,9 @@ void CodeWhileEndBody (
     cond = PopExpr();
     ADDR_STAT(stat)[0] = cond;
 
+    /* decrmement loop nesting */
+    TLS(LoopNesting)--;
+    
     /* push the while-statement                                            */
     PushStat( stat );
 }
@@ -1046,6 +1241,7 @@ void CodeRepeatBegin ( void )
 
 void CodeRepeatBeginBody ( void )
 {
+  TLS(LoopNesting)++;
 }
 
 void CodeRepeatEndBody (
@@ -1053,6 +1249,7 @@ void CodeRepeatEndBody (
 {
     /* leave the number of statements in the body on the expression stack  */
     PushExpr( INTEXPR_INT(nr) );
+    TLS(LoopNesting)--;
 }
 
 void CodeRepeatEnd ( void )
@@ -1111,6 +1308,9 @@ void            CodeBreak ( void )
 {
     Stat                stat;           /* break-statement, result         */
 
+    if (!TLS(LoopNesting))
+      SyntaxError("break statement not enclosed in a loop");
+    
     /* allocate the break-statement                                        */
     stat = NewStat( T_BREAK, 0 * sizeof(Expr) );
 
@@ -1128,6 +1328,9 @@ void            CodeBreak ( void )
 void            CodeContinue ( void )
 {
     Stat                stat;           /* continue-statement, result         */
+
+    if (!TLS(LoopNesting))
+      SyntaxError("continue statement not enclosed in a loop");
 
     /* allocate the continue-statement                                        */
     stat = NewStat( T_CONTINUE, 0 * sizeof(Expr) );
@@ -1671,10 +1874,15 @@ static Obj CONVERT_FLOAT_LITERAL_EAGER;
 
 
 static UInt getNextFloatExprNumber( void ) {
+  UInt next;
+  HashLock(&NextFloatExprNumber);
   if (NextFloatExprNumber > MAX_FLOAT_INDEX)
-    return 0;
-  else
-    return NextFloatExprNumber++;
+    next = 0;
+  else {
+    next = NextFloatExprNumber++;
+  }
+  HashUnlock(&NextFloatExprNumber);
+  return next;
 }
 
 static UInt CheckForCommonFloat(Char *str) {
@@ -2196,20 +2404,24 @@ void CodeIsbGVar (
 *F  CodeAssListLevel( <level> ) . . . . . .  code assignment to several lists
 *F  CodeAsssListLevel( <level> )  . code multiple assignment to several lists
 */
-void CodeAssListUniv (
-    Stat                ass )
+void CodeAssListUniv ( 
+		      Stat                ass,
+		       Int narg)
 {
     Expr                list;           /* list expression                 */
     Expr                pos;            /* position expression             */
     Expr                rhsx;           /* right hand side expression      */
+    Int i;
 
     /* enter the right hand side expression                                */
     rhsx = PopExpr();
-    ADDR_STAT(ass)[2] = (Stat)rhsx;
+    ADDR_STAT(ass)[narg+1] = (Stat)rhsx;
 
     /* enter the position expression                                       */
-    pos = PopExpr();
-    ADDR_STAT(ass)[1] = (Stat)pos;
+    for (i = narg; i > 0; i--) {
+      pos = PopExpr();
+      ADDR_STAT(ass)[i] = (Stat)pos;
+    }
 
     /* enter the list expression                                           */
     list = PopExpr();
@@ -2219,15 +2431,25 @@ void CodeAssListUniv (
     PushStat( ass );
 }
 
-void CodeAssList ( void )
+void CodeAssList ( Int narg )
 {
     Stat                ass;            /* assignment, result              */
 
     /* allocate the assignment                                             */
-    ass = NewStat( T_ASS_LIST, 3 * sizeof(Stat) );
+    switch (narg) {
+    case 1:
+      ass = NewStat( T_ASS_LIST, 3 * sizeof(Stat) );
+      break;
+
+    case 2:
+      ass = NewStat(T_ASS2_LIST, 4* sizeof(Stat));
+      break;
+    default:
+      ass  = NewStat(T_ASSX_LIST, (narg + 2)*sizeof(Stat));
+    }
 
     /* let 'CodeAssListUniv' do the rest                                   */
-    CodeAssListUniv( ass );
+    CodeAssListUniv( ass, narg );
 }
 
 void CodeAsssList ( void )
@@ -2238,20 +2460,20 @@ void CodeAsssList ( void )
     ass = NewStat( T_ASSS_LIST, 3 * sizeof(Stat) );
 
     /* let 'CodeAssListUniv' do the rest                                   */
-    CodeAssListUniv( ass );
+    CodeAssListUniv( ass, 1 );
 }
 
-void CodeAssListLevel (
+void CodeAssListLevel ( Int narg,
     UInt                level )
 {
     Stat                ass;            /* assignment, result              */
 
     /* allocate the assignment and enter the level                         */
-    ass = NewStat( T_ASS_LIST_LEV, 4 * sizeof(Stat) );
-    ADDR_STAT(ass)[3] = (Stat)level;
+    ass = NewStat( T_ASS_LIST_LEV, (narg +3) * sizeof(Stat) );
+    ADDR_STAT(ass)[narg+2] = (Stat)level;
 
     /* let 'CodeAssListUniv' do the rest                                   */
-    CodeAssListUniv( ass );
+    CodeAssListUniv( ass, narg );
 }
 
 void CodeAsssListLevel (
@@ -2264,7 +2486,7 @@ void CodeAsssListLevel (
     ADDR_STAT(ass)[3] = (Stat)level;
 
     /* let 'CodeAssListUniv' do the rest                                   */
-    CodeAssListUniv( ass );
+    CodeAssListUniv( ass, 1 );
 }
 
 
@@ -2272,18 +2494,21 @@ void CodeAsssListLevel (
 **
 *F  CodeUnbList() . . . . . . . . . . . . . . .  code unbind of list position
 */
-void CodeUnbList ( void )
+void CodeUnbList ( Int narg )
 {
     Expr                list;           /* list expression                 */
     Expr                pos;            /* position expression             */
     Stat                ass;            /* unbind, result                  */
+    Int i;
 
     /* allocate the unbind                                                 */
-    ass = NewStat( T_UNB_LIST, 2 * sizeof(Stat) );
+    ass = NewStat( T_UNB_LIST, (narg+1) * sizeof(Stat) );
 
-    /* enter the position expression                                       */
-    pos = PopExpr();
-    ADDR_STAT(ass)[1] = (Stat)pos;
+    /* enter the position expressions                                       */
+    for (i = narg; i > 0; i--) {
+      pos = PopExpr();
+      ADDR_STAT(ass)[i] = (Stat)pos;
+    }
 
     /* enter the list expression                                           */
     list = PopExpr();
@@ -2302,14 +2527,19 @@ void CodeUnbList ( void )
 *F  CodeElmsListLevel( <level> )  .  code multiple selection of several lists
 */
 void CodeElmListUniv (
-    Expr                ref )
+		      Expr                ref,
+		      Int narg)
 {
     Expr                list;           /* list expression                 */
     Expr                pos;            /* position expression             */
+    Int                i;
 
     /* enter the position expression                                       */
-    pos = PopExpr();
-    ADDR_EXPR(ref)[1] = pos;
+
+    for (i = narg; i > 0; i--) {
+      pos = PopExpr();
+      ADDR_EXPR(ref)[i] = pos;
+    }
 
     /* enter the list expression                                           */
     list = PopExpr();
@@ -2319,15 +2549,21 @@ void CodeElmListUniv (
     PushExpr( ref );
 }
 
-void CodeElmList ( void )
+void CodeElmList ( Int narg )
 {
     Expr                ref;            /* reference, result               */
 
-    /* allocate the reference                                              */
-    ref = NewExpr( T_ELM_LIST, 2 * sizeof(Expr) );
-
-    /* let 'CodeElmListUniv' to the rest                                   */
-    CodeElmListUniv( ref );
+      /* allocate the reference                                              */
+    if (narg == 1)
+      ref = NewExpr( T_ELM_LIST, 2 * sizeof(Expr) );
+    else if (narg == 2)
+      ref = NewExpr( T_ELM2_LIST, 3 * sizeof(Expr) );
+    else
+      ref = NewExpr( T_ELMX_LIST, (narg + 1) *sizeof(Expr));
+      
+      /* let 'CodeElmListUniv' to the rest                                   */
+    CodeElmListUniv( ref, narg );
+      
 }
 
 void CodeElmsList ( void )
@@ -2338,20 +2574,20 @@ void CodeElmsList ( void )
     ref = NewExpr( T_ELMS_LIST, 2 * sizeof(Expr) );
 
     /* let 'CodeElmListUniv' to the rest                                   */
-    CodeElmListUniv( ref );
+    CodeElmListUniv( ref, 1 );
 }
 
-void CodeElmListLevel (
+void CodeElmListLevel ( Int narg,
     UInt                level )
 {
     Expr                ref;            /* reference, result               */
 
-    /* allocate the reference and enter the level                          */
-    ref = NewExpr( T_ELM_LIST_LEV, 3 * sizeof(Expr) );
-    ADDR_EXPR(ref)[2] = (Stat)level;
+    ref = NewExpr( T_ELM_LIST_LEV, (narg+2)*sizeof(Expr));
+    ADDR_EXPR(ref)[narg+1] = (Stat)level;
+      
 
     /* let 'CodeElmListUniv' do the rest                                   */
-    CodeElmListUniv( ref );
+    CodeElmListUniv( ref, narg );
 }
 
 void CodeElmsListLevel (
@@ -2364,7 +2600,7 @@ void CodeElmsListLevel (
     ADDR_EXPR(ref)[2] = (Stat)level;
 
     /* let 'CodeElmListUniv' do the rest                                   */
-    CodeElmListUniv( ref );
+    CodeElmListUniv( ref, 1 );
 }
 
 
@@ -2372,18 +2608,21 @@ void CodeElmsListLevel (
 **
 *F  CodeIsbList() . . . . . . . . . . . . . .  code bound list position check
 */
-void CodeIsbList ( void )
+void CodeIsbList ( Int narg )
 {
     Expr                ref;            /* isbound, result                 */
     Expr                list;           /* list expression                 */
     Expr                pos;            /* position expression             */
+    Int i;
 
     /* allocate the isbound                                                */
-    ref = NewExpr( T_ISB_LIST, 2 * sizeof(Expr) );
+    ref = NewExpr( T_ISB_LIST, (narg + 1) * sizeof(Expr) );
 
     /* enter the position expression                                       */
-    pos = PopExpr();
-    ADDR_EXPR(ref)[1] = pos;
+    for (i = narg; i > 0; i--) {
+      pos = PopExpr();
+      ADDR_EXPR(ref)[i] = pos;
+    }
 
     /* enter the list expression                                           */
     list = PopExpr();
@@ -3136,17 +3375,13 @@ void LoadBody ( Obj body )
 }
 
 
-
-
 /****************************************************************************
 **
-
 *F * * * * * * * * * * * * * initialize package * * * * * * * * * * * * * * *
 */
 
 /****************************************************************************
 **
-
 *F  InitKernel( <module> )  . . . . . . . . initialise kernel data structures
 */
 static Int InitKernel (
@@ -3159,12 +3394,17 @@ static Int InitKernel (
     SaveObjFuncs[ T_BODY ] = SaveBody;
     LoadObjFuncs[ T_BODY ] = LoadBody;
 
+    /* Allocate function bodies in the public data space */
+    MakeBagTypePublic(T_BODY);
+
     /* make the result variable known to Gasman                            */
     InitGlobalBag( &CodeResult, "CodeResult" );
+    
+    InitGlobalBag( &FilenameCache, "FilenameCache" );
 
     /* allocate the statements and expressions stacks                      */
-    InitGlobalBag( &StackStat, "StackStat" );
-    InitGlobalBag( &StackExpr, "StackExpr" );
+    InitGlobalBag( &TLS(StackStat), "TLS(StackStat)" );
+    InitGlobalBag( &TLS(StackExpr), "TLS(StackExpr)" );
 
     /* some functions and globals needed for float conversion */
     InitCopyGVar( "EAGER_FLOAT_LITERAL_CACHE", &EAGER_FLOAT_LITERAL_CACHE);
@@ -3185,8 +3425,9 @@ static Int InitLibrary (
   UInt gv;
   Obj cache;
     /* allocate the statements and expressions stacks                      */
-    StackStat = NewBag( T_BODY, 64*sizeof(Stat) );
-    StackExpr = NewBag( T_BODY, 64*sizeof(Expr) );
+    TLS(StackStat) = NewBag( T_BODY, 64*sizeof(Stat) );
+    TLS(StackExpr) = NewBag( T_BODY, 64*sizeof(Expr) );
+    FilenameCache = NEW_PLIST(T_PLIST, 0);
 
     GVAR_SAVED_FLOAT_INDEX = GVarName("SavedFloatIndex");
     
@@ -3222,17 +3463,17 @@ static Int PreSave (
   UInt i;
 
   /* Can't save in mid-parsing */
-  if (CountExpr || CountStat)
+  if (TLS(CountExpr) || TLS(CountStat))
     return 1;
 
   /* push the FP cache index out into a GAP Variable */
   AssGVar(GVAR_SAVED_FLOAT_INDEX, INTOBJ_INT(NextFloatExprNumber));
 
   /* clean any old data out of the statement and expression stacks */
-  for (i = 0; i < SIZE_BAG(StackStat)/sizeof(UInt); i++)
-    ADDR_OBJ(StackStat)[i] = (Obj)0;
-  for (i = 0; i < SIZE_BAG(StackExpr)/sizeof(UInt); i++)
-    ADDR_OBJ(StackExpr)[i] = (Obj)0;
+  for (i = 0; i < SIZE_BAG(TLS(StackStat))/sizeof(UInt); i++)
+    ADDR_OBJ(TLS(StackStat))[i] = (Obj)0;
+  for (i = 0; i < SIZE_BAG(TLS(StackExpr))/sizeof(UInt); i++)
+    ADDR_OBJ(TLS(StackExpr))[i] = (Obj)0;
   /* return success                                                      */
   return 0;
 }
@@ -3260,7 +3501,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoCode ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

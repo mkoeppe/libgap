@@ -21,6 +21,8 @@
 **
 */
 
+#define _GNU_SOURCE  /* is used for getpt(), ptsname_r prototype etc. */
+
 #include        "system.h"              /* system dependent part           */
 
 #include        "iostream.h"            /* file input/output               */
@@ -41,6 +43,10 @@
 
 #include        "records.h"             /* generic records                 */
 #include        "bool.h"                /* True and False                  */
+
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
 
 #include        "libgap_internal.h"     /* GAP shared library              */
 
@@ -133,18 +139,22 @@ static Int FreePtyIOStreams;
 Int NewStream( void )
 {
   Int stream = -1;
+  HashLock(PtyIOStreams);
   if ( FreePtyIOStreams != -1 )
   {
       stream = FreePtyIOStreams;
       FreePtyIOStreams = PtyIOStreams[stream].childPID;
   }
+  HashUnlock(PtyIOStreams);
   return stream;
 }
 
 void FreeStream( UInt stream)
 {
+   HashLock(PtyIOStreams);
    PtyIOStreams[stream].childPID = FreePtyIOStreams;
    FreePtyIOStreams = stream;
+   HashUnlock(PtyIOStreams);
 }
 
 /****************************************************************************
@@ -153,10 +163,12 @@ void FreeStream( UInt stream)
 */
 void SignalChild (UInt stream, UInt sig)
 {
+    HashLock(PtyIOStreams);
     if ( PtyIOStreams[stream].childPID != -1 )
     {
         kill( PtyIOStreams[stream].childPID, sig );
     }
+    HashUnlock(PtyIOStreams);
 }
 
 /****************************************************************************
@@ -165,11 +177,13 @@ void SignalChild (UInt stream, UInt sig)
 */
 void KillChild (UInt stream)
 {
+    HashLock(PtyIOStreams);
     if ( PtyIOStreams[stream].childPID != -1 )
     {
         close(PtyIOStreams[stream].ptyFD);
         SignalChild( stream, SIGKILL );
     }
+    HashUnlock(PtyIOStreams);
 }
 
 
@@ -255,7 +269,8 @@ static UInt GetMasterPty ( int *pty, Char *nametty, Char *namepty )
 #elif HAVE_GETPT && HAVE_PTSNAME_R
     /* Attempt to use glibc specific APIs, for compatibility with older
        glibc versions (before 2.2.1, release January 2001). */
-    if ((*pty = getpt()) > 0 ) {
+    *pty = getpt();
+    if (*pty > 0) {
         if (grantpt(*pty) || unlockpt(*pty)) {
             close(*pty);
             return 1;
@@ -270,14 +285,16 @@ static UInt GetMasterPty ( int *pty, Char *nametty, Char *namepty )
        getpt or openpty, but do have ptsname.
        Platforms *missing* ptsname include:
        Mac OS X 10.3, OpenBSD 3.8, Minix 3.1.8, mingw, MSVC 9, BeOS. */
-    if ( (*pty = open( "/dev/ptmx", O_RDWR )) < 0 )
+    *pty = open( "/dev/ptmx", O_RDWR );
+    if ( *pty < 0 )
         return 1;
     strxcpy(nametty, ptsname(*pty), 32);
     return 0;
 
 #elif HAVE_GETPSEUDOTTY
     /* TODO: From which system(s) does getpseudotty originate? */
-    return (*pty = getpseudotty( nametty, namepty )) >= 0 ? 0 : 1;
+    *pty = getpseudotty( nametty, namepty );
+    return *pty < 0 ? 1 : 0;
 
 #elif HAVE__GETPTY
     /* Available on SGI IRIX >= 4.0 (released September 1991).
@@ -289,28 +306,7 @@ static UInt GetMasterPty ( int *pty, Char *nametty, Char *namepty )
     strcpy( nametty, line );
     return 0;
 
-#elif defined(sgi) || (defined(umips) && defined(USG))
-    /* FIXME: Is this code still usable? A bit later it access an
-       undefined variable 'tty', so for non-sgi systems this won't
-       even compile.
-       */
-    struct stat fstat_buf;
-
-    /* TODO: AIX has /dev/ptc, what else? */
-    *pty = open( "/dev/ptc", O_RDWR );
-    if ( *pty < 0 || (fstat (*pty, &fstat_buf)) < 0 )
-        return 1;
-    snprintf( nametty, 32, "/dev/ttyq%d", minor(fstat_buf.st_rdev) );
-  #if !defined(sgi)
-    snprintf( namepty, 32, "/dev/ptyq%d", minor(fstat_buf.st_rdev) );
-    if ( (*tty = open (nametty, O_RDWR)) < 0 ) {
-        close (*pty);
-        return 1;
-    }
-  #endif
-    return 0;
-
-# else
+#else
     /* fallback to old-style BSD pseudoterminals, doing a brute force
        search over all pty device files. */
     int devindex;
@@ -388,6 +384,7 @@ void ChildStatusChanged( int whichsig )
   int status;
   int retcode;
   assert(whichsig == SIGCHLD);
+  HashLock(PtyIOStreams);
   for (i = 0; i < MAX_PTYS; i++) {
       if (PtyIOStreams[i].inuse) {
           retcode = waitpid( PtyIOStreams[i].childPID, &status, WNOHANG | WUNTRACED );
@@ -398,6 +395,7 @@ void ChildStatusChanged( int whichsig )
           }
       }
   }
+  HashUnlock(PtyIOStreams);
   /* Collect up any other zombie children */
   do {
       retcode = waitpid( -1, &status, WNOHANG);
@@ -558,24 +556,33 @@ void HandleChildStatusChanges( UInt pty)
 {
   /* common error handling, when we are asked to read or write to a stopped
      or dead child */
+  HashLock(PtyIOStreams);
   if (PtyIOStreams[pty].alive == 0)
   {
       PtyIOStreams[pty].changed = 0;
       PtyIOStreams[pty].blocked = 0;
+      HashUnlock(PtyIOStreams);
       ErrorQuit("Child Process is unexpectedly dead", (Int) 0L, (Int) 0L);
+      return;
   }
   if (PtyIOStreams[pty].blocked)
   {
+      HashUnlock(PtyIOStreams);
       ErrorQuit("Child Process is still dead", (Int)0L,(Int)0L);
+      return;
   }
   if (PtyIOStreams[pty].changed)
   {
       PtyIOStreams[pty].blocked = 1;
       PtyIOStreams[pty].changed = 0;
+      Int cPID = PtyIOStreams[pty].childPID;
+      Int status = PtyIOStreams[pty].status;
+      HashUnlock(PtyIOStreams);
       ErrorQuit("Child Process %d has stopped or died, status %d",
-                (Int) PtyIOStreams[pty].childPID,
-                (Int) PtyIOStreams[pty].status);
+                cPID, status);
+      return;
   }
+  HashUnlock(PtyIOStreams);
 }
 
 #define MAX_ARGS 1000
@@ -922,7 +929,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoIOStream ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

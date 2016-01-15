@@ -27,15 +27,15 @@ extern syJmp_buf ReadJmpError;
 
 #ifndef DEBUG_READ_ERROR
 
-#define READ_ERROR()    (NrError || (NrError+=sySetjmp(ReadJmpError)))
+#define READ_ERROR()    (TLS(NrError) || (TLS(NrError)+=sySetjmp(TLS(ReadJmpError))))
 
 #else
 
 #define READ_ERROR()                                                     \
-    ( NrError ||                                                         \
-      ( ( NrError += setjmp(ReadJmpError) ) ?                            \
+    ( TLS(NrError) ||                                                         \
+      ( ( TLS(NrError) += setjmp(TLS(ReadJmpError)) ) ?                            \
         Pr( "READ_ERROR( %s, %d )\n", (Int)__FILE__, __LINE__ ),0 : 0 ), \
-      NrError )
+      TLS(NrError) )
 
 #endif
 
@@ -64,8 +64,13 @@ extern Obj ReadEvalResult;
 **  It does not expect the  first symbol of its input  already read and  wont
 **  read the  first symbol of the  next  input.
 **
+**  The if pointer dualSemicolon is non-zero, then the integer it
+**  it points to will be set to 1 if the command was followed by
+**  a double semi-colon, otherwise it is set to 0. It is safe to
+**  pass 0 for dualSemicolon, in this case it is ignore.
+**
 */
-extern UInt ReadEvalCommand ( Obj context );
+extern UInt ReadEvalCommand ( Obj context, UInt *dualSemicolon );
 
 
 /****************************************************************************

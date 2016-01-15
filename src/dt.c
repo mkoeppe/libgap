@@ -74,6 +74,10 @@
 #include        "plist.h"               /* plain lists                     */
 #include        "string.h"              /* strings                         */
 
+#include	"code.h"		/* coder                           */
+#include	"thread.h"		/* threads			   */
+#include	"tls.h"			/* thread-local storage		   */
+
 
 /****************************************************************************
 **
@@ -1752,9 +1756,9 @@ void    UnmarkAEClass(
 
 /****************************************************************************
 **
-*F  Funcposition( <self>, <vector> )
+*F  FuncDT_evaluation( <self>, <vector> )
 **
-**  Funcposition implements the internal function
+**  FuncDT_evaluation implements the internal function
 **
 **  DT_evaluation( <vector> ).
 **
@@ -1762,7 +1766,7 @@ void    UnmarkAEClass(
 **  monomials.  DT_evaluation is called from the library function dt_add.
 */
 
-Obj    Funcposition(Obj      self,
+Obj    FuncDT_evaluation(Obj      self,
                     Obj      vector)
 {
     UInt   res,i;
@@ -1802,7 +1806,7 @@ static StructGVarFunc GVarFuncs [] = {
       FuncGetPols, "src/dt.c:GetPols" },
     
     { "DT_evaluation", 1, "vector",
-      Funcposition, "src/dt.c:DT_evaluation" },
+      FuncDT_evaluation, "src/dt.c:DT_evaluation" },
 
     { 0 }
 
@@ -1863,7 +1867,6 @@ static StructInitInfo module = {
 
 StructInitInfo * InitInfoDeepThought ( void )
 {
-    FillInVersion( &module );
     return &module;
 }
 

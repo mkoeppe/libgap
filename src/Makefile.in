@@ -137,7 +137,7 @@ am__libgap_la_SOURCES_DIST = ariths.c c_random.c gmpints.c objccoll.c \
 	compiler.c funcs.c listfunc.c permutat.c stats.c weakptr.c \
 	compstat.c gap.c listoper.c plist.c streams.c c_oper1.c \
 	lists.c precord.c string.c costab.c gasman.c macfloat.c \
-	range.c sysfiles.c pperm.c trans.c itanium.s
+	range.c sysfiles.c pperm.c trans.c profile.c itanium.s
 @NEED_ITANIUMOBJ_TRUE@am__objects_1 = itanium.lo
 am_libgap_la_OBJECTS = libgap_la-ariths.lo libgap_la-c_random.lo \
 	libgap_la-gmpints.lo libgap_la-objccoll.lo \
@@ -162,7 +162,7 @@ am_libgap_la_OBJECTS = libgap_la-ariths.lo libgap_la-c_random.lo \
 	libgap_la-precord.lo libgap_la-string.lo libgap_la-costab.lo \
 	libgap_la-gasman.lo libgap_la-macfloat.lo libgap_la-range.lo \
 	libgap_la-sysfiles.lo libgap_la-pperm.lo libgap_la-trans.lo \
-	$(am__objects_1)
+	libgap_la-profile.lo $(am__objects_1)
 libgap_la_OBJECTS = $(am_libgap_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -377,7 +377,7 @@ libgap_la_SOURCES = ariths.c c_random.c gmpints.c objccoll.c \
 	compiler.c funcs.c listfunc.c permutat.c stats.c weakptr.c \
 	compstat.c gap.c listoper.c plist.c streams.c c_oper1.c \
 	lists.c precord.c string.c costab.c gasman.c macfloat.c \
-	range.c sysfiles.c pperm.c trans.c $(am__append_1)
+	range.c sysfiles.c pperm.c trans.c profile.c $(am__append_1)
 libgapincludedir = @includedir@/gap
 libgapinclude_HEADERS = \
   ariths.h    cyclotom.h  integer.h   objcftl.h   rational.h  sysfiles.h \
@@ -391,7 +391,9 @@ libgapinclude_HEADERS = \
   config.h    gmpints.h   macfloat.h  precord.h   streams.h   weakptr.h  \
   costab.h    gvars.h     objccoll.h  range.h     string.h               \
   pperm.h     trans.h \
-  libgap.h    libgap_internal.h    
+  libgap.h    libgap_internal.h \
+  aobjects.h  atomic.h    ffdata.h    objccoll-impl.h \
+  objscoll-impl.h profile.h thread.h tls.h
 
 libgap_la_CFLAGS = $(AM_CFLAGS) \
   -DCONFIG_H @GMP_CFLAGS@ @SAGE_CFLAGS@
@@ -537,6 +539,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgap_la-plist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgap_la-pperm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgap_la-precord.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgap_la-profile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgap_la-range.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgap_la-rational.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libgap_la-read.Plo@am__quote@
@@ -1027,6 +1030,13 @@ libgap_la-trans.lo: trans.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='trans.c' object='libgap_la-trans.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgap_la_CFLAGS) $(CFLAGS) -c -o libgap_la-trans.lo `test -f 'trans.c' || echo '$(srcdir)/'`trans.c
+
+libgap_la-profile.lo: profile.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgap_la_CFLAGS) $(CFLAGS) -MT libgap_la-profile.lo -MD -MP -MF $(DEPDIR)/libgap_la-profile.Tpo -c -o libgap_la-profile.lo `test -f 'profile.c' || echo '$(srcdir)/'`profile.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libgap_la-profile.Tpo $(DEPDIR)/libgap_la-profile.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='profile.c' object='libgap_la-profile.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libgap_la_CFLAGS) $(CFLAGS) -c -o libgap_la-profile.lo `test -f 'profile.c' || echo '$(srcdir)/'`profile.c
 
 .s.o:
 	$(AM_V_CCAS)$(CCASCOMPILE) -c -o $@ $<
