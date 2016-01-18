@@ -3,13 +3,17 @@
 #include <stddef.h>
 
 #include "src/config.h"
-#include "src/libgap.h"
 #include "src/system.h"
 #include "src/objects.h"
 #include "src/gasman.h"
 #include "src/code.h"
+#include "src/calls.h"
 #include "src/vars.h"
+#include "src/gap.h"
 #include "src/read.h"
+#include "src/libgap.h"
+#include "src/libgap_internal.h"
+
 
 // Path to the GAP root (for the library)
 #ifndef SYS_DEFAULT_PATHS
@@ -40,7 +44,7 @@ int main()
   libgap_start_interaction("1/0");
 
   libgap_enter();
-  ReadEvalCommand(BottomLVars);
+  ReadEvalCommand(BottomLVars, 0);
   ViewObjHandler(ReadEvalResult);
   libgap_exit()
 

@@ -16,6 +16,7 @@
 #include "src/string.h"
 #include "src/read.h"
 #include "src/code.h"
+#include "src/calls.h"
 #include "src/vars.h"
 #include "src/libgap.h"
 #include "src/libgap_internal.h"
