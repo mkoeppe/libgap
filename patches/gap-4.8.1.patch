@@ -180,24 +180,6 @@ diff -urd upstream-gap-4.8.1/src/objscoll.c src/objscoll.c
  
  /****************************************************************************
  **
-diff -urd upstream-gap-4.8.1/src/profile.c src/profile.c
---- upstream-gap-4.8.1/src/profile.c	2016-01-18 16:22:47.539652232 +0000
-+++ src/profile.c	2016-01-18 16:00:21.247614947 +0000
-@@ -631,12 +631,12 @@
- 
- #ifndef HAVE_GETTIMEOFDAY
-     if(wallTime == True) {
--        ErrorMayQuit("This OS does not support wall-clock based timing");
-+        ErrorMayQuit("This OS does not support wall-clock based timing",0,0);
-     }
- #endif
- #ifndef HAVE_GETRUSAGE
-     if(wallTime == False) {
--        ErrorMayQuit("This OS does not support CPU based timing");
-+        ErrorMayQuit("This OS does not support CPU based timing",0,0);
-     }
- #endif
- 
 diff -urd upstream-gap-4.8.1/src/scanner.c src/scanner.c
 --- upstream-gap-4.8.1/src/scanner.c	2016-01-18 16:22:47.540652242 +0000
 +++ src/scanner.c	2016-01-18 16:00:21.252615000 +0000
