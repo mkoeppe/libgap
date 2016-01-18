@@ -48,10 +48,17 @@ libgap_la_LDFLAGS = -lm @GMP_LIBS@ -no-undefined
 
 
 dist-hook:
-	echo '*** /src dist-hook *********************************'
+	@echo '***************************************************'
+	@echo '*** /src dist-hook *********************************'
+	@echo '***************************************************'
+	@echo '****** libGAPify'
 	rm -f $(distdir)/config.h
 	$(top_distdir)/scripts/libGAPify.py --modify $(distdir)
 	chmod 755 $(top_distdir)/scripts $(top_distdir)/scripts/libGAPify.py
 	rm -f $(top_distdir)/scripts/libGAPify.py
 	cp $(top_distdir)/scripts/libGAPify_dummy.py $(top_distdir)/scripts/libGAPify.py
-	echo '***************************************************'
+	@echo '****** patch version'
+	echo "Version: $(PACKAGE)-$(VERSION)"
+	sed -i 's/SyKernelVersion = "4.dev"/SyKernelVersion = "$(VERSION)"/g' $(top_distdir)/src/system.c
+	sed -i 's/GAP_BUILD_VERSION  "4.dev"/GAP_BUILD_VERSION  "$(PACKAGE)-$(VERSION)"/g' $(top_distdir)/src/gap_version.h
+	@echo '***************************************************'
