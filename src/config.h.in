@@ -97,6 +97,9 @@
 /* Define to 1 if you have the `getsockopt' function. */
 #undef HAVE_GETSOCKOPT
 
+/* Define to 1 if you have the `gettimeofday' function. */
+#undef HAVE_GETTIMEOFDAY
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 

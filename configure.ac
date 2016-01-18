@@ -108,6 +108,7 @@ AC_CHECK_FUNCS([symlink readlink chmod fchmod chown fchown lchown dup dup2 mknod
 AC_CHECK_FUNCS([socket listen accept connect bind getsockname recv recvfrom recvmsg send])
 AC_CHECK_FUNCS([sendto sendmsg getsockopt setsockopt getprotobyname gethostbyname])
 AC_CHECK_FUNCS([opendir closedir dirfd readdir rewinddir seekdir telldir])
+AC_CHECK_FUNCS([gettimeofday])
 
 # sigsetjmp is a macro on some platforms, cannot use AC_CHECK_FUNCS
 AC_MSG_CHECKING(for sigsetjmp())

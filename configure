@@ -13679,6 +13679,17 @@ _ACEOF
 fi
 done
 
+for ac_func in gettimeofday
+do :
+  ac_fn_c_check_func "$LINENO" "gettimeofday" "ac_cv_func_gettimeofday"
+if test "x$ac_cv_func_gettimeofday" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETTIMEOFDAY 1
+_ACEOF
+
+fi
+done
+
 
 # sigsetjmp is a macro on some platforms, cannot use AC_CHECK_FUNCS
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sigsetjmp()" >&5
