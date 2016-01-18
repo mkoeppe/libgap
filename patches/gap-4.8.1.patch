@@ -1,6 +1,6 @@
 diff -urd upstream-gap-4.8.1/src/c_filt1.c src/c_filt1.c
---- upstream-gap-4.8.1/src/c_filt1.c	2016-01-18 16:22:47.527652106 +0000
-+++ src/c_filt1.c	2016-01-18 16:00:21.206614514 +0000
+--- upstream-gap-4.8.1/src/c_filt1.c	2016-01-18 17:07:03.646473886 +0000
++++ src/c_filt1.c	2016-01-18 17:07:29.266742361 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -10,8 +10,8 @@ diff -urd upstream-gap-4.8.1/src/c_filt1.c src/c_filt1.c
  /* global variables used in handlers */
  static GVar G_IS__FUNCTION;
 diff -urd upstream-gap-4.8.1/src/c_meths1.c src/c_meths1.c
---- upstream-gap-4.8.1/src/c_meths1.c	2016-01-18 16:22:47.527652106 +0000
-+++ src/c_meths1.c	2016-01-18 16:00:21.207614524 +0000
+--- upstream-gap-4.8.1/src/c_meths1.c	2016-01-18 17:07:03.646473886 +0000
++++ src/c_meths1.c	2016-01-18 17:07:29.268742382 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -24,8 +24,8 @@ Only in src: config.h
 Only in src: config.h.in
 Only in src: config.h.in~
 diff -urd upstream-gap-4.8.1/src/c_oper1.c src/c_oper1.c
---- upstream-gap-4.8.1/src/c_oper1.c	2016-01-18 16:22:47.542652263 +0000
-+++ src/c_oper1.c	2016-01-18 16:00:21.209614546 +0000
+--- upstream-gap-4.8.1/src/c_oper1.c	2016-01-18 17:07:03.648473907 +0000
++++ src/c_oper1.c	2016-01-18 17:07:29.270742403 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -35,8 +35,8 @@ diff -urd upstream-gap-4.8.1/src/c_oper1.c src/c_oper1.c
  /* global variables used in handlers */
  static GVar G_REREADING;
 diff -urd upstream-gap-4.8.1/src/c_random.c src/c_random.c
---- upstream-gap-4.8.1/src/c_random.c	2016-01-18 16:22:47.527652106 +0000
-+++ src/c_random.c	2016-01-18 16:00:21.209614546 +0000
+--- upstream-gap-4.8.1/src/c_random.c	2016-01-18 17:07:03.648473907 +0000
++++ src/c_random.c	2016-01-18 17:07:29.270742403 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -46,8 +46,8 @@ diff -urd upstream-gap-4.8.1/src/c_random.c src/c_random.c
  /* global variables used in handlers */
  static GVar G_QUO__INT;
 diff -urd upstream-gap-4.8.1/src/c_type1.c src/c_type1.c
---- upstream-gap-4.8.1/src/c_type1.c	2016-01-18 16:22:47.528652117 +0000
-+++ src/c_type1.c	2016-01-18 16:00:21.211614567 +0000
+--- upstream-gap-4.8.1/src/c_type1.c	2016-01-18 17:07:03.649473917 +0000
++++ src/c_type1.c	2016-01-18 17:07:29.272742424 +0000
 @@ -1,6 +1,6 @@
  #ifndef AVOID_PRECOMPILED
  /* C file produced by GAC */
@@ -58,8 +58,8 @@ diff -urd upstream-gap-4.8.1/src/c_type1.c src/c_type1.c
  static GVar G_NAME__FUNC;
 Only in src: .deps
 diff -urd upstream-gap-4.8.1/src/gap.c src/gap.c
---- upstream-gap-4.8.1/src/gap.c	2016-01-18 16:22:47.542652263 +0000
-+++ src/gap.c	2016-01-18 16:00:21.224614704 +0000
+--- upstream-gap-4.8.1/src/gap.c	2016-01-18 17:07:03.651473938 +0000
++++ src/gap.c	2016-01-18 17:07:29.273742435 +0000
 @@ -212,14 +212,14 @@
  #endif
  
@@ -101,8 +101,8 @@ diff -urd upstream-gap-4.8.1/src/gap.c src/gap.c
    return 0;
 Only in src: gap_version.h
 diff -urd upstream-gap-4.8.1/src/gasman.c src/gasman.c
---- upstream-gap-4.8.1/src/gasman.c	2016-01-18 16:22:47.535652190 +0000
-+++ src/gasman.c	2016-01-18 16:00:21.226614725 +0000
+--- upstream-gap-4.8.1/src/gasman.c	2016-01-18 17:07:03.652473949 +0000
++++ src/gasman.c	2016-01-18 17:07:29.274742445 +0000
 @@ -137,6 +137,7 @@
  
  #include        "objects.h"             /* objects                         */
@@ -122,8 +122,8 @@ diff -urd upstream-gap-4.8.1/src/gasman.c src/gasman.c
      for ( i = 0; i < GlobalBags.nr; i++ )
          MARK_BAG( *GlobalBags.addr[i] );
 diff -urd upstream-gap-4.8.1/src/iostream.c src/iostream.c
---- upstream-gap-4.8.1/src/iostream.c	2016-01-18 16:22:47.536652200 +0000
-+++ src/iostream.c	2016-01-18 16:00:21.233614799 +0000
+--- upstream-gap-4.8.1/src/iostream.c	2016-01-18 17:07:03.654473970 +0000
++++ src/iostream.c	2016-01-18 17:07:29.274742445 +0000
 @@ -48,6 +48,8 @@
  #include	"thread.h"		/* threads			   */
  #include	"tls.h"			/* thread-local storage		   */
@@ -151,8 +151,8 @@ Only in src: Makefile
 Only in src: Makefile.am
 Only in src: Makefile.in
 diff -urd upstream-gap-4.8.1/src/objscoll.c src/objscoll.c
---- upstream-gap-4.8.1/src/objscoll.c	2016-01-18 16:22:47.538652221 +0000
-+++ src/objscoll.c	2016-01-18 16:00:21.240614873 +0000
+--- upstream-gap-4.8.1/src/objscoll.c	2016-01-18 17:07:03.657474001 +0000
++++ src/objscoll.c	2016-01-18 17:07:29.275742456 +0000
 @@ -103,7 +103,7 @@
  #define SingleCollectWord   C8Bits_SingleCollectWord
  #define Solution            C8Bits_Solution
@@ -181,8 +181,8 @@ diff -urd upstream-gap-4.8.1/src/objscoll.c src/objscoll.c
  /****************************************************************************
  **
 diff -urd upstream-gap-4.8.1/src/scanner.c src/scanner.c
---- upstream-gap-4.8.1/src/scanner.c	2016-01-18 16:22:47.540652242 +0000
-+++ src/scanner.c	2016-01-18 16:00:21.252615000 +0000
+--- upstream-gap-4.8.1/src/scanner.c	2016-01-18 17:07:03.660474032 +0000
++++ src/scanner.c	2016-01-18 17:07:29.276742466 +0000
 @@ -64,6 +64,8 @@
  #include	"tls.h"
  #include	"thread.h"
@@ -364,8 +364,8 @@ diff -urd upstream-gap-4.8.1/src/scanner.c src/scanner.c
  
 Only in src: stamp-h1
 diff -urd upstream-gap-4.8.1/src/sysfiles.c src/sysfiles.c
---- upstream-gap-4.8.1/src/sysfiles.c	2016-01-18 16:22:47.541652253 +0000
-+++ src/sysfiles.c	2016-01-18 16:00:21.257615052 +0000
+--- upstream-gap-4.8.1/src/sysfiles.c	2016-01-18 17:07:03.662474053 +0000
++++ src/sysfiles.c	2016-01-18 17:07:29.278742487 +0000
 @@ -42,6 +42,8 @@
  #include	"thread.h"		/* threads			   */
  #include	"tls.h"			/* thread-local storage		   */
