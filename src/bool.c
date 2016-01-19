@@ -70,13 +70,13 @@ Obj Fail;
 
 /****************************************************************************
 **
-*V  SuPeRfail  . . . . . . . . . . . . . . . . . . . . . . .  superfail value
+*V  SFail  . . . . . . . . . . . . . . . . . . . . . . . . . . superfail value
 **
-**  'SuPeRfail' is an ``superfail'' object which is used to indicate failure if
+**  'SFail' is an ``superfail'' object which is used to indicate failure if
 **  `fail' itself is a sensible response. This is used when having GAP read
 **  a file line-by-line via a library function (demo.g)
 */
-Obj SuPeRfail;
+Obj SFail;
 
 
 /****************************************************************************
@@ -115,7 +115,7 @@ void PrintBool (
     else if ( bool == Fail ) {
         Pr( "fail", 0L, 0L );
     }
-    else if ( bool == SuPeRfail ) {
+    else if ( bool == SFail ) {
         Pr( "SuPeRfail", 0L, 0L );
     }
     else {
@@ -402,7 +402,7 @@ static Int InitKernel (
     InitGlobalBag( &True,  "src/bool.c:TRUE"  );
     InitGlobalBag( &False, "src/bool.c:FALSE" );
     InitGlobalBag( &Fail,  "src/bool.c:FAIL"  );
-    InitGlobalBag( &SuPeRfail,  "src/bool.c:SUPERFAIL"  );
+    InitGlobalBag( &SFail,  "src/bool.c:SFAIL"  );
 
     /* install the saving functions                                       */
     SaveObjFuncs[ T_BOOL ] = SaveBool;
@@ -446,9 +446,9 @@ static Int InitLibrary (
     MakeReadOnlyGVar(gvar);
 
     /* `SuPeRfail' ditto                       */
-    SuPeRfail  = NewBag( T_BOOL, 0L );
+    SFail  = NewBag( T_BOOL, 0L );
     gvar = GVarName( "SuPeRfail" );
-    AssGVar( gvar, SuPeRfail );
+    AssGVar( gvar, SFail );
     MakeReadOnlyGVar(gvar);
 
     /* make and install the 'RETURN_TRUE' function                         */

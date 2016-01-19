@@ -43,13 +43,13 @@ extern Obj Fail;
 
 /****************************************************************************
 **
-*V  SuPeRfail  . . . . . . . . . . . . . . . . . . . . . . .  superfail value
+*V  SFail  . . . . . . . . . . . . . . . . . . . . . . . . . . superfail value
 **
-**  'SuPeRfail' is an ``superfail'' object which is used to indicate failure if
+**  'SFail' is an ``superfail'' object which is used to indicate failure if
 **  `fail' itself is a sensible response. This is used when having GAP read
 **  a file line-by-line via a library function (demo.g)
 */
-extern Obj SuPeRfail;
+extern Obj SFail;
 
 
 /****************************************************************************

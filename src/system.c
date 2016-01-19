@@ -78,10 +78,10 @@ Int enableCodeCoverageAtStartup( Char **argv, void * dummy);
 /****************************************************************************
 **
 *V  SyKernelVersion  . . . . . . . . . . . . . . . hard coded kernel version
-** do not edit the following line. Occurences of `4.dev' and `today'
+** do not edit the following line. Occurences of `4.8.1' and `today'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyKernelVersion = "4.dev";
+const Char * SyKernelVersion = "4.8.1";
 
 /****************************************************************************
 **
@@ -98,10 +98,10 @@ const Char * SyBuildDateTime = GAP_BUILD_DATETIME;
 
 /****************************************************************************
 *V  SyWindowsPath  . . . . . . . . . . . . . . . . . default path for Windows
-** do not edit the following line. Occurences of `gap4dev'
+** do not edit the following line. Occurences of `gap4r8'
 ** will be replaced by string matching by distribution wrapping scripts.
 */
-const Char * SyWindowsPath = "/cygdrive/c/gap4dev";
+const Char * SyWindowsPath = "/cygdrive/c/gap4r8";
 
 /****************************************************************************
 **
