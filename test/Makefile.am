@@ -22,7 +22,7 @@ error_handler_LDFLAGS = -lgmp -lm
 dist-hook:
 	echo '*** /test dist-hook *******************************'
 	chmod 644 $(distdir)/*.c
-	sed -i \
+	$(SED) -i \
 	   -e 's/ViewObjHandler/libGAP_ViewObjHandler/g' \
 	   -e 's/ExecStatus/libGAP_ExecStatus/g' \
 	   -e 's/BottomLVars/libGAP_BottomLVars/g' \
