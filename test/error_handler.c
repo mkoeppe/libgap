@@ -28,15 +28,16 @@ void handler(char* msg)
 
 int main()
 {
-  char* argv[7];
+  char* argv[8];
   argv[0] = "gap";
   argv[1] = "-l";
   argv[2] = SYS_DEFAULT_PATHS;
   argv[3] = "-m";
   argv[4] = "24M";
   argv[5] = "-T";
-  argv[6] = NULL;
-  int argc=6;
+  argv[6] = "-A";
+  argv[7] = NULL;
+  int argc=7;
   libgap_set_error_handler(handler);
   libgap_initialize(argc, argv);
   libgap_mark_stack_bottom();
