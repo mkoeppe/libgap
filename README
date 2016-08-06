@@ -1,9 +1,9 @@
-LibGAP 
+LibGAP
 ======
 
 A C library version of the GAP kernel.
 
-GAP (http://www.gap-system.org) is a system fo computational group
+GAP (http://www.gap-system.org) is a system for computational group
 theory. This repo contains a shared library version of the GAP kernel,
 allowing you to directly talk to GAP from your own C/C++ code.
 
@@ -14,7 +14,7 @@ implemented using LibGAP.
 Requirements
 ============
 
-Runtime: 
+Runtime:
   * the GAP library (scripts in the GAP language)
   * GMP/MPIR shared library
 
@@ -22,7 +22,7 @@ Compile-time:
   * GMP/MPIR headers
 
 Packaging (to run "make dist"):
-  * Python 
+  * Python
   * The Python PLY module (http://www.dabeaz.com/ply)
 
 
@@ -68,7 +68,7 @@ the following steps:
      patches/gap-x.y.z.patch
 
   3. Replace the C sources in LibGAP's src with the new
-     upstream-gap-x.y.(z+1): 
+     upstream-gap-x.y.(z+1):
 
          cp upstream/src/*.[c,h] src/
 
@@ -79,7 +79,7 @@ the following steps:
 
   5. Update src/Makefile.am if C sources have been added/removed.
 
-  6. Update the version in configure.ac and run 
+  6. Update the version in configure.ac and run
 
          $ autoreconf -fiv
 
