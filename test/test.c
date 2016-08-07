@@ -42,8 +42,8 @@ void error_handler(char* msg)
 void init()
 {
   printf("Using gap library at %s\n", SYS_DEFAULT_PATHS);
-  char* argv[12];
-  argv[0] = "sage";
+  char* argv[13];
+  argv[0] = "gap";
   argv[1] = "-l";
   argv[2] = SYS_DEFAULT_PATHS;
   char* memory_pool = "1000M";
@@ -54,9 +54,10 @@ void init()
   argv[7] = "-m";
   argv[8] = "64M";
   argv[9] = "-q";
-  argv[10] = "-T";
-  argv[11] = NULL;
-  int argc=11;
+  argv[10] = "-A";
+  argv[11] = "-T";
+  argv[12] = NULL;
+  int argc=12;
   //  libgap_set_error_handler(&error_handler);
   //  libgap_initialize(argc, argv);
 

@@ -54,16 +54,17 @@ int main()
 {
   print_stack_start();
   stacker();
-  char* argv[8];
+  char* argv[9];
   argv[0] = "gap";
   argv[1] = "-l";
   argv[2] = SYS_DEFAULT_PATHS;
   argv[3] = "-m";
   argv[4] = "32M";
   argv[5] = "-q";
-  argv[6] = "-T";
-  argv[7] = NULL;
-  int argc=7;
+  argv[6] = "-A";
+  argv[7] = "-T";
+  argv[8] = NULL;
+  int argc=8;
   // gap_main_loop(argc, argv, environ);
   libgap_set_error_handler(&error_handler);
   libgap_initialize(argc, argv);
