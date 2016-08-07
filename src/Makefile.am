@@ -2,6 +2,9 @@ DEFAULT_INCLUDES = -I@top_builddir@
 
 lib_LTLIBRARIES = libgap.la
 
+libgap_la_LT_INFO = -version-info @LIBGAP_LT_VERSION@
+
+
 libgap_la_SOURCES = \
   ariths.c    c_random.c  gmpints.c   objccoll.c  rational.c  system.c  \
   blister.c   c_type1.c   gvars.c     objcftl.c   read.c      tietze.c  \
@@ -44,7 +47,7 @@ libgap_la_CFLAGS = $(AM_CFLAGS) \
   -DCONFIG_H @GMP_CFLAGS@ @SAGE_CFLAGS@
 
 # the no-undefined is necessary for Cygwin
-libgap_la_LDFLAGS = -lm @GMP_LIBS@ -no-undefined
+libgap_la_LDFLAGS = $(libgap_la_LT_INFO) -lm @GMP_LIBS@ -no-undefined
 
 
 dist-hook:
