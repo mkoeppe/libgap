@@ -1,0 +1,7 @@
+LIBGAP_8.4.3 {
+global:
+libGAP_*;
+libgap_*;
+local:
+*;
+};
