@@ -1,0 +1,21 @@
+language: c
+
+compiler:
+  - gcc
+  - clang
+
+dist: trusty
+
+sudo: required
+
+addons:
+  apt_packages:
+    - libgmp-dev
+    - gap
+    - autoconf
+    - automake
+    - libtool
+
+script:
+  - autoreconf -fi && ./configure CFLAGS='-DSYS_DEFAULT_PATHS=\"/usr/share/gap\"' && make -j4 && make check
+
