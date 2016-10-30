@@ -61,7 +61,7 @@ dnl SYS_ARCH must match the GAP install for packages
 dnl to find binaries in the right path (see GAParch_system 
 dnl in sysinfo.gap)
 AC_ARG_WITH(gap-system-arch,
-  [AS_HELP_STRING([--with-gap_system_arch=<string>],  
+  [AS_HELP_STRING([--with-gap-system-arch=<string>],
                   [the GAP arch (default: x86_64-unknown-linux-gnu-gcc-default64)])],
   [GAP_SYSTEM_ARCH="$with_gap_system_arch"],
   [GAP_SYSTEM_ARCH="x86_64-unknown-linux-gnu-gcc-default64"])
