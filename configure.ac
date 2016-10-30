@@ -67,6 +67,10 @@ AC_ARG_WITH(gap-system-arch,
   [GAP_SYSTEM_ARCH="x86_64-unknown-linux-gnu-gcc-default64"])
 AC_DEFINE_UNQUOTED([SYS_ARCH], ["$GAP_SYSTEM_ARCH"], [GAP system architecture string])
 
+AC_ARG_WITH(gap-root,
+  [AS_HELP_STRING([--with-gap-root=DIRECTORY],
+                  [root directory of the GAP library])],
+  [AC_DEFINE_UNQUOTED([SYS_DEFAULT_PATHS], ["$with_gap_root"], [Root directory of GAP library])])
 
 # weird macros that GAP uses
 AC_DEFINE_UNQUOTED([CONFIGNAME], ["sage-libGAP"], [arbitrary name])
